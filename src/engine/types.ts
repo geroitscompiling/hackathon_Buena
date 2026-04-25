@@ -14,3 +14,7 @@ export interface BuildingFact {
   isGoldStandard: boolean;
   confidenceScore: number;
 }
+
+export interface Ingestor {
+  ingest(filePath: string, fileId: string): Promise<BuildingFact[]>;
+}
