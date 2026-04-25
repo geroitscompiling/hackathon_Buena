@@ -29,7 +29,7 @@ export type SemanticSearchResult = {
 };
 
 function compactParts(parts: Array<string | null | undefined | false>): string {
-	return parts.filter((part): part is string => Boolean(part && part.trim())).join(" | ");
+	return parts.filter((part): part is string => Boolean(part?.trim())).join(" | ");
 }
 
 export function formatSemanticSearchQuery(query: string): string {

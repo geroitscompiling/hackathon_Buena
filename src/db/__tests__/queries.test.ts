@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import * as relations from "#/db/relations";
 import * as schema from "#/db/schema";
 import {
 	createApartment,

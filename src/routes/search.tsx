@@ -137,17 +137,22 @@ function SearchPage() {
 						}}
 					>
 						<div className="xl:col-span-2">
-							<label className="mb-2 block text-sm font-medium">Query</label>
+							<label htmlFor="search-query" className="mb-2 block text-sm font-medium">
+								Query
+							</label>
 							<Input
+								id="search-query"
 								value={query}
 								onChange={(event) => setQuery(event.target.value)}
 								placeholder="e.g. open roof leak issues in LIE-001"
 							/>
 						</div>
 						<div>
-							<label className="mb-2 block text-sm font-medium">Entity Type</label>
+							<label htmlFor="search-entity-type" className="mb-2 block text-sm font-medium">
+								Entity Type
+							</label>
 							<Select value={entityType} onValueChange={(value) => setEntityType(value as "all" | "fact" | "case")}>
-								<SelectTrigger className="w-full">
+								<SelectTrigger id="search-entity-type" className="w-full">
 									<SelectValue placeholder="All entities" />
 								</SelectTrigger>
 								<SelectContent>
@@ -158,16 +163,33 @@ function SearchPage() {
 							</Select>
 						</div>
 						<div>
-							<label className="mb-2 block text-sm font-medium">Property ID</label>
-							<Input value={propertyId} onChange={(event) => setPropertyId(event.target.value)} placeholder="LIE-001" />
-						</div>
-						<div>
-							<label className="mb-2 block text-sm font-medium">House ID</label>
-							<Input value={houseId} onChange={(event) => setHouseId(event.target.value)} placeholder="LIE-001-H1" />
-						</div>
-						<div>
-							<label className="mb-2 block text-sm font-medium">Apartment ID</label>
+							<label htmlFor="search-property-id" className="mb-2 block text-sm font-medium">
+								Property ID
+							</label>
 							<Input
+								id="search-property-id"
+								value={propertyId}
+								onChange={(event) => setPropertyId(event.target.value)}
+								placeholder="LIE-001"
+							/>
+						</div>
+						<div>
+							<label htmlFor="search-house-id" className="mb-2 block text-sm font-medium">
+								House ID
+							</label>
+							<Input
+								id="search-house-id"
+								value={houseId}
+								onChange={(event) => setHouseId(event.target.value)}
+								placeholder="LIE-001-H1"
+							/>
+						</div>
+						<div>
+							<label htmlFor="search-apartment-id" className="mb-2 block text-sm font-medium">
+								Apartment ID
+							</label>
+							<Input
+								id="search-apartment-id"
 								value={apartmentId}
 								onChange={(event) => setApartmentId(event.target.value)}
 								placeholder="LIE-001-H1-A1"
@@ -175,8 +197,15 @@ function SearchPage() {
 						</div>
 						<div className="flex items-end gap-3">
 							<div className="flex-1">
-								<label className="mb-2 block text-sm font-medium">Limit</label>
-								<Input value={limit} onChange={(event) => setLimit(event.target.value)} inputMode="numeric" />
+								<label htmlFor="search-limit" className="mb-2 block text-sm font-medium">
+									Limit
+								</label>
+								<Input
+									id="search-limit"
+									value={limit}
+									onChange={(event) => setLimit(event.target.value)}
+									inputMode="numeric"
+								/>
 							</div>
 							<Button type="submit" className="min-w-28">
 								Search
