@@ -4,13 +4,12 @@ import { GeminiService } from "../GeminiService";
 describe("GeminiService", () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    delete process.env.GEMINI_MODEL;
-    delete process.env.GEMINI_MAX_RETRIES;
-    delete process.env.GEMINI_MIN_REQUEST_DELAY_MS;
   });
 
   it("throws when api key is missing", () => {
-    expect(() => new GeminiService("")).toThrow("GEMINI_API_KEY is required");
+    expect(() => new GeminiService({ apiKey: "", model: "gemini-test-model" })).toThrow(
+      "GEMINI_API_KEY is required"
+    );
   });
 
   it("sends generation request with temperature 0", async () => {
@@ -28,7 +27,13 @@ describe("GeminiService", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const service = new GeminiService("test-key", "gemini-test-model");
+    const service = new GeminiService({
+      apiKey: "test-key",
+      model: "gemini-test-model",
+      maxRetries: 2,
+      minRequestDelayMs: 1000,
+      debugEnabled: false,
+    });
     await service.generateJson<{ isRelevant: boolean }>("Test prompt");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -55,13 +60,18 @@ describe("GeminiService", () => {
       })
     );
 
-    const service = new GeminiService("test-key");
+    const service = new GeminiService({
+      apiKey: "test-key",
+      model: "gemini-test-model",
+      maxRetries: 2,
+      minRequestDelayMs: 1000,
+      debugEnabled: false,
+    });
     const result = await service.generateJson<{ facts: unknown[] }>("Extract");
     expect(result).toEqual({ facts: [] });
   });
 
-  it("uses GEMINI_MODEL when model argument is omitted", async () => {
-    process.env.GEMINI_MODEL = "gemini-from-env";
+  it("uses configured model when sending requests", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -76,11 +86,17 @@ describe("GeminiService", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const service = new GeminiService("test-key");
+    const service = new GeminiService({
+      apiKey: "test-key",
+      model: "gemini-from-config",
+      maxRetries: 2,
+      minRequestDelayMs: 1000,
+      debugEnabled: false,
+    });
     await service.generateJson<{ ok: boolean }>("Ping");
 
     const [url] = fetchMock.mock.calls[0];
-    expect(String(url)).toContain("/models/gemini-from-env:generateContent");
+    expect(String(url)).toContain("/models/gemini-from-config:generateContent");
   });
 
   it("includes response body when request fails", async () => {
@@ -94,7 +110,13 @@ describe("GeminiService", () => {
       })
     );
 
-    const service = new GeminiService("test-key", "gemini-1.5-flash");
+    const service = new GeminiService({
+      apiKey: "test-key",
+      model: "gemini-1.5-flash",
+      maxRetries: 2,
+      minRequestDelayMs: 1000,
+      debugEnabled: false,
+    });
 
     await expect(service.generateJson("Prompt")).rejects.toThrow(
       'Gemini request failed for model gemini-1.5-flash (attempt 1/'
@@ -102,7 +124,6 @@ describe("GeminiService", () => {
   });
 
   it("retries on 429 and succeeds on a follow-up attempt", async () => {
-    process.env.GEMINI_MAX_RETRIES = "2";
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -119,7 +140,13 @@ describe("GeminiService", () => {
       });
     vi.stubGlobal("fetch", fetchMock);
 
-    const service = new GeminiService("test-key", "gemini-test-model");
+    const service = new GeminiService({
+      apiKey: "test-key",
+      model: "gemini-test-model",
+      maxRetries: 2,
+      minRequestDelayMs: 1000,
+      debugEnabled: false,
+    });
     const result = await service.generateJson<{ facts: unknown[] }>("Extract");
 
     expect(result).toEqual({ facts: [] });
@@ -127,7 +154,6 @@ describe("GeminiService", () => {
   });
 
   it("retries on 503 then throws after max retries", async () => {
-    process.env.GEMINI_MAX_RETRIES = "1";
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 503,
@@ -136,7 +162,13 @@ describe("GeminiService", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const service = new GeminiService("test-key", "gemini-test-model");
+    const service = new GeminiService({
+      apiKey: "test-key",
+      model: "gemini-test-model",
+      maxRetries: 1,
+      minRequestDelayMs: 1000,
+      debugEnabled: false,
+    });
 
     await expect(service.generateJson("Extract")).rejects.toThrow(
       'Gemini request failed for model gemini-test-model (attempt 2/2) with status 503: {"error":{"message":"service unavailable"}}'

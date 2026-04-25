@@ -1,10 +1,31 @@
 import { createEnv } from '@t3-oss/env-core'
 import { z } from 'zod'
 
+const optionalDebugFlag = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim() || undefined : value),
+  z.enum(['0', '1']).optional()
+)
+
+const serverEnvShape = {
+  SERVER_URL: z.string().url().optional(),
+  GEMINI_API_KEY: z.string().min(1),
+  GEMINI_MODEL_GATEKEEPER: z.string().min(1),
+  GEMINI_MODEL_EXTRACTOR: z.string().min(1),
+  GEMINI_MAX_RETRIES: z.coerce.number().int().min(1).max(10),
+  GEMINI_MIN_REQUEST_DELAY_MS: z.coerce.number().int().min(1000).max(10000),
+  GEMINI_DEBUG: optionalDebugFlag,
+} as const
+
+const serverEnvSchema = z.object(serverEnvShape)
+
+export type ServerEnv = z.infer<typeof serverEnvSchema>
+
+export function getServerEnv(): ServerEnv {
+  return serverEnvSchema.parse(process.env)
+}
+
 export const env = createEnv({
-  server: {
-    SERVER_URL: z.string().url().optional(),
-  },
+  server: serverEnvShape,
 
   /**
    * The prefix that client-side variables must have. This is enforced both at

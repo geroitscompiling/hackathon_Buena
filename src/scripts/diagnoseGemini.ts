@@ -1,12 +1,7 @@
 import dotenv from "dotenv";
+import { getServerEnv } from "#/env";
 
 dotenv.config({ path: [".env.local", ".env"] });
-
-const apiKey = process.env.GEMINI_API_KEY ?? "";
-const configuredGatekeeperModel =
-  process.env.GEMINI_MODEL_GATEKEEPER ?? process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-const configuredExtractorModel =
-  process.env.GEMINI_MODEL_EXTRACTOR ?? process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
 async function fetchJson(url: string): Promise<{
   status: number;
@@ -23,7 +18,7 @@ async function fetchJson(url: string): Promise<{
   };
 }
 
-async function probeModel(model: string): Promise<void> {
+async function probeModel(apiKey: string, model: string): Promise<void> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -55,9 +50,10 @@ async function probeModel(model: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is required");
-  }
+  const runtimeEnv = getServerEnv();
+  const apiKey = runtimeEnv.GEMINI_API_KEY;
+  const configuredGatekeeperModel = runtimeEnv.GEMINI_MODEL_GATEKEEPER;
+  const configuredExtractorModel = runtimeEnv.GEMINI_MODEL_EXTRACTOR;
 
   console.log("Gemini diagnose started");
   console.log(`gatekeeper_model=${configuredGatekeeperModel}`);
@@ -75,11 +71,10 @@ async function main(): Promise<void> {
     console.log(`body=${modelsResult.bodyText.slice(0, 500)}...(truncated)`);
   }
 
-  await probeModel(configuredGatekeeperModel);
+  await probeModel(apiKey, configuredGatekeeperModel);
   if (configuredExtractorModel !== configuredGatekeeperModel) {
-    await probeModel(configuredExtractorModel);
+    await probeModel(apiKey, configuredExtractorModel);
   }
-  await probeModel("gemini-2.5-flash");
 }
 
 main().catch((error) => {

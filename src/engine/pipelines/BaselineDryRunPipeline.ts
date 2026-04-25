@@ -9,6 +9,7 @@ import { Gatekeeper } from "../services/Gatekeeper";
 import { GeminiService } from "../services/GeminiService";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 import { facts, properties, sources } from "../../db/schema";
+import { getServerEnv } from "#/env";
 
 interface BaselineDryRunDb {
   insert: (...args: unknown[]) => {
@@ -56,10 +57,11 @@ export async function runBaselineDryRun({
     name: propertyName,
   });
 
-  const gatekeeperModel = process.env.GEMINI_MODEL_GATEKEEPER ?? process.env.GEMINI_MODEL;
-  const extractorModel = process.env.GEMINI_MODEL_EXTRACTOR ?? process.env.GEMINI_MODEL;
-  const buildGatekeeperLlmClient = () => new GeminiService(undefined, gatekeeperModel);
-  const buildExtractorLlmClient = () => new GeminiService(undefined, extractorModel);
+  const runtimeEnv = getServerEnv();
+  const buildGatekeeperLlmClient = () =>
+    new GeminiService({ model: runtimeEnv.GEMINI_MODEL_GATEKEEPER });
+  const buildExtractorLlmClient = () =>
+    new GeminiService({ model: runtimeEnv.GEMINI_MODEL_EXTRACTOR });
   const resolvedGatekeeper =
     gatekeeper ?? new Gatekeeper(buildGatekeeperLlmClient(), { strictErrors: strictAiErrors });
   const resolvedExtractor =

@@ -1,3 +1,5 @@
+import { getServerEnv } from "#/env";
+
 interface GeminiGeneratePart {
   text?: string;
 }
@@ -10,36 +12,48 @@ interface GeminiGenerateResponse {
   }>;
 }
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
-const DEFAULT_MAX_RETRIES = 5;
-const DEFAULT_MIN_REQUEST_DELAY_MS = 1000;
 const RETRYABLE_STATUS_CODES = new Set([429, 503]);
+
+interface GeminiServiceOptions {
+  apiKey?: string;
+  model: string;
+  maxRetries?: number;
+  minRequestDelayMs?: number;
+  debugEnabled?: boolean;
+}
 
 export class GeminiService {
   private lastRequestAt = 0;
+  private readonly apiKey: string;
+  private readonly model: string;
+  private readonly maxRetries: number;
+  private readonly minRequestDelayMs: number;
+  private readonly debugEnabled: boolean;
 
-  constructor(
-    private readonly apiKey: string = process.env.GEMINI_API_KEY ?? "",
-    private readonly model: string = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
-  ) {
+  constructor(options: GeminiServiceOptions) {
+    const runtimeEnv = getServerEnv();
+    this.maxRetries = options.maxRetries ?? runtimeEnv.GEMINI_MAX_RETRIES;
+    this.minRequestDelayMs =
+      options.minRequestDelayMs ?? runtimeEnv.GEMINI_MIN_REQUEST_DELAY_MS;
+    this.debugEnabled = options.debugEnabled ?? runtimeEnv.GEMINI_DEBUG === "1";
+    this.apiKey = options.apiKey ?? runtimeEnv.GEMINI_API_KEY;
+    this.model = options.model;
     if (!this.apiKey) {
       throw new Error("GEMINI_API_KEY is required");
     }
   }
 
   async generateJson<T>(prompt: string): Promise<T> {
-    const maxRetries = Number(process.env.GEMINI_MAX_RETRIES ?? DEFAULT_MAX_RETRIES);
-    const totalAttempts = maxRetries + 1;
-    const debugEnabled = process.env.GEMINI_DEBUG === "1";
+    const totalAttempts = this.maxRetries + 1;
     let attempt = 0;
     let response: Response | null = null;
 
-    while (attempt <= maxRetries) {
+    while (attempt <= this.maxRetries) {
       const attemptNumber = attempt + 1;
       await this.enforceMinimumDelay();
-      if (debugEnabled) {
+      if (this.debugEnabled) {
         console.log(
-          `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} sending request`
+          `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} sending request`,
         );
       }
       response = await fetch(
@@ -61,9 +75,9 @@ export class GeminiService {
       this.lastRequestAt = Date.now();
 
       if (response.ok) {
-        if (debugEnabled) {
+        if (this.debugEnabled) {
           console.log(
-            `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} success`
+            `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} success`,
           );
         }
         break;
@@ -73,15 +87,15 @@ export class GeminiService {
       const detailSuffix = errorDetails ? `: ${errorDetails}` : "";
       const errorMessage = `Gemini request failed for model ${this.model} (attempt ${attemptNumber}/${totalAttempts}) with status ${response.status}${detailSuffix}`;
       const shouldRetry =
-        RETRYABLE_STATUS_CODES.has(response.status) && attempt < maxRetries;
+        RETRYABLE_STATUS_CODES.has(response.status) && attempt < this.maxRetries;
       if (!shouldRetry) {
         throw new Error(errorMessage);
       }
 
       const retryAfterMs = this.getRetryDelayMs(response, attempt);
-      if (debugEnabled) {
+      if (this.debugEnabled) {
         console.warn(
-          `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} status=${response.status} retrying_in_ms=${retryAfterMs}`
+          `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} status=${response.status} retrying_in_ms=${retryAfterMs}`,
         );
       }
       await this.sleep(retryAfterMs);
@@ -106,19 +120,16 @@ export class GeminiService {
   }
 
   private async enforceMinimumDelay(): Promise<void> {
-    const minRequestDelayMs = Number(
-      process.env.GEMINI_MIN_REQUEST_DELAY_MS ?? DEFAULT_MIN_REQUEST_DELAY_MS
-    );
-    if (minRequestDelayMs <= 0 || this.lastRequestAt === 0) {
+    if (this.minRequestDelayMs <= 0 || this.lastRequestAt === 0) {
       return;
     }
 
     const elapsedMs = Date.now() - this.lastRequestAt;
-    if (elapsedMs >= minRequestDelayMs) {
+    if (elapsedMs >= this.minRequestDelayMs) {
       return;
     }
 
-    await this.sleep(minRequestDelayMs - elapsedMs);
+    await this.sleep(this.minRequestDelayMs - elapsedMs);
   }
 
   private getRetryDelayMs(response: Response, attempt: number): number {
@@ -139,5 +150,3 @@ export class GeminiService {
     });
   }
 }
-
-export { DEFAULT_GEMINI_MODEL };
