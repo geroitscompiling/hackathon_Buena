@@ -4,12 +4,12 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import * as relations from "#/db/relations";
 import * as schema from "#/db/schema";
+import { listCases } from "#/services/cases";
+import { listFacts } from "#/services/facts";
 import {
 	getPropertyHierarchy,
-	listCases,
-	listFacts,
 	listPropertyHierarchies,
-} from "#/db/queries";
+} from "#/services/properties";
 import { createMcpTools, listMcpTools } from "#/mcp/server";
 
 describe("mcp tools", () => {

@@ -5,12 +5,21 @@ import { beforeAll, describe, expect, it } from "vitest";
 import * as relations from "#/db/relations";
 import * as schema from "#/db/schema";
 import {
+	createApartment,
+	deleteApartment,
+	updateApartment,
+} from "#/services/apartments";
+import { listCases } from "#/services/cases";
+import { listFacts } from "#/services/facts";
+import { createHouse, deleteHouse, updateHouse } from "#/services/houses";
+import {
+	createProperty,
+	deleteProperty,
 	getPropertyHierarchy,
-	listCases,
-	listFacts,
 	listProperties,
 	listPropertyHierarchies,
-} from "#/db/queries";
+	updateProperty,
+} from "#/services/properties";
 
 describe("db queries", () => {
 	let sqlite: Database.Database;
@@ -89,6 +98,30 @@ describe("db queries", () => {
         FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action,
         FOREIGN KEY ("ownerUserId") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
       );
+
+      CREATE TABLE IF NOT EXISTS "fact_houses" (
+        "factId" text NOT NULL,
+        "houseId" text NOT NULL,
+        PRIMARY KEY ("factId", "houseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_apartments" (
+        "factId" text NOT NULL,
+        "apartmentId" text NOT NULL,
+        PRIMARY KEY ("factId", "apartmentId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_cases" (
+        "factId" text NOT NULL,
+        "caseId" text NOT NULL,
+        PRIMARY KEY ("factId", "caseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("caseId") REFERENCES "cases"("id") ON UPDATE no action ON DELETE no action
+      );
     `);
 
 		await db.insert(schema.properties).values({
@@ -166,5 +199,62 @@ describe("db queries", () => {
 		expect(facts[0].source.fileId).toBe("stammdaten.json");
 		expect(cases).toHaveLength(1);
 		expect(cases[0].owner.name).toBe("Alice Manager");
+	});
+
+	it("creates, updates, and deletes hierarchy records", async () => {
+		const property = await createProperty(db, {
+			id: "LIE-003",
+			name: "Neue Schonhauser 88",
+		});
+		const house = await createHouse(db, {
+			id: "LIE-003-H1",
+			propertyId: property.id,
+			name: "Side House",
+		});
+		const apartment = await createApartment(db, {
+			id: "LIE-003-H1-A1",
+			houseId: house.id,
+			name: "Studio 4",
+		});
+
+		expect(property.id).toBe("LIE-003");
+		expect(house.propertyId).toBe("LIE-003");
+		expect(apartment.houseId).toBe("LIE-003-H1");
+
+		const updatedProperty = await updateProperty(db, {
+			id: property.id,
+			name: "Neue Schonhauser 88A",
+		});
+		const updatedHouse = await updateHouse(db, {
+			id: house.id,
+			name: "Rear House",
+		});
+		const updatedApartment = await updateApartment(db, {
+			id: apartment.id,
+			name: "Studio 4B",
+		});
+
+		expect(updatedProperty.name).toBe("Neue Schonhauser 88A");
+		expect(updatedHouse.name).toBe("Rear House");
+		expect(updatedApartment.name).toBe("Studio 4B");
+
+		await deleteApartment(db, { id: apartment.id });
+		await deleteHouse(db, { id: house.id });
+		await deleteProperty(db, { id: property.id });
+
+		const properties = await listProperties(db, { limit: 10 });
+		expect(properties.some((entry) => entry.id === "LIE-003")).toBe(false);
+	});
+
+	it("deletes a property subtree together with related facts and cases", async () => {
+		await deleteProperty(db, { id: "LIE-001" });
+
+		const properties = await listProperties(db, { limit: 10 });
+		const facts = await listFacts(db, { propertyId: "LIE-001", limit: 10 });
+		const cases = await listCases(db, { propertyId: "LIE-001", limit: 10 });
+
+		expect(properties.some((entry) => entry.id === "LIE-001")).toBe(false);
+		expect(facts).toHaveLength(0);
+		expect(cases).toHaveLength(0);
 	});
 });

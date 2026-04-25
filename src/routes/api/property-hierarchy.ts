@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { getPropertyHierarchy } from "#/db/queries";
+import { getPropertyHierarchy } from "#/services/properties";
 
 export const Route = createFileRoute("/api/property-hierarchy")({
 	server: {

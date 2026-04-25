@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { listCases } from "#/db/queries";
+import { listCases } from "#/services/cases";
 
 export const Route = createFileRoute("/api/cases")({
 	server: {
