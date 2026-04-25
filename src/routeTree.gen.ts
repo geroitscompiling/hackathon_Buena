@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CasesRouteImport } from './routes/cases'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -24,6 +25,11 @@ import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const CasesRoute = CasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -98,6 +104,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cases': typeof CasesRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cases': typeof CasesRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cases': typeof CasesRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/cases'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/cases'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/cases'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CasesRoute: typeof CasesRoute
   ApiCasesRoute: typeof ApiCasesRoute
   ApiFactsRoute: typeof ApiFactsRoute
   ApiMcpRoute: typeof ApiMcpRoute
@@ -214,6 +227,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/cases': {
+      id: '/cases'
+      path: '/cases'
+      fullPath: '/cases'
+      preLoaderRoute: typeof CasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -318,6 +338,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CasesRoute: CasesRoute,
   ApiCasesRoute: ApiCasesRoute,
   ApiFactsRoute: ApiFactsRoute,
   ApiMcpRoute: ApiMcpRoute,
