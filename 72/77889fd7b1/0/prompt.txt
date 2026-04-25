@@ -1,0 +1,105 @@
+Handover Ticket: Baseline Dry-Run AI 404 Blocker
+Context
+Continue work in ~/workspace/hackathon on baseline dry-run pipeline (make run-initial).
+
+Current status:
+
+DB reset/setup flow works.
+Baseline pipeline runs and now fails loudly on AI errors (intentionally).
+Current blocker is Gemini API returning HTTP 404 during Gatekeeper call.
+Problem Statement
+make run-initial fails at AI relevance filtering with:
+
+Gatekeeper failed to evaluate document relevance: Gemini request failed with status 404
+Stack starts in src/engine/services/Gatekeeper.ts and src/engine/services/GeminiService.ts
+This indicates the app reaches Gemini, but endpoint/model/key combo is invalid (not a local env-loading issue anymore).
+
+What Was Implemented In This Session
+Baseline & Data Work
+Added baseline dry-run pipeline:
+src/engine/pipelines/BaselineDryRunPipeline.ts
+Added scripts:
+src/scripts/dryRunBaseline.ts
+src/scripts/dryRunHistory.ts (placeholder)
+Added package scripts:
+dry-run:baseline
+dry-run:history
+Moved day-based fixtures:
+testfiles/incremental/day-* → testfiles/HistoryPopulationData/day-*
+Added note file:
+testfiles/HistoryPopulationData/README.md
+Makefile + Ops
+Added Makefile with:
+install, db-reset, db-setup, run-initial, run-history, dev, test, lint, check
+Makefile now injects default DB:
+DATABASE_URL ?= local.db
+Added SQLite artifacts to .gitignore:
+local.db, local.db-shm, local.db-wal
+Diagnostics / Reliability
+Added strict AI error mode (fail-fast):
+Gatekeeper supports strictErrors
+FactExtractor supports strictErrors
+Baseline script uses strict mode, so silent AI failures are now visible.
+Summary now includes noisy-source diagnostics:
+noisySourcesEvaluated
+noisySourcesWithFacts
+Added tests for strict error behavior in:
+src/engine/services/__tests__/Gatekeeper.test.ts
+src/engine/services/__tests__/FactExtractor.test.ts
+Docs
+Updated README.md with Makefile flow and baseline usage.
+Updated agents.md with local ops defaults.
+Assumptions
+Baseline dry-run should use real Gemini calls in local demo runs.
+Tests remain offline-safe via mocks (already implemented).
+404 is from Gemini model/endpoint config mismatch, not missing env var (env is loaded now).
+Keep strict fail-fast behavior for demo transparency unless product decides otherwise.
+Most Likely Root Cause
+In src/engine/services/GeminiService.ts, model is hardcoded to:
+
+gemini-1.5-flash
+Request URL:
+
+https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=...
+A 404 strongly suggests this model/version/path is unavailable for the provided key/project/region or API surface.
+
+Suggested Next Steps (for next agent)
+Verify Gemini model availability for this key
+
+Use Google docs/API for currently available model IDs.
+Likely update default model to a currently valid one.
+Make model configurable
+
+Read from env (e.g. GEMINI_MODEL) with sane fallback.
+Log model name on startup (non-secret) for easier debugging.
+Improve error detail
+
+In GeminiService, include response body text in thrown error for non-OK responses (helps identify exact Google error reason).
+Re-run flow
+
+make run-initial
+Confirm non-gold facts persist and summary reflects noisy ingestion.
+Optional guardrail
+
+Preflight check target to validate Gemini connectivity before full ingestion.
+Quick Repro
+make run-initial
+Current expected failure:
+
+Gemini request failed with status 404
+Files Most Relevant to Continue
+src/engine/services/GeminiService.ts
+src/engine/services/Gatekeeper.ts
+src/engine/services/FactExtractor.ts
+src/engine/pipelines/BaselineDryRunPipeline.ts
+src/scripts/dryRunBaseline.ts
+Makefile
+README.md
+
+---
+
+Ah wait, the GEMINI_MODEL is in addition not set in the ENV and example ENV. I can do that for you, what model do you propse for the task for now?
+
+---
+
+Why not 3.1-flash?
