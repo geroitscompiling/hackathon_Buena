@@ -76,7 +76,7 @@ describe("Baseline dry-run pipeline", () => {
       propertyName: "WEG Immanuelkirchstraße 26",
       datasetRootPath: "testfiles",
       noisyInputFiles: [
-        "emails/2026-01/20260101_083800_EMAIL-06547.eml",
+        "emails/2026-01/20260101_074000_EMAIL-06545.eml",
         "rechnungen/2025-12/20251203_DL-015_INV-00184.pdf",
       ],
       gatekeeper,
