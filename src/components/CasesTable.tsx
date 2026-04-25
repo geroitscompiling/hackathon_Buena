@@ -16,14 +16,14 @@ type CasesTableProps = {
 export function CasesTable({ cases }: CasesTableProps) {
 	if (cases.length === 0) {
 		return (
-			<div className="rounded-[1.75rem] border border-dashed border-border/70 bg-white/60 px-6 py-6 text-sm text-muted-foreground">
+			<div className="rounded-lg border border-dashed bg-card px-6 py-6 text-sm text-muted-foreground">
 				No cases found.
 			</div>
 		);
 	}
 
 	return (
-		<div className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-white/80">
+		<div className="overflow-hidden rounded-lg border bg-card">
 			<div className="overflow-x-auto">
 				<Table>
 					<TableHeader>
@@ -41,15 +41,9 @@ export function CasesTable({ cases }: CasesTableProps) {
 							<TableRow key={caseItem.id}>
 								<TableCell className="min-w-56 align-top">
 									<div className="space-y-1">
-										<p className="font-semibold text-[var(--sea-ink)]">
-											{caseItem.title}
-										</p>
-										<p className="text-xs text-[var(--sea-ink-soft)]">
-											{caseItem.id}
-										</p>
-										<p className="text-sm text-[var(--sea-ink-soft)]">
-											{caseItem.summary}
-										</p>
+										<p className="font-semibold">{caseItem.title}</p>
+										<p className="text-xs text-muted-foreground">{caseItem.id}</p>
+										<p className="text-sm text-muted-foreground">{caseItem.summary}</p>
 									</div>
 								</TableCell>
 								<TableCell className="align-top">
@@ -59,12 +53,8 @@ export function CasesTable({ cases }: CasesTableProps) {
 								</TableCell>
 								<TableCell className="min-w-44 align-top">
 									<div className="space-y-1">
-										<p className="font-medium text-[var(--sea-ink)]">
-											{caseItem.property.name}
-										</p>
-										<p className="text-xs text-[var(--sea-ink-soft)]">
-											{caseItem.property.id}
-										</p>
+										<p className="font-medium">{caseItem.property.name}</p>
+										<p className="text-xs text-muted-foreground">{caseItem.property.id}</p>
 									</div>
 								</TableCell>
 								<TableCell className="min-w-48 align-top">
@@ -76,25 +66,19 @@ export function CasesTable({ cases }: CasesTableProps) {
 											<Badge>{caseItem.apartment.id}</Badge>
 										) : null}
 										{!caseItem.house && !caseItem.apartment ? (
-											<span className="text-sm text-[var(--sea-ink-soft)]">
-												Property only
-											</span>
+											<span className="text-sm text-muted-foreground">Property only</span>
 										) : null}
 									</div>
 								</TableCell>
 								<TableCell className="min-w-40 align-top">
 									<div className="space-y-1">
-										<p className="font-medium text-[var(--sea-ink)]">
-											{caseItem.owner.name}
-										</p>
+										<p className="font-medium">{caseItem.owner.name}</p>
 										{caseItem.owner.email ? (
-											<p className="text-xs text-[var(--sea-ink-soft)]">
-												{caseItem.owner.email}
-											</p>
+											<p className="text-xs text-muted-foreground">{caseItem.owner.email}</p>
 										) : null}
 									</div>
 								</TableCell>
-								<TableCell className="min-w-36 align-top text-sm text-[var(--sea-ink-soft)]">
+								<TableCell className="min-w-36 align-top text-sm text-muted-foreground">
 									{new Date(caseItem.updatedAt).toLocaleString("en-GB", {
 										dateStyle: "medium",
 										timeStyle: "short",

@@ -59,7 +59,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
+      <body className="font-sans antialiased [overflow-wrap:anywhere]">
         <TooltipProvider>{children}</TooltipProvider>
         <TanStackDevtools
           config={{
@@ -84,11 +84,11 @@ function RootLayout() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex items-center gap-3 border-b border-[var(--line)] bg-[rgba(255,255,255,0.62)] px-4 py-3 backdrop-blur md:px-6">
+        <div className="flex items-center gap-3 border-b bg-background px-4 py-3 md:px-6">
           <SidebarTrigger className="md:hidden" />
           <div>
-            <p className="text-sm font-semibold text-[var(--sea-ink)]">Buena</p>
-            <p className="text-xs text-[var(--sea-ink-soft)]">Property management</p>
+            <p className="text-sm font-semibold">Buena</p>
+            <p className="text-xs text-muted-foreground">Property management</p>
           </div>
         </div>
         <Outlet />

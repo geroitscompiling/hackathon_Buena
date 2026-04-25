@@ -104,8 +104,8 @@ function App() {
 		<main className="px-4 py-6 md:px-6">
 			<section className="mb-5 flex items-center justify-between gap-4">
 				<div>
-					<p className="island-kicker mb-2">Properties</p>
-					<h1 className="text-2xl font-semibold text-[var(--sea-ink)]">
+					<p className="mb-2 text-sm text-muted-foreground">Properties</p>
+					<h1 className="text-2xl font-semibold">
 						{properties.length} properties loaded
 					</h1>
 				</div>
