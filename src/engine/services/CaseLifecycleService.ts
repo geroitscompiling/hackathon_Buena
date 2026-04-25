@@ -17,6 +17,7 @@ import type { HierarchyResolver } from "./HierarchyResolver";
 import type { ResolvedHierarchyScope } from "./HierarchyResolver";
 import { createHash } from "node:crypto";
 import type { db as appDb } from "../../db";
+import type { SemanticIndexService } from "#/services/semanticIndex";
 
 type CaseLifecycleDb = typeof appDb;
 
@@ -88,7 +89,10 @@ function scopesAlign(
 export class CaseLifecycleService {
 	constructor(
 		private readonly db: CaseLifecycleDb,
-		private readonly options: { defaultOwnerUserId?: string } = {},
+		private readonly options: {
+			defaultOwnerUserId?: string;
+			semanticIndexService?: Pick<SemanticIndexService, "refreshCaseEmbeddingById">;
+		} = {},
 	) {}
 
 	defaultOwner(): string {
@@ -152,6 +156,7 @@ export class CaseLifecycleService {
 				createdAt: nowIso,
 				updatedAt: nowIso,
 			});
+			await this.options.semanticIndexService?.refreshCaseEmbeddingById(id);
 			return { opened: true, updated: false };
 		}
 
@@ -169,6 +174,7 @@ export class CaseLifecycleService {
 				apartmentId: cmd.apartmentId ?? existing.apartmentId,
 			})
 			.where(eq(cases.id, existing.id));
+		await this.options.semanticIndexService?.refreshCaseEmbeddingById(existing.id);
 
 		return { opened: false, updated: true };
 	}

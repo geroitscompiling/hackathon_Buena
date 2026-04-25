@@ -19,6 +19,7 @@
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
+    "embeddings:backfill": "tsx src/scripts/backfillEmbeddings.ts",
     "dry-run:baseline": "tsx src/scripts/dryRunBaseline.ts",
     "dry-run:history": "tsx src/scripts/dryRunHistory.ts",
     "gemini:diagnose": "tsx src/scripts/diagnoseGemini.ts"
@@ -44,6 +45,7 @@
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.577.0",
     "nitro": "npm:nitro-nightly@latest",
+    "postgres": "^3.4.9",
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -54,6 +56,7 @@
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "latest",
     "@biomejs/biome": "2.4.5",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",

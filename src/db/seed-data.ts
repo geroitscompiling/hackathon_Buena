@@ -1,6 +1,3 @@
-import type Database from "better-sqlite3";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-
 import * as schema from "./schema";
 
 export const seedDataset = {
@@ -208,32 +205,23 @@ export type SeedSummary = {
 	[K in keyof typeof seedDataset]: number;
 };
 
-const clearStatements = [
-	"DELETE FROM fact_cases",
-	"DELETE FROM fact_apartments",
-	"DELETE FROM fact_houses",
-	"DELETE FROM cases",
-	"DELETE FROM facts",
-	"DELETE FROM sources",
-	"DELETE FROM apartments",
-	"DELETE FROM houses",
-	"DELETE FROM properties",
-	"DELETE FROM users",
-];
-
 /**
  * Resets the hierarchy dataset and inserts deterministic demo records for UI,
  * API, and MCP development.
  */
 export async function seedDatabase(
-	db: BetterSQLite3Database<typeof schema>,
-	sqlite: Database.Database,
+	db: typeof import("./index").db,
 ): Promise<SeedSummary> {
-	sqlite.pragma("foreign_keys = ON");
-
-	for (const statement of clearStatements) {
-		sqlite.exec(statement);
-	}
+	await db.delete(schema.factCases);
+	await db.delete(schema.factApartments);
+	await db.delete(schema.factHouses);
+	await db.delete(schema.cases);
+	await db.delete(schema.facts);
+	await db.delete(schema.sources);
+	await db.delete(schema.apartments);
+	await db.delete(schema.houses);
+	await db.delete(schema.properties);
+	await db.delete(schema.users);
 
 	await db.insert(schema.properties).values(seedDataset.properties);
 	await db.insert(schema.houses).values(seedDataset.houses);

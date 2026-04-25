@@ -6,6 +6,7 @@ import { JsonIngestor } from "../ingestors/JsonIngestor";
 import { PdfIngestor } from "../ingestors/PdfIngestor";
 import { FactPersistencePolicy } from "../services/FactPersistencePolicy";
 import { FactExtractor } from "../services/FactExtractor";
+import { GeminiEmbeddingService } from "../services/GeminiEmbeddingService";
 import { Gatekeeper } from "../services/Gatekeeper";
 import { GeminiService } from "../services/GeminiService";
 import { HierarchyResolver } from "../services/HierarchyResolver";
@@ -25,6 +26,7 @@ import {
   users,
 } from "../../db/schema";
 import type { db as appDb } from "../../db";
+import { SemanticIndexService, type EmbeddingClient } from "#/services/semanticIndex";
 
 type BaselineDryRunDb = typeof appDb;
 
@@ -70,6 +72,11 @@ export interface BaselineDryRunOptions {
   /** Caps merged case intents for the whole run (mock dry-run readability). */
   maxCasesPerRun?: number;
   caseLifecycleService?: CaseLifecycleService;
+  semanticIndexService?: Pick<
+    SemanticIndexService,
+    "refreshFactEmbeddingById" | "refreshCaseEmbeddingById"
+  >;
+  embeddingClient?: EmbeddingClient;
 }
 
 export interface BaselineDryRunSummary {
@@ -94,7 +101,16 @@ const defaultNoisyInputFiles = [
 ];
 
 function isUniqueConstraintError(error: unknown): boolean {
-  return error instanceof Error && /unique|constraint|primary key/i.test(error.message);
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const maybeError = error as { message?: unknown; code?: unknown };
+  const message =
+    typeof maybeError.message === "string" ? maybeError.message : "";
+  const code = typeof maybeError.code === "string" ? maybeError.code : "";
+
+  return code === "23505" || /unique|constraint|primary key/i.test(message);
 }
 
 function deriveDocumentMetadataFromFact(
@@ -175,17 +191,14 @@ async function buildDefaultHierarchyResolver(
 }
 
 async function ensureDefaultCaseOwner(db: BaselineDryRunDb): Promise<void> {
-  try {
-    await db.insert(users).values({
+  await db
+    .insert(users)
+    .values({
       id: "user-1",
       name: "Default Owner",
       email: "owner@buena.test",
-    });
-  } catch (error) {
-    if (!isUniqueConstraintError(error)) {
-      throw error;
-    }
-  }
+    })
+    .onConflictDoNothing();
 }
 
 export async function runBaselineDryRun({
@@ -205,17 +218,16 @@ export async function runBaselineDryRun({
   caseExtractor,
   maxCasesPerRun,
   caseLifecycleService,
+  semanticIndexService,
+  embeddingClient,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
-  try {
-    await db.insert(properties).values({
+  await db
+    .insert(properties)
+    .values({
       id: propertyId,
       name: propertyName,
-    });
-  } catch (error) {
-    if (!isUniqueConstraintError(error)) {
-      throw error;
-    }
-  }
+    })
+    .onConflictDoNothing();
 
   let resolvedGatekeeper: RelevanceGatekeeper | undefined = gatekeeper;
   let resolvedExtractor: BuildingFactExtractor | undefined = extractor;
@@ -241,7 +253,18 @@ export async function runBaselineDryRun({
     throw new Error("BaselineDryRunPipeline failed to initialize AI services");
   }
 
-  const lifecycle = caseLifecycleService ?? new CaseLifecycleService(db);
+  let resolvedEmbeddingClient = embeddingClient;
+  if (!resolvedEmbeddingClient && process.env.GEMINI_API_KEY && process.env.GEMINI_MODEL_EMBEDDING) {
+    resolvedEmbeddingClient = new GeminiEmbeddingService();
+  }
+  const resolvedSemanticIndexService =
+    semanticIndexService ?? new SemanticIndexService(db, resolvedEmbeddingClient);
+
+  const lifecycle =
+    caseLifecycleService ??
+    new CaseLifecycleService(db, {
+      semanticIndexService: resolvedSemanticIndexService,
+    });
   const resolvedHierarchyResolver =
     hierarchyResolver ?? (await buildDefaultHierarchyResolver(db, propertyId));
   const resolvedFactPersistencePolicy =
@@ -397,6 +420,7 @@ export async function runBaselineDryRun({
         isGoldStandard: fact.isGoldStandard,
         confidenceScore: fact.confidenceScore,
       });
+      await resolvedSemanticIndexService.refreshFactEmbeddingById(fact.id);
 
       if (resolvedScope.scopeType === "house" || resolvedScope.scopeType === "apartment") {
         if (!resolvedScope.houseId) {

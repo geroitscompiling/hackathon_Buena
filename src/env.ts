@@ -8,9 +8,11 @@ const optionalDebugFlag = z.preprocess(
 
 const serverEnvShape = {
   SERVER_URL: z.string().url().optional(),
+  DATABASE_URL: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),
   GEMINI_MODEL_GATEKEEPER: z.string().min(1),
   GEMINI_MODEL_EXTRACTOR: z.string().min(1),
+  GEMINI_MODEL_EMBEDDING: z.string().min(1),
   GEMINI_MAX_RETRIES: z.coerce.number().int().min(1).max(10),
   GEMINI_MIN_REQUEST_DELAY_MS: z.coerce.number().int().min(1000).max(10000),
   GEMINI_DEBUG: optionalDebugFlag,
@@ -30,6 +32,10 @@ const geminiServiceRuntimeSchema = z.object({
     (value) => (typeof value === 'string' ? value.trim() || undefined : value),
     z.string().min(1).optional()
   ),
+  GEMINI_MODEL_EMBEDDING: z.preprocess(
+    (value) => (typeof value === 'string' ? value.trim() || undefined : value),
+    z.string().min(1).optional()
+  ),
   GEMINI_MAX_RETRIES: z.preprocess(
     (value) => (value === undefined || value === '' ? 5 : value),
     z.coerce.number().int().min(1).max(10)
@@ -46,6 +52,7 @@ export type GeminiServiceRuntimeEnv = z.infer<typeof geminiServiceRuntimeSchema>
 export function getGeminiServiceRuntimeEnv(): GeminiServiceRuntimeEnv {
   return geminiServiceRuntimeSchema.parse({
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_MODEL_EMBEDDING: process.env.GEMINI_MODEL_EMBEDDING,
     GEMINI_MAX_RETRIES: process.env.GEMINI_MAX_RETRIES,
     GEMINI_MIN_REQUEST_DELAY_MS: process.env.GEMINI_MIN_REQUEST_DELAY_MS,
     GEMINI_DEBUG: process.env.GEMINI_DEBUG,

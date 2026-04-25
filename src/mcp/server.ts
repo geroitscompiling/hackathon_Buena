@@ -10,10 +10,15 @@ import { z } from "zod";
 import type { db } from "#/db/index";
 import { listCases, listCasesSchema } from "#/services/cases";
 import { listFacts, listFactsSchema } from "#/services/facts";
+import { GeminiEmbeddingService } from "#/engine/services/GeminiEmbeddingService";
 import {
 	listPropertiesSchema,
 	listPropertyHierarchies,
 } from "#/services/properties";
+import {
+	semanticSearch,
+	semanticSearchSchema,
+} from "#/services/semanticIndex";
 
 type AppDatabase = typeof db;
 
@@ -46,6 +51,14 @@ export function createMcpTools(database?: AppDatabase) {
 				"Lists cases with optional filtering by scope, status, or owner.",
 			schema: listCasesSchema,
 			execute: (args) => listCases(database, args),
+		},
+		{
+			name: "semantic_search",
+			description:
+				"Searches facts and cases by natural language using vector similarity.",
+			schema: semanticSearchSchema,
+			execute: (args) =>
+				semanticSearch(new GeminiEmbeddingService(), database, args),
 		},
 	] as const satisfies readonly McpToolDefinition<ZodTypeAny>[];
 }

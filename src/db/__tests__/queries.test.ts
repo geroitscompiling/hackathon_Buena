@@ -1,8 +1,5 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import * as relations from "#/db/relations";
 import * as schema from "#/db/schema";
 import {
 	createApartment,
@@ -20,112 +17,15 @@ import {
 	listPropertyHierarchies,
 	updateProperty,
 } from "#/services/properties";
+import { createPostgresTestDb } from "#/test/postgresTestDb";
 
 describe("db queries", () => {
-	let sqlite: Database.Database;
-	let db: ReturnType<typeof drizzle>;
+	let testDb: Awaited<ReturnType<typeof createPostgresTestDb>>;
+	let db: Awaited<ReturnType<typeof createPostgresTestDb>>["db"];
 
 	beforeAll(async () => {
-		sqlite = new Database(":memory:");
-		db = drizzle(sqlite, {
-			schema: {
-				...schema,
-				...relations,
-			},
-		});
-
-		sqlite.exec(`
-      CREATE TABLE IF NOT EXISTS "properties" (
-        "id" text PRIMARY KEY NOT NULL,
-        "name" text NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS "houses" (
-        "id" text PRIMARY KEY NOT NULL,
-        "propertyId" text NOT NULL,
-        "name" text NOT NULL,
-        FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON UPDATE no action ON DELETE no action
-      );
-
-      CREATE TABLE IF NOT EXISTS "apartments" (
-        "id" text PRIMARY KEY NOT NULL,
-        "houseId" text NOT NULL,
-        "name" text NOT NULL,
-        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action
-      );
-
-      CREATE TABLE IF NOT EXISTS "users" (
-        "id" text PRIMARY KEY NOT NULL,
-        "name" text NOT NULL,
-        "email" text
-      );
-
-      CREATE TABLE IF NOT EXISTS "sources" (
-        "id" text PRIMARY KEY NOT NULL,
-        "fileId" text NOT NULL,
-        "fileType" text NOT NULL,
-        "ingestionDate" text NOT NULL,
-        "documentDate" text,
-        "anchorReference" text
-      );
-
-      CREATE TABLE IF NOT EXISTS "facts" (
-        "id" text PRIMARY KEY NOT NULL,
-        "propertyId" text NOT NULL,
-        "category" text NOT NULL,
-        "key" text NOT NULL,
-        "value" text NOT NULL,
-        "sourceId" text NOT NULL,
-        "isGoldStandard" integer NOT NULL,
-        "confidenceScore" real NOT NULL,
-        FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("sourceId") REFERENCES "sources"("id") ON UPDATE no action ON DELETE no action
-      );
-
-      CREATE TABLE IF NOT EXISTS "cases" (
-        "id" text PRIMARY KEY NOT NULL,
-        "propertyId" text NOT NULL,
-        "houseId" text,
-        "apartmentId" text,
-        "ownerUserId" text NOT NULL,
-        "caseKey" text NOT NULL,
-        "closurePredicate" text,
-        "title" text NOT NULL,
-        "summary" text NOT NULL,
-        "status" text NOT NULL,
-        "createdAt" text NOT NULL,
-        "updatedAt" text NOT NULL,
-        FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("ownerUserId") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
-      );
-      CREATE UNIQUE INDEX IF NOT EXISTS "cases_property_case_key" ON "cases" ("propertyId","caseKey");
-
-      CREATE TABLE IF NOT EXISTS "fact_houses" (
-        "factId" text NOT NULL,
-        "houseId" text NOT NULL,
-        PRIMARY KEY ("factId", "houseId"),
-        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action
-      );
-
-      CREATE TABLE IF NOT EXISTS "fact_apartments" (
-        "factId" text NOT NULL,
-        "apartmentId" text NOT NULL,
-        PRIMARY KEY ("factId", "apartmentId"),
-        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action
-      );
-
-      CREATE TABLE IF NOT EXISTS "fact_cases" (
-        "factId" text NOT NULL,
-        "caseId" text NOT NULL,
-        PRIMARY KEY ("factId", "caseId"),
-        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
-        FOREIGN KEY ("caseId") REFERENCES "cases"("id") ON UPDATE no action ON DELETE no action
-      );
-    `);
+		testDb = await createPostgresTestDb();
+		db = testDb.db;
 
 		await db.insert(schema.properties).values({
 			id: "LIE-001",
@@ -188,6 +88,10 @@ describe("db queries", () => {
 			factId: "fact-1",
 			caseId: "case-1",
 		});
+	});
+
+	afterAll(async () => {
+		await testDb?.close();
 	});
 
 	it("lists and resolves hierarchical property queries", async () => {

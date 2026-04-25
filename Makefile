@@ -1,11 +1,13 @@
-.PHONY: help install db-reset db-setup run-initial run-initial-live run-initial-mock run-history run-history-live run-history-mock diagnose dev test lint check
+.PHONY: help install db-start db-stop db-reset db-setup run-initial run-initial-live run-initial-mock run-history run-history-live run-history-mock diagnose dev test lint check
 
-DATABASE_URL ?= local.db
+DATABASE_URL ?= postgres://postgres:postgres@localhost:5433/buena
 
 help:
 	@echo "Available commands:"
 	@echo "  make install      - install dependencies"
-	@echo "  make db-reset     - delete local SQLite files"
+	@echo "  make db-start     - start local Postgres + pgvector"
+	@echo "  make db-stop      - stop local Postgres + pgvector"
+	@echo "  make db-reset     - reset local Postgres volume data"
 	@echo "  make db-setup     - push schema and seed clean db"
 	@echo "  make run-initial  - reset db and run baseline dry-run (live AI)"
 	@echo "  make run-initial-live - run baseline dry-run with live AI"
@@ -22,10 +24,18 @@ help:
 install:
 	pnpm install
 
-db-reset:
-	rm -f local.db local.db-shm local.db-wal
+db-start:
+	docker compose up -d postgres
 
-db-setup:
+db-stop:
+	docker compose down
+
+db-reset:
+	docker compose down -v
+	docker compose up -d postgres
+
+db-setup: db-start
+	docker compose exec -T postgres psql -U postgres -d buena -c "CREATE EXTENSION IF NOT EXISTS vector;"
 	DATABASE_URL=$(DATABASE_URL) pnpm run db:push
 	DATABASE_URL=$(DATABASE_URL) pnpm run db:seed
 
