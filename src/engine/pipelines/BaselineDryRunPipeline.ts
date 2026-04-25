@@ -11,8 +11,8 @@ import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from ".
 import { facts, properties, sources } from "../../db/schema";
 
 interface BaselineDryRunDb {
-  insert: (...args: never[]) => {
-    values: (...args: never[]) => Promise<unknown> | unknown;
+  insert: (...args: unknown[]) => {
+    values: (...args: unknown[]) => Promise<unknown> | unknown;
   };
 }
 
