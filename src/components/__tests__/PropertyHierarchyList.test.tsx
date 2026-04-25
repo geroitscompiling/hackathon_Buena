@@ -95,24 +95,19 @@ describe("PropertyHierarchyList", () => {
 		render(<PropertyHierarchyList properties={properties} />);
 
 		expect(
-			screen.getByRole("link", { name: /Immanuelkirchstrasse 26/i }),
+			screen.getByRole("button", { name: /Immanuelkirchstrasse 26/i }),
 		).toBeTruthy();
+		expect(screen.getByRole("link", { name: /Show facts/i })).toBeTruthy();
 		expect(screen.queryByText("Front House")).toBeNull();
 		expect(screen.queryByText("baujahr")).toBeNull();
 
-		fireEvent.click(
-			screen.getByRole("button", { name: /Toggle Immanuelkirchstrasse 26/i }),
-		);
-		expect(
-			screen.getByRole("link", { name: /Front House/i }),
-		).toBeTruthy();
+		fireEvent.click(screen.getByRole("button", { name: /Immanuelkirchstrasse 26/i }));
+		expect(screen.getByRole("button", { name: /Front House/i })).toBeTruthy();
 
-		fireEvent.click(
-			screen.getByRole("button", { name: /Toggle Front House/i }),
-		);
+		fireEvent.click(screen.getByRole("button", { name: /Front House/i }));
 		expect(screen.getByText("Front House")).toBeTruthy();
 		expect(screen.getByText("Unit 1")).toBeTruthy();
-		expect(screen.getByRole("link", { name: /Unit 1/i })).toBeTruthy();
+		expect(screen.getAllByRole("link", { name: /Show facts/i })).toHaveLength(3);
 		expect(screen.queryByText("boiler_status")).toBeNull();
 		expect(screen.queryByText("smoke_detector_check")).toBeNull();
 	});

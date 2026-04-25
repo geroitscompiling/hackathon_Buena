@@ -79,43 +79,43 @@ export function PropertyHierarchyList({
 			</div>
 
 			{properties.length === 0 ? (
-				<div className="rounded-lg border border-dashed bg-card px-6 py-6 text-sm text-muted-foreground">
+				<div className="border border-dashed px-6 py-6 text-sm text-muted-foreground">
 					No properties found in the database yet.
 				</div>
 			) : (
-				<Accordion className="space-y-3" collapsible type="single">
+				<Accordion className="border-t" collapsible type="single">
 					{properties.map((property) => (
 						<AccordionItem
 							key={property.id}
 							value={property.id}
-							className="overflow-hidden rounded-lg border bg-card"
+							className="border-b"
 						>
-							<div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
-								<div className="min-w-0 flex-1">
-									<Link
-										params={{
-											scopeId: property.id,
-											scopeType: "property",
-										}}
-										to="/facts/$scopeType/$scopeId"
-										className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
-									>
-										<span className="block truncate text-lg font-semibold">
+							<div className="flex flex-wrap items-center justify-between gap-3 py-4">
+								<AccordionTrigger className="min-w-0 flex-1 py-1 hover:no-underline">
+									<div className="min-w-0 text-left">
+										<span className="block truncate text-base font-semibold">
 											{property.name}
 										</span>
 										<span className="mt-1 block text-sm text-muted-foreground">
 											{property.id}
 										</span>
-									</Link>
-								</div>
+									</div>
+								</AccordionTrigger>
 								<div className="flex flex-wrap items-center justify-end gap-2">
 									<Badge variant="secondary">
 										{property.houses.length} houses
 									</Badge>
-									<AccordionTrigger
-										aria-label={`Toggle ${property.name}`}
-										className="rounded-md border px-3 py-2 hover:no-underline"
-									/>
+									<Button asChild size="sm" type="button" variant="outline">
+										<Link
+											params={{
+												scopeId: property.id,
+												scopeType: "property",
+											}}
+											to="/facts/$scopeType/$scopeId"
+										>
+											Show facts
+										</Link>
+									</Button>
 									<HouseDialog
 										mode="create"
 										onAfterMutation={onAfterMutation}
@@ -156,43 +156,43 @@ export function PropertyHierarchyList({
 								</div>
 							</div>
 
-							<AccordionContent className="border-t px-5 py-4 sm:px-6">
+							<AccordionContent className="pb-4 pl-6">
 								{property.houses.length === 0 ? (
 									<p className="text-sm text-muted-foreground">No houses assigned.</p>
 								) : (
-									<Accordion className="space-y-2" collapsible type="single">
+									<Accordion className="border-l" collapsible type="single">
 										{property.houses.map((house) => (
 											<AccordionItem
 												key={house.id}
 												value={house.id}
-												className="overflow-hidden rounded-lg border bg-muted/30"
+												className="border-b last:border-b-0"
 											>
-												<div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-													<div className="min-w-0 flex-1">
-														<Link
-															params={{
-																scopeId: house.id,
-																scopeType: "house",
-															}}
-															to="/facts/$scopeType/$scopeId"
-															className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
-														>
+												<div className="flex flex-wrap items-center justify-between gap-3 py-3 pl-4">
+													<AccordionTrigger className="min-w-0 flex-1 py-1 hover:no-underline">
+														<div className="min-w-0 text-left">
 															<span className="block truncate text-sm font-semibold">
 																{house.name}
 															</span>
 															<span className="mt-1 block text-xs text-muted-foreground">
 																{house.id}
 															</span>
-														</Link>
-													</div>
+														</div>
+													</AccordionTrigger>
 													<div className="flex flex-wrap items-center justify-end gap-2">
 														<Badge variant="outline">
 															{house.apartments.length} apartments
 														</Badge>
-														<AccordionTrigger
-															aria-label={`Toggle ${house.name}`}
-															className="rounded-md border px-3 py-2 hover:no-underline"
-														/>
+														<Button asChild size="sm" type="button" variant="outline">
+															<Link
+																params={{
+																	scopeId: house.id,
+																	scopeType: "house",
+																}}
+																to="/facts/$scopeType/$scopeId"
+															>
+																Show facts
+															</Link>
+														</Button>
 														<ApartmentDialog
 															houseId={house.id}
 															houseName={house.name}
@@ -247,34 +247,38 @@ export function PropertyHierarchyList({
 													</div>
 												</div>
 
-												<AccordionContent className="border-t px-4 py-3">
+												<AccordionContent className="pb-3 pl-6">
 													{house.apartments.length === 0 ? (
 														<p className="text-sm text-muted-foreground">No apartments assigned.</p>
 													) : (
-														<ul className="space-y-2">
+														<ul className="border-l">
 															{house.apartments.map((apartment) => (
 																<li
 																	key={apartment.id}
-																	className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background px-3 py-3"
+																	className="flex flex-wrap items-center justify-between gap-3 border-b py-3 pl-4 last:border-b-0"
 																>
-																	<div className="min-w-0 flex-1">
-																		<Link
-																			params={{
-																				scopeId: apartment.id,
-																				scopeType: "apartment",
-																			}}
-																			to="/facts/$scopeType/$scopeId"
-																			className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
-																		>
+															<div className="min-w-0 flex-1">
+																		<div className="block py-1">
 																			<span className="block truncate text-sm font-medium">
 																				{apartment.name}
 																			</span>
 																			<span className="mt-1 block text-xs text-muted-foreground">
 																				{apartment.id}
 																			</span>
-																		</Link>
+																		</div>
 																	</div>
 																	<div className="flex flex-wrap justify-end gap-2">
+																		<Button asChild size="sm" type="button" variant="outline">
+																			<Link
+																				params={{
+																					scopeId: apartment.id,
+																					scopeType: "apartment",
+																				}}
+																				to="/facts/$scopeType/$scopeId"
+																			>
+																				Show facts
+																			</Link>
+																		</Button>
 																		<ApartmentDialog
 																			defaultName={apartment.name}
 																			houseId={house.id}
