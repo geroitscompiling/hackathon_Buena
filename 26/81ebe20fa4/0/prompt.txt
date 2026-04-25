@@ -1,0 +1,415 @@
+Okay, github is failing:
+Run pnpm run lint
+
+> buena@ lint /home/runner/work/hackathon_Buena/hackathon_Buena
+> biome lint
+
+src/engine/__tests__/integration.test.ts:6:18 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+    4 │ import { sources, facts } from '../../db/schema';
+    5 │ import { eq, and } from 'drizzle-orm';
+  > 6 │ import path from 'path';
+      │                  ^^^^^^
+    7 │ import { JsonIngestor } from '../ingestors/JsonIngestor';
+    8 │ import { CsvIngestor } from '../ingestors/CsvIngestor';
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+      4   4 │   import { sources, facts } from '../../db/schema';
+      5   5 │   import { eq, and } from 'drizzle-orm';
+      6     │ - import·path·from·'path';
+          6 │ + import·path·from·'node:path';
+      7   7 │   import { JsonIngestor } from '../ingestors/JsonIngestor';
+      8   8 │   import { CsvIngestor } from '../ingestors/CsvIngestor';
+  
+
+src/engine/ingestors/CsvIngestor.ts:1:32 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+  > 1 │ import { promises as fs } from "fs";
+      │                                ^^^^
+    2 │ import { BuildingFact, Ingestor } from "../types";
+    3 │ import crypto from "crypto";
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1    │ - import·{·promises·as·fs·}·from·"fs";
+        1 │ + import·{·promises·as·fs·}·from·"node:fs";
+     2  2 │   import { BuildingFact, Ingestor } from "../types";
+     3  3 │   import crypto from "crypto";
+  
+
+src/engine/ingestors/CsvIngestor.ts:3:20 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+    1 │ import { promises as fs } from "fs";
+    2 │ import { BuildingFact, Ingestor } from "../types";
+  > 3 │ import crypto from "crypto";
+      │                    ^^^^^^^^
+    4 │ 
+    5 │ export class CsvIngestor implements Ingestor {
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1  1 │   import { promises as fs } from "fs";
+     2  2 │   import { BuildingFact, Ingestor } from "../types";
+     3    │ - import·crypto·from·"crypto";
+        3 │ + import·crypto·from·"node:crypto";
+     4  4 │   
+     5  5 │   export class CsvIngestor implements Ingestor {
+  
+
+src/engine/ingestors/JsonIngestor.ts:1:32 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+  > 1 │ import { promises as fs } from "fs";
+      │                                ^^^^
+    2 │ import { BuildingFact, Ingestor } from "../types";
+    3 │ import crypto from "crypto";
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1    │ - import·{·promises·as·fs·}·from·"fs";
+        1 │ + import·{·promises·as·fs·}·from·"node:fs";
+     2  2 │   import { BuildingFact, Ingestor } from "../types";
+     3  3 │   import crypto from "crypto";
+  
+
+src/engine/ingestors/JsonIngestor.ts:3:20 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+    1 │ import { promises as fs } from "fs";
+    2 │ import { BuildingFact, Ingestor } from "../types";
+  > 3 │ import crypto from "crypto";
+      │                    ^^^^^^^^
+    4 │ 
+    5 │ export class JsonIngestor implements Ingestor {
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1  1 │   import { promises as fs } from "fs";
+     2  2 │   import { BuildingFact, Ingestor } from "../types";
+     3    │ - import·crypto·from·"crypto";
+        3 │ + import·crypto·from·"node:crypto";
+     4  4 │   
+     5  5 │   export class JsonIngestor implements Ingestor {
+  
+
+src/engine/ingestors/__tests__/CsvIngestor.test.ts:2:18 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+    1 │ import { describe, it, expect } from "vitest";
+  > 2 │ import path from "path";
+      │                  ^^^^^^
+    3 │ import { CsvIngestor } from "../CsvIngestor";
+    4 │ 
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1  1 │   import { describe, it, expect } from "vitest";
+     2    │ - import·path·from·"path";
+        2 │ + import·path·from·"node:path";
+     3  3 │   import { CsvIngestor } from "../CsvIngestor";
+     4  4 │   
+  
+
+src/engine/ingestors/__tests__/JsonIngestor.test.ts:2:18 lint/style/useNodejsImportProtocol  FIXABLE  ━━━━━━━━━━
+
+  i A Node.js builtin module should be imported with the node: protocol.
+  
+    1 │ import { describe, it, expect } from "vitest";
+  > 2 │ import path from "path";
+      │                  ^^^^^^
+    3 │ import { JsonIngestor } from "../JsonIngestor";
+    4 │ 
+  
+  i Using the node: protocol is more explicit and signals that the imported module belongs to Node.js.
+  
+  i Unsafe fix: Add the node: protocol.
+  
+     1  1 │   import { describe, it, expect } from "vitest";
+     2    │ - import·path·from·"path";
+        2 │ + import·path·from·"node:path";
+     3  3 │   import { JsonIngestor } from "../JsonIngestor";
+     4  4 │   
+  
+
+src/components/ui/button.tsx:1:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+  > 1 │ import * as React from "react"
+      │        ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ import { cva, type VariantProps } from "class-variance-authority"
+    3 │ import { Slot } from "radix-ui"
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    1 │ import·type·*·as·React·from·"react"
+      │        +++++                       
+
+src/components/ui/input.tsx:1:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+  > 1 │ import * as React from "react"
+      │        ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+    3 │ import { cn } from "#/lib/utils"
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    1 │ import·type·*·as·React·from·"react"
+      │        +++++                       
+
+src/components/ui/label.tsx:3:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+    1 │ "use client"
+    2 │ 
+  > 3 │ import * as React from "react"
+      │        ^^^^^^^^^^^^^^^^^^^^^^^
+    4 │ import { Label as LabelPrimitive } from "radix-ui"
+    5 │ 
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    3 │ import·type·*·as·React·from·"react"
+      │        +++++                       
+
+src/components/ui/select.tsx:1:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+  > 1 │ import * as React from "react"
+      │        ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+    3 │ import { Select as SelectPrimitive } from "radix-ui"
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    1 │ import·type·*·as·React·from·"react"
+      │        +++++                       
+
+src/components/ui/switch.tsx:1:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+  > 1 │ import * as React from "react"
+      │        ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ import { Switch as SwitchPrimitive } from "radix-ui"
+    3 │ 
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    1 │ import·type·*·as·React·from·"react"
+      │        +++++                       
+
+src/components/ui/textarea.tsx:1:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+  > 1 │ import * as React from "react"
+      │        ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+    3 │ import { cn } from "#/lib/utils"
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    1 │ import·type·*·as·React·from·"react"
+      │        +++++                       
+
+src/engine/__tests__/integration.test.ts:10:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+     8 │ import { CsvIngestor } from '../ingestors/CsvIngestor';
+     9 │ import { EmlIngestor } from '../ingestors/EmlIngestor';
+  > 10 │ import { BuildingFactExtractor, RelevanceGatekeeper } from '../types';
+       │        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    11 │ 
+    12 │ describe('Integration: ERP Ingestors Pipeline', () => {
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    10 │ import·type·{·BuildingFactExtractor,·RelevanceGatekeeper·}·from·'../types';
+       │        +++++                                                               
+
+src/engine/ingestors/CsvIngestor.ts:2:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+    1 │ import { promises as fs } from "fs";
+  > 2 │ import { BuildingFact, Ingestor } from "../types";
+      │        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ import crypto from "crypto";
+    4 │ 
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    2 │ import·type·{·BuildingFact,·Ingestor·}·from·"../types";
+      │        +++++                                           
+
+src/engine/ingestors/JsonIngestor.ts:2:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+    1 │ import { promises as fs } from "fs";
+  > 2 │ import { BuildingFact, Ingestor } from "../types";
+      │        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ import crypto from "crypto";
+    4 │ 
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    2 │ import·type·{·BuildingFact,·Ingestor·}·from·"../types";
+      │        +++++                                           
+
+src/engine/ingestors/__tests__/EmlIngestor.test.ts:3:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━
+
+  ! All these imports are only used as types.
+  
+    1 │ import { describe, it, expect, vi } from "vitest";
+    2 │ import { EmlIngestor } from "../EmlIngestor";
+  > 3 │ import { BuildingFactExtractor, RelevanceGatekeeper } from "../../types";
+      │        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4 │ 
+    5 │ describe("EmlIngestor", () => {
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    3 │ import·type·{·BuildingFactExtractor,·RelevanceGatekeeper·}·from·"../../types";
+      │        +++++                                                                  
+
+src/routes/demo/better-auth.tsx:109:14 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  ! This variable err is unused.
+  
+    107 │         }
+    108 │       }
+  > 109 │     } catch (err) {
+        │              ^^^
+    110 │       setError('An unexpected error occurred')
+    111 │     } finally {
+  
+  i Unused variables are often the result of typos, incomplete refactors, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend err with an underscore.
+  
+    107 107 │           }
+    108 108 │         }
+    109     │ - ····}·catch·(err)·{
+        109 │ + ····}·catch·(_err)·{
+    110 110 │         setError('An unexpected error occurred')
+    111 111 │       } finally {
+  
+
+src/components/ui/slider.tsx:55:16 lint/suspicious/noArrayIndexKey ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Avoid using the index of an array as key property in an element.
+  
+    53 │         <SliderPrimitive.Thumb
+    54 │           data-slot="slider-thumb"
+  > 55 │           key={index}
+       │                ^^^^^
+    56 │           className="block size-4 shrink-0 rounded-full border border-primary bg-white shadow-sm ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+    57 │         />
+  
+  i This is the source of the key value.
+  
+    50 │         />
+    51 │       </SliderPrimitive.Track>
+  > 52 │       {Array.from({ length: _values.length }, (_, index) => (
+       │                                                   ^^^^^
+    53 │         <SliderPrimitive.Thumb
+    54 │           data-slot="slider-thumb"
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+src/routes/demo/better-auth.tsx:59:11 lint/a11y/useButtonType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Provide an explicit type prop for the button element.
+  
+    57 │           </div>
+    58 │ 
+  > 59 │           <button
+       │           ^^^^^^^
+  > 60 │             onClick={() => {
+  > 61 │               void authClient.signOut()
+  > 62 │             }}
+  > 63 │             className="w-full h-9 px-4 text-sm font-medium border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+  > 64 │           >
+       │           ^
+    65 │             Sign out
+    66 │           </button>
+  
+  i The default type of a button is submit, which causes the submission of a form when placed inside a `form` element. This is likely not the behaviour that you want inside a React application.
+  
+  i Allowed button types are: submit, button or reset
+  
+
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 10.
+Checked 54 files in 103ms. No fixes applied.
+Found 4 errors.
+Found 19 warnings.
+Found 7 infos.
+ ELIFECYCLE  Command failed with exit code 1.
+Error: Process completed with exit code 1.
+
+---
+
+I did, please let's also take care of warnings. I really want it clean:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:80-211
+
+---
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:213-219
