@@ -1,11 +1,13 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { drizzle } from "drizzle-orm/better-sqlite3";
 
-import * as schema from './schema.ts'
+import * as relations from "./relations.ts";
+import * as schema from "./schema.ts";
 
-const databaseUrl = process.env.DATABASE_URL
+const dbUrl = process.env.DATABASE_URL ?? "local.db";
 
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL is required')
-}
-
-export const db = drizzle(databaseUrl, { schema })
+export const db = drizzle(dbUrl, {
+	schema: {
+		...schema,
+		...relations,
+	},
+});
