@@ -6,6 +6,20 @@ To run this application:
 
 ```bash
 pnpm install
+```
+
+## Database Setup
+
+Initialize the SQLite database and seed initial test data:
+
+```bash
+pnpm run db:push
+pnpm run db:seed
+```
+
+## Running the App
+
+```bash
 pnpm dev
 ```
 
