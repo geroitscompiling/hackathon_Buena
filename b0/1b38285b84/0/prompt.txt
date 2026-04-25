@@ -1,0 +1,79 @@
+Revised Agent Ticket Prompt
+You are continuing the Buena Context-Loom project in /Users/gerograms/workspace/hackathon.
+
+Goal
+Implement the baseline dry run only (not history replay yet), and reorganize history day data into a self-explaining folder.
+
+Scope Correction (Important)
+Do not process day-01 to day-10 as part of baseline logic.
+That day-based processing belongs to the later history population epic.
+
+For this ticket:
+
+Build initial property state from base data (CSV/JSON + relevant EML/PDF signal filtering/extraction).
+Prepare code structure for later history replay, but do not implement replay behavior now.
+Move day-based dataset files into a clearer directory name (see “Data Relocation” below).
+Deliverables
+1) Baseline Dry-Run Pipeline (current epic)
+Implement a runnable dry-run path that:
+
+Ingests base ERP/core files (CSV/JSON) as gold facts.
+Ingests noisy documents (EML/PDF path) via Gatekeeper + FactExtractor.
+Persists sources and facts using current Drizzle schema.
+Produces deterministic output in offline mode (no internet required in tests).
+Expected semantics:
+
+ERP facts => isGoldStandard: true
+AI-derived facts => isGoldStandard: false
+2) Data Relocation (history input dataset)
+Move existing day-based incremental data from current location into a self-explaining directory, e.g.:
+
+from: testfiles/incremental/day-01 ... day-10
+to: testfiles/HistoryPopulationData/day-01 ... day-10
+Update all impacted references in:
+
+tests
+scripts
+docs (README / implementation notes where applicable)
+Add a short note explaining why this folder is separate:
+
+“Used for history replay/population epic, not baseline ingestion.”
+3) CLI Scripts
+Add explicit scripts:
+
+pnpm run dry-run:baseline → baseline pipeline only
+Optional placeholder (no-op or TODO-protected): pnpm run dry-run:history
+4) Tests (TDD mandatory)
+Write failing tests first, then implement:
+
+Baseline dry-run integration test (offline-safe).
+Assertions for persisted facts/sources and gold vs non-gold semantics.
+No network in tests: mock Gemini/external services.
+5) CI Safety
+Ensure tests/lint remain green with current GitHub Actions flow on PRs/merges to main.
+
+Constraints
+Follow strict TDD workflow.
+Keep modules small and SOLID.
+No live external calls in tests.
+Do not edit plan files.
+Keep changes deterministic and demo-friendly.
+Acceptance Criteria
+pnpm run dry-run:baseline works end-to-end.
+Day-based files live under testfiles/HistoryPopulationData/.
+All references to old day-paths are updated.
+pnpm test passes fully offline.
+pnpm lint passes for touched files (or full repo if feasible).
+Short change summary lists moved paths and updated references.
+Readme on how to run the initial Setup from testdata is updated
+
+---
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:337-370
+
+---
+
+Well Well, NO warnings please:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:387-402 
+
+If you really need the any, supress the warning with a reason
