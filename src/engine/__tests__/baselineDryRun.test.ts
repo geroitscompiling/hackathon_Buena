@@ -87,6 +87,8 @@ describe("Baseline dry-run pipeline", () => {
     expect(summary.factsPersisted).toBeGreaterThan(2);
     expect(summary.goldFactsPersisted).toBeGreaterThan(1);
     expect(summary.nonGoldFactsPersisted).toBe(2);
+    expect(summary.noisySourcesEvaluated).toBe(2);
+    expect(summary.noisySourcesWithFacts).toBe(2);
 
     const property = await db.select().from(properties).where(eq(properties.id, "LIE-001"));
     expect(property).toHaveLength(1);

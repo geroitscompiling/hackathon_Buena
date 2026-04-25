@@ -24,6 +24,7 @@ export interface BaselineDryRunOptions {
   noisyInputFiles?: string[];
   gatekeeper?: RelevanceGatekeeper;
   extractor?: BuildingFactExtractor;
+  strictAiErrors?: boolean;
 }
 
 export interface BaselineDryRunSummary {
@@ -31,6 +32,8 @@ export interface BaselineDryRunSummary {
   factsPersisted: number;
   goldFactsPersisted: number;
   nonGoldFactsPersisted: number;
+  noisySourcesEvaluated: number;
+  noisySourcesWithFacts: number;
 }
 
 const defaultNoisyInputFiles = [
@@ -46,6 +49,7 @@ export async function runBaselineDryRun({
   noisyInputFiles = defaultNoisyInputFiles,
   gatekeeper,
   extractor,
+  strictAiErrors = false,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
   await db.insert(properties).values({
     id: propertyId,
@@ -53,8 +57,10 @@ export async function runBaselineDryRun({
   });
 
   const buildLlmClient = () => new GeminiService();
-  const resolvedGatekeeper = gatekeeper ?? new Gatekeeper(buildLlmClient());
-  const resolvedExtractor = extractor ?? new FactExtractor(buildLlmClient());
+  const resolvedGatekeeper =
+    gatekeeper ?? new Gatekeeper(buildLlmClient(), { strictErrors: strictAiErrors });
+  const resolvedExtractor =
+    extractor ?? new FactExtractor(buildLlmClient(), { strictErrors: strictAiErrors });
 
   const coreIngestions = [
     {
@@ -76,6 +82,7 @@ export async function runBaselineDryRun({
 
   const allFacts: BuildingFact[] = [];
   const sourceIds = new Set<string>();
+  let noisySourcesWithFacts = 0;
 
   for (const ingestion of [...coreIngestions, ...noisyIngestions]) {
     const filePath = path.resolve(datasetRootPath, ingestion.relativePath);
@@ -84,6 +91,9 @@ export async function runBaselineDryRun({
     const factsForFile = await ingestion.ingestor.ingest(filePath, fileId);
     if (factsForFile.length === 0) {
       continue;
+    }
+    if (ingestion.relativePath !== "stammdaten/stammdaten.json" && ingestion.relativePath !== "stammdaten/eigentuemer.csv") {
+      noisySourcesWithFacts += 1;
     }
 
     const sourceId = `source-${ingestion.relativePath.replaceAll("/", "-")}`;
@@ -118,5 +128,7 @@ export async function runBaselineDryRun({
     factsPersisted: allFacts.length,
     goldFactsPersisted,
     nonGoldFactsPersisted,
+    noisySourcesEvaluated: noisyIngestions.length,
+    noisySourcesWithFacts,
   };
 }
