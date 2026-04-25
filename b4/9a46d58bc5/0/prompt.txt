@@ -1,0 +1,9 @@
+Should I set debug to 1 in the env file for now?
+
+---
+
+Okay done
+
+---
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:983-1025
