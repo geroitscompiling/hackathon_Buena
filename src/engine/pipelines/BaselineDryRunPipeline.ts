@@ -11,22 +11,14 @@ import { GeminiService } from "../services/GeminiService";
 import { HierarchyResolver } from "../services/HierarchyResolver";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 import { factApartments, factHouses, facts, properties, sources } from "../../db/schema";
-import { getServerEnv } from "#/env";
+import type { db as appDb } from "../../db";
 
-interface BaselineDryRunDb {
-  insert: (...args: unknown[]) => {
-    values: (...args: unknown[]) => Promise<unknown> | unknown;
-  };
-  query?: {
-    properties?: {
-      findFirst: (args: unknown) => Promise<unknown>;
-    };
-  };
-}
+type BaselineDryRunDb = typeof appDb;
 
 export interface BaselineDryRunOptions {
   db: BaselineDryRunDb;
   datasetRootPath?: string;
+  includeCoreIngestions?: boolean;
   propertyId?: string;
   propertyName?: string;
   noisyInputFiles?: string[];
@@ -122,7 +114,7 @@ async function buildDefaultHierarchyResolver(
 
   try {
     const property = (await propertiesQuery.findFirst({
-      where: (propertiesTable: { id: unknown }, operators: { eq: (left: unknown, right: unknown) => unknown }) =>
+      where: (propertiesTable, operators) =>
         operators.eq(propertiesTable.id, propertyId),
       with: {
         houses: {
@@ -163,6 +155,7 @@ async function buildDefaultHierarchyResolver(
 export async function runBaselineDryRun({
   db,
   datasetRootPath = "testfiles",
+  includeCoreIngestions = true,
   propertyId = "LIE-001",
   propertyName = "WEG Immanuelkirchstraße 26",
   noisyInputFiles = defaultNoisyInputFiles,
@@ -185,15 +178,29 @@ export async function runBaselineDryRun({
     }
   }
 
-  const runtimeEnv = getServerEnv();
-  const buildGatekeeperLlmClient = () =>
-    new GeminiService({ model: runtimeEnv.GEMINI_MODEL_GATEKEEPER });
-  const buildExtractorLlmClient = () =>
-    new GeminiService({ model: runtimeEnv.GEMINI_MODEL_EXTRACTOR });
-  const resolvedGatekeeper =
-    gatekeeper ?? new Gatekeeper(buildGatekeeperLlmClient(), { strictErrors: strictAiErrors });
-  const resolvedExtractor =
-    extractor ?? new FactExtractor(buildExtractorLlmClient(), { strictErrors: strictAiErrors });
+  const resolvedGatekeeper = gatekeeper ?? (() => {
+    throw new Error("Gatekeeper fallback resolver not initialized");
+  })();
+  const resolvedExtractor = extractor ?? (() => {
+    throw new Error("Extractor fallback resolver not initialized");
+  })();
+
+  if (!gatekeeper || !extractor) {
+    const { getServerEnv } = await import("#/env");
+    const runtimeEnv = getServerEnv();
+    if (!gatekeeper) {
+      const llmClient = new GeminiService({ model: runtimeEnv.GEMINI_MODEL_GATEKEEPER });
+      (resolvedGatekeeper as unknown as Gatekeeper) = new Gatekeeper(llmClient, {
+        strictErrors: strictAiErrors,
+      });
+    }
+    if (!extractor) {
+      const llmClient = new GeminiService({ model: runtimeEnv.GEMINI_MODEL_EXTRACTOR });
+      (resolvedExtractor as unknown as FactExtractor) = new FactExtractor(llmClient, {
+        strictErrors: strictAiErrors,
+      });
+    }
+  }
   const resolvedHierarchyResolver =
     hierarchyResolver ?? (await buildDefaultHierarchyResolver(db, propertyId));
   const resolvedFactPersistencePolicy =
@@ -238,7 +245,12 @@ export async function runBaselineDryRun({
   let factsBlockedAsConflicts = 0;
   let factsUpdatedIdempotent = 0;
 
-  for (const ingestion of [...coreIngestions, ...noisyIngestions]) {
+  const ingestions = [
+    ...(includeCoreIngestions ? coreIngestions : []),
+    ...noisyIngestions,
+  ];
+
+  for (const ingestion of ingestions) {
     const filePath = path.resolve(datasetRootPath, ingestion.relativePath);
     await fs.access(filePath);
     const fileId = path.basename(filePath);

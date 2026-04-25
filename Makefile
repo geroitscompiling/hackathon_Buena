@@ -8,7 +8,7 @@ help:
 	@echo "  make db-reset     - delete local SQLite files"
 	@echo "  make db-setup     - push schema and seed clean db"
 	@echo "  make run-initial  - reset db and run baseline dry-run"
-	@echo "  make run-history  - placeholder for history replay epic"
+	@echo "  make run-history  - replay day-01 to day-10 history inputs"
 	@echo "  make diagnose     - check Gemini models/probe quota signals"
 	@echo "  make dev          - run app locally"
 	@echo "  make test         - run test suite"

@@ -3,6 +3,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 
 import { db } from "../db";
+import { runPropertyHistoryReplay } from "../engine/pipelines/PropertyHistoryRunner";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
 import type { BuildingFactExtractor, RelevanceGatekeeper } from "../engine/types";
 
@@ -41,10 +42,10 @@ async function preloadExistingGoldFacts(propertyId: string) {
 
 async function main() {
   const propertyId = "LIE-001";
+  const dayRootPath = path.resolve("testfiles/HistoryPopulationData");
   const conflictLogPath = path.resolve("artifacts/history-conflicts.jsonl");
   await mkdir(path.dirname(conflictLogPath), { recursive: true });
 
-  const preloadedExistingFacts = await preloadExistingGoldFacts(propertyId);
   const gatekeeper: RelevanceGatekeeper = {
     isRelevant: async () => true,
   };
@@ -76,22 +77,35 @@ async function main() {
     },
   };
 
-  const summary = await runBaselineDryRun({
-    db,
-    propertyId,
-    noisyInputFiles: ["emails/2026-01/20260101_074000_EMAIL-06545.eml"],
-    gatekeeper,
-    extractor,
-    preloadedExistingFacts,
-    onConflict: async (entry) => {
-      await appendFile(conflictLogPath, `${JSON.stringify(entry)}\n`, "utf8");
+  const replay = await runPropertyHistoryReplay({
+    dayRootPath,
+    runDay: async ({ dayLabel, datasetRootPath, noisyInputFiles }) => {
+      const preloadedExistingFacts = await preloadExistingGoldFacts(propertyId);
+      return runBaselineDryRun({
+        db,
+        propertyId,
+        datasetRootPath,
+        includeCoreIngestions: false,
+        noisyInputFiles,
+        gatekeeper,
+        extractor,
+        preloadedExistingFacts,
+        onConflict: async (entry) => {
+          await appendFile(
+            conflictLogPath,
+            `${JSON.stringify({ ...entry, dayLabel })}\n`,
+            "utf8",
+          );
+        },
+      });
     },
   });
 
   console.log("History dry-run complete");
-  console.log(JSON.stringify(summary, null, 2));
+  console.log(JSON.stringify(replay, null, 2));
   console.log(`Conflict log stored at: ${conflictLogPath}`);
-  console.log(`Conflicts blocked: ${summary.factsBlockedAsConflicts}`);
+  console.log(`Days processed: ${replay.totalDaysProcessed}`);
+  console.log(`Conflicts blocked: ${replay.totals.factsBlockedAsConflicts}`);
 }
 
 main().catch((error) => {
