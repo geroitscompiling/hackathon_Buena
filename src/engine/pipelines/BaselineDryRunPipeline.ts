@@ -10,8 +10,14 @@ import { GeminiService } from "../services/GeminiService";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 import { facts, properties, sources } from "../../db/schema";
 
+interface BaselineDryRunDb {
+  insert: (...args: never[]) => {
+    values: (...args: never[]) => Promise<unknown> | unknown;
+  };
+}
+
 export interface BaselineDryRunOptions {
-  db: any;
+  db: BaselineDryRunDb;
   datasetRootPath?: string;
   propertyId?: string;
   propertyName?: string;
