@@ -33,11 +33,22 @@ pnpm build
 
 ## Testing
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+This project uses [Vitest](https://vitest.dev/) for testing. 
 
+### Running Tests
+
+Run all tests:
 ```bash
 pnpm test
 ```
+
+Run specific test suites:
+- **Unit Tests**: `npx vitest src/engine/ingestors/__tests__/`
+- **Integration Tests**: `npx vitest src/engine/__tests__/integration.test.ts`
+
+### Continuous Integration
+
+A GitHub Action is configured in `.github/workflows/tests.yml` to automatically run the test suite on every push or pull request to the `main` branch.
 
 ## Styling
 
