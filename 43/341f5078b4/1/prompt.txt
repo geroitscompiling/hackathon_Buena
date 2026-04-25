@@ -1,0 +1,57 @@
+Okay, the rest of Epic R1 was implemented. Also I did a LIVE run, looks good. But please verify again
+
+---
+
+Okay okay, sso we are good with Epic R1 and R2 would be the next move (check impl plan) HOWEVER, I don't get it. We implemented the script that populates inital data with "versioned" over the 10 tests days, why isn't that already creating those cases mentioned? What's a CASE in this context anyway? I am a bit lost, before you proceed please expain current state and next steps on the POC
+
+---
+
+Yes and no. Apart from the dry run (mack) we alrady successfully imported the history over AI Agents. So this works. Let's now refine The Case Idea under R2, please create tickets. Having only one Case on the dry run is okay, but make sure logic exists for whole data set
+
+---
+
+Wait, one more information:
+Just keep in mind that if a case is opened and a new fact comes in later that proves the case can be closed, the case should close automatically.
+
+---
+
+Okay, tickets are done but probably a "handover" to tzhe other agent so he knows his way around and th3e current state would be nice. Can you formualte?
+
+---
+
+Okay, Epic 2 was implemented, please check the solution proposed (not yet commited in git)
+
+---
+
+Fixed
+Case extraction no longer depends on persisted facts
+
+In BaselineDryRunPipeline, case extraction now runs for non-core files whenever caseExtractor is configured, even if no facts were inserted for that file.
+This removes the persistedInThisFile.length > 0 gate.
+Auto-close now sees more evidence (not just inserted facts)
+
+Added closureEvidenceThisFile and feed it to evaluateAutoClose.
+Evidence now includes:
+inserted facts
+updated_idempotent facts (with resolved scope)
+This prevents missed closures when signals are deduped as idempotent.
+MAX_CASES_PER_RUN now acts as a true run-level budget
+
+Added a global remainingCaseBudget across the full ingestion loop.
+Per file, intents are sliced by remaining budget and budget is decremented.
+Once exhausted, later files skip case processing.
+Fact-to-case linking heuristic tightened
+
+Reduced over-link risk by:
+tokenizing case keys on non-alphanumeric boundaries
+filtering short/generic tokens
+requiring stronger token matches (exact boundary match or long compact-token match)
+removing broad reverse-contains behavior that caused spurious links
+Validation
+pnpm test: 79/79 passing
+pnpm lint: clean
+Your open questions (decisions applied)
+Closure evaluation scope: now uses all per-file non-blocked evidence (including idempotent), not only newly inserted rows.
+MAX_CASES_PER_RUN meaning: implemented as global run cap across all files.
+
+PLEASE VALIDATE SOLUTION
