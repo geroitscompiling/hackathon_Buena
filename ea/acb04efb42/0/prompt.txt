@@ -1,0 +1,5 @@
+Having a look at Epic 3: This can be skipped as it is a POC or?
+
+---
+
+Yes, please. And remove the tickets for Epic2 (as they are implemented). Update the Plan with our current progress so other agents know where we are and won't start all over again :)
