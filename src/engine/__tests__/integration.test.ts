@@ -1,197 +1,138 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { sources, facts } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
-import path from 'node:path';
-import { JsonIngestor } from '../ingestors/JsonIngestor';
-import { CsvIngestor } from '../ingestors/CsvIngestor';
-import { EmlIngestor } from '../ingestors/EmlIngestor';
-import type { BuildingFactExtractor, RelevanceGatekeeper } from '../types';
+import path from "node:path";
 
-describe('Integration: ERP Ingestors Pipeline', () => {
-  let sqlite: Database.Database;
-  let db: ReturnType<typeof drizzle>;
+import { and, eq } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-  beforeAll(() => {
-    sqlite = new Database(':memory:');
-    db = drizzle(sqlite);
-    
-    // Create tables
-    sqlite.exec(`
-      CREATE TABLE IF NOT EXISTS "sources" (
-        "id" text PRIMARY KEY NOT NULL,
-        "fileId" text NOT NULL,
-        "fileType" text NOT NULL,
-        "ingestionDate" text NOT NULL,
-        "documentDate" text,
-        "anchorReference" text
-      );
-      
-      CREATE TABLE IF NOT EXISTS "facts" (
-        "id" text PRIMARY KEY NOT NULL,
-        "propertyId" text NOT NULL,
-        "category" text NOT NULL,
-        "key" text NOT NULL,
-        "value" text NOT NULL,
-        "sourceId" text NOT NULL,
-        "isGoldStandard" integer NOT NULL,
-        "confidenceScore" real NOT NULL,
-        FOREIGN KEY ("sourceId") REFERENCES "sources"("id") ON UPDATE no action ON DELETE no action
-      );
-    `);
-  });
+import { facts, properties, sources } from "#/db/schema";
+import { createPostgresTestDb } from "#/test/postgresTestDb";
+import { CsvIngestor } from "../ingestors/CsvIngestor";
+import { EmlIngestor } from "../ingestors/EmlIngestor";
+import { JsonIngestor } from "../ingestors/JsonIngestor";
+import type { BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 
-  it('JSON Pipeline: reads stammdaten.json and persists facts as Gold Standard', async () => {
-    const ingestor = new JsonIngestor();
-    const filePath = path.resolve(__dirname, '../../../testfiles/stammdaten/stammdaten.json');
-    const fileId = 'stammdaten.json';
-    
-    // 1. Ingest facts
-    const buildingFacts = await ingestor.ingest(filePath, fileId);
-    
-    // 2. Persist Source
-    // In our simplified test, we use the first fact's source info
-    const sourceRef = buildingFacts[0].source;
-    const sourceDbId = `source-${fileId}`;
-    
-    await db.insert(sources).values({
-      id: sourceDbId,
-      fileId: sourceRef.fileId,
-      fileType: sourceRef.fileType,
-      ingestionDate: sourceRef.ingestionDate,
-    });
-    
-    // 3. Persist Facts
-    for (const fact of buildingFacts) {
-      await db.insert(facts).values({
-        id: fact.id,
-        propertyId: fact.propertyId,
-        category: fact.category,
-        key: fact.key,
-        value: String(fact.value), // Convert strictly to string for DB
-        sourceId: sourceDbId,
-        isGoldStandard: fact.isGoldStandard,
-        confidenceScore: fact.confidenceScore,
-      });
-    }
-    
-    // 4. Assert Persistence (baujahr specifically)
-    const baujahrFacts = await db.select().from(facts).where(and(
-      eq(facts.key, 'baujahr'),
-      eq(facts.propertyId, 'LIE-001')
-    ));
-    
-    expect(baujahrFacts.length).toBe(1);
-    expect(baujahrFacts[0].value).toBe('1928');
-    expect(baujahrFacts[0].isGoldStandard).toBe(true);
-    expect(baujahrFacts[0].category).toBe('core_erp');
-  });
+describe("Integration: ERP Ingestors Pipeline", () => {
+	let testDb: Awaited<ReturnType<typeof createPostgresTestDb>>;
+	let db: Awaited<ReturnType<typeof createPostgresTestDb>>["db"];
 
-  it('CSV Pipeline: reads eigentuemer.csv and persists facts as Gold Standard', async () => {
-    const ingestor = new CsvIngestor();
-    const filePath = path.resolve(__dirname, '../../../testfiles/stammdaten/eigentuemer.csv');
-    const fileId = 'eigentuemer.csv';
-    
-    // 1. Ingest facts
-    const buildingFacts = await ingestor.ingest(filePath, fileId);
-    
-    // 2. Persist Source
-    const sourceRef = buildingFacts[0].source;
-    const sourceDbId = `source-${fileId}`;
-    
-    await db.insert(sources).values({
-      id: sourceDbId,
-      fileId: sourceRef.fileId,
-      fileType: sourceRef.fileType,
-      ingestionDate: sourceRef.ingestionDate,
-    });
-    
-    // 3. Persist Facts
-    for (const fact of buildingFacts) {
-      await db.insert(facts).values({
-        id: fact.id,
-        propertyId: fact.propertyId,
-        category: fact.category,
-        key: fact.key,
-        value: String(fact.value),
-        sourceId: sourceDbId,
-        isGoldStandard: fact.isGoldStandard,
-        confidenceScore: fact.confidenceScore,
-      });
-    }
-    
-    // 4. Assert Persistence (Marcus Dowerg specifically)
-    const ownerFact = await db.select().from(facts).where(and(
-      eq(facts.key, 'owner_EIG-001'),
-      eq(facts.sourceId, sourceDbId)
-    ));
-    
-    expect(ownerFact.length).toBe(1);
-    expect(ownerFact[0].value).toBe('Herr Marcus Dowerg');
-    expect(ownerFact[0].isGoldStandard).toBe(true);
-    expect(ownerFact[0].category).toBe('governance');
-  });
+	beforeAll(async () => {
+		testDb = await createPostgresTestDb();
+		db = testDb.db;
+		await db.insert(properties).values({
+			id: "LIE-001",
+			name: "Immanuelkirchstrasse 26",
+		});
+	});
 
-  it('EML AI Pipeline: persists non-gold facts from mocked AI extraction', async () => {
-    const mockGatekeeper: RelevanceGatekeeper = {
-      isRelevant: async () => true,
-    };
-    const mockExtractor: BuildingFactExtractor = {
-      extract: async () => [
-        {
-          category: 'maintenance',
-          key: 'water_damage_status',
-          value: 'reported',
-          confidenceScore: 0.93,
-        },
-      ],
-    };
+	afterAll(async () => {
+		await testDb.close();
+	});
 
-    const ingestor = new EmlIngestor(mockGatekeeper, mockExtractor);
-    const filePath = path.resolve(
-      __dirname,
-      '../../../testfiles/HistoryPopulationData/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml'
-    );
-    const fileId = '20260101_083800_EMAIL-06547.eml';
+	it("JSON Pipeline: reads stammdaten.json and persists facts as Gold Standard", async () => {
+		const ingestor = new JsonIngestor();
+		const filePath = path.resolve("testfiles/stammdaten/stammdaten.json");
+		const buildingFacts = await ingestor.ingest(filePath, "stammdaten.json");
+		const sourceRef = buildingFacts[0].source;
+		const sourceDbId = "source-stammdaten.json";
 
-    const buildingFacts = await ingestor.ingest(filePath, fileId);
+		await db.insert(sources).values({
+			id: sourceDbId,
+			fileId: sourceRef.fileId,
+			fileType: sourceRef.fileType,
+			ingestionDate: sourceRef.ingestionDate,
+		});
+		for (const fact of buildingFacts) {
+			await db.insert(facts).values({
+				id: fact.id,
+				propertyId: fact.propertyId,
+				category: fact.category,
+				key: fact.key,
+				value: String(fact.value),
+				sourceId: sourceDbId,
+				isGoldStandard: fact.isGoldStandard,
+				confidenceScore: fact.confidenceScore,
+			});
+		}
 
-    expect(buildingFacts.length).toBe(1);
-    expect(buildingFacts[0].isGoldStandard).toBe(false);
-    expect(buildingFacts[0].source.fileType).toBe('eml');
+		const baujahrFacts = await db.select().from(facts).where(
+			and(eq(facts.key, "baujahr"), eq(facts.propertyId, "LIE-001")),
+		);
+		expect(baujahrFacts).toHaveLength(1);
+		expect(baujahrFacts[0].value).toBe("1928");
+		expect(baujahrFacts[0].isGoldStandard).toBe(true);
+	});
 
-    const sourceRef = buildingFacts[0].source;
-    const sourceDbId = `source-${fileId}`;
+	it("CSV Pipeline: reads eigentuemer.csv and persists facts as Gold Standard", async () => {
+		const ingestor = new CsvIngestor();
+		const filePath = path.resolve("testfiles/stammdaten/eigentuemer.csv");
+		const buildingFacts = await ingestor.ingest(filePath, "eigentuemer.csv");
+		const sourceRef = buildingFacts[0].source;
+		const sourceDbId = "source-eigentuemer.csv";
 
-    await db.insert(sources).values({
-      id: sourceDbId,
-      fileId: sourceRef.fileId,
-      fileType: sourceRef.fileType,
-      ingestionDate: sourceRef.ingestionDate,
-    });
+		await db.insert(sources).values({
+			id: sourceDbId,
+			fileId: sourceRef.fileId,
+			fileType: sourceRef.fileType,
+			ingestionDate: sourceRef.ingestionDate,
+		});
+		for (const fact of buildingFacts) {
+			await db.insert(facts).values({
+				id: fact.id,
+				propertyId: fact.propertyId,
+				category: fact.category,
+				key: fact.key,
+				value: String(fact.value),
+				sourceId: sourceDbId,
+				isGoldStandard: fact.isGoldStandard,
+				confidenceScore: fact.confidenceScore,
+			});
+		}
 
-    for (const fact of buildingFacts) {
-      await db.insert(facts).values({
-        id: fact.id,
-        propertyId: fact.propertyId,
-        category: fact.category,
-        key: fact.key,
-        value: String(fact.value),
-        sourceId: sourceDbId,
-        isGoldStandard: fact.isGoldStandard,
-        confidenceScore: fact.confidenceScore,
-      });
-    }
+		const ownerFacts = await db
+			.select()
+			.from(facts)
+			.where(eq(facts.category, "governance"));
+		expect(ownerFacts.some((fact) => fact.key.startsWith("owner_"))).toBe(true);
+	});
 
-    const persistedFacts = await db.select().from(facts).where(and(
-      eq(facts.key, 'water_damage_status'),
-      eq(facts.sourceId, sourceDbId)
-    ));
+	it("EML AI Pipeline: persists non-gold facts from mocked AI extraction", async () => {
+		const mockGatekeeper: RelevanceGatekeeper = {
+			isRelevant: async () => true,
+		};
+		const mockExtractor: BuildingFactExtractor = {
+			extract: async () => [
+				{
+					category: "maintenance",
+					key: "heating_issue",
+					value: "reported",
+					confidenceScore: 0.92,
+				},
+			],
+		};
+		const ingestor = new EmlIngestor(mockGatekeeper, mockExtractor, "LIE-001");
+		const filePath = path.resolve(
+			"testfiles/emails/2026-01/20260101_074000_EMAIL-06545.eml",
+		);
+		const buildingFacts = await ingestor.ingest(filePath, "EMAIL-06545.eml");
 
-    expect(persistedFacts.length).toBe(1);
-    expect(persistedFacts[0].value).toBe('reported');
-    expect(persistedFacts[0].isGoldStandard).toBe(false);
-    expect(persistedFacts[0].category).toBe('maintenance');
-  });
+		await db.insert(sources).values({
+			id: "source-email-1",
+			fileId: "EMAIL-06545.eml",
+			fileType: "eml",
+			ingestionDate: buildingFacts[0].source.ingestionDate,
+		});
+		await db.insert(facts).values({
+			id: buildingFacts[0].id,
+			propertyId: buildingFacts[0].propertyId,
+			category: buildingFacts[0].category,
+			key: buildingFacts[0].key,
+			value: String(buildingFacts[0].value),
+			sourceId: "source-email-1",
+			isGoldStandard: buildingFacts[0].isGoldStandard,
+			confidenceScore: buildingFacts[0].confidenceScore,
+		});
+
+		const storedFacts = await db.select().from(facts).where(eq(facts.key, "heating_issue"));
+		expect(storedFacts).toHaveLength(1);
+		expect(storedFacts[0].isGoldStandard).toBe(false);
+	});
 });

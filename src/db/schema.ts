@@ -1,11 +1,22 @@
-import { integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index } from "drizzle-orm/pg-core";
+import {
+	boolean,
+	pgTable,
+	primaryKey,
+	real,
+	text,
+	uniqueIndex,
+	vector,
+} from "drizzle-orm/pg-core";
 
-export const properties = sqliteTable("properties", {
+const embeddingDimensions = 1536;
+
+export const properties = pgTable("properties", {
 	id: text("id").primaryKey(),
 	name: text("name").notNull(),
 });
 
-export const houses = sqliteTable("houses", {
+export const houses = pgTable("houses", {
 	id: text("id").primaryKey(),
 	propertyId: text("propertyId")
 		.notNull()
@@ -13,7 +24,7 @@ export const houses = sqliteTable("houses", {
 	name: text("name").notNull(),
 });
 
-export const apartments = sqliteTable("apartments", {
+export const apartments = pgTable("apartments", {
 	id: text("id").primaryKey(),
 	houseId: text("houseId")
 		.notNull()
@@ -21,13 +32,13 @@ export const apartments = sqliteTable("apartments", {
 	name: text("name").notNull(),
 });
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
 	id: text("id").primaryKey(),
 	name: text("name").notNull(),
 	email: text("email"),
 });
 
-export const sources = sqliteTable("sources", {
+export const sources = pgTable("sources", {
 	id: text("id").primaryKey(),
 	fileId: text("fileId").notNull(),
 	fileType: text("fileType").notNull(),
@@ -36,22 +47,32 @@ export const sources = sqliteTable("sources", {
 	anchorReference: text("anchorReference"),
 });
 
-export const facts = sqliteTable("facts", {
-	id: text("id").primaryKey(),
-	propertyId: text("propertyId")
-		.notNull()
-		.references(() => properties.id),
-	category: text("category").notNull(),
-	key: text("key").notNull(),
-	value: text("value").notNull(),
-	sourceId: text("sourceId")
-		.notNull()
-		.references(() => sources.id),
-	isGoldStandard: integer("isGoldStandard", { mode: "boolean" }).notNull(),
-	confidenceScore: real("confidenceScore").notNull(),
-});
+export const facts = pgTable(
+	"facts",
+	{
+		id: text("id").primaryKey(),
+		propertyId: text("propertyId")
+			.notNull()
+			.references(() => properties.id),
+		category: text("category").notNull(),
+		key: text("key").notNull(),
+		value: text("value").notNull(),
+		sourceId: text("sourceId")
+			.notNull()
+			.references(() => sources.id),
+		isGoldStandard: boolean("isGoldStandard").notNull(),
+		confidenceScore: real("confidenceScore").notNull(),
+		embedding: vector("embedding", { dimensions: embeddingDimensions }),
+	},
+	(table) => [
+		index("facts_embedding_hnsw").using(
+			"hnsw",
+			table.embedding.op("vector_cosine_ops"),
+		),
+	],
+);
 
-export const cases = sqliteTable(
+export const cases = pgTable(
 	"cases",
 	{
 		id: text("id").primaryKey(),
@@ -70,11 +91,18 @@ export const cases = sqliteTable(
 		status: text("status").notNull(),
 		createdAt: text("createdAt").notNull(),
 		updatedAt: text("updatedAt").notNull(),
+		embedding: vector("embedding", { dimensions: embeddingDimensions }),
 	},
-	(table) => [uniqueIndex("cases_property_case_key").on(table.propertyId, table.caseKey)],
+	(table) => [
+		uniqueIndex("cases_property_case_key").on(table.propertyId, table.caseKey),
+		index("cases_embedding_hnsw").using(
+			"hnsw",
+			table.embedding.op("vector_cosine_ops"),
+		),
+	],
 );
 
-export const factHouses = sqliteTable(
+export const factHouses = pgTable(
 	"fact_houses",
 	{
 		factId: text("factId")
@@ -87,7 +115,7 @@ export const factHouses = sqliteTable(
 	(table) => [primaryKey({ columns: [table.factId, table.houseId] })],
 );
 
-export const factApartments = sqliteTable(
+export const factApartments = pgTable(
 	"fact_apartments",
 	{
 		factId: text("factId")
@@ -100,7 +128,7 @@ export const factApartments = sqliteTable(
 	(table) => [primaryKey({ columns: [table.factId, table.apartmentId] })],
 );
 
-export const factCases = sqliteTable(
+export const factCases = pgTable(
 	"fact_cases",
 	{
 		factId: text("factId")

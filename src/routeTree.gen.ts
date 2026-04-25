@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as FactsRouteImport } from './routes/facts'
 import { Route as CasesRouteImport } from './routes/cases'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoBetterAuthRouteImport } from './routes/demo/better-auth'
+import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as ApiPropertyHierarchyRouteImport } from './routes/api/property-hierarchy'
 import { Route as ApiPropertyHierarchiesRouteImport } from './routes/api/property-hierarchies'
 import { Route as ApiPropertiesRouteImport } from './routes/api/properties'
@@ -26,6 +28,11 @@ import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FactsRoute = FactsRouteImport.update({
   id: '/facts',
   path: '/facts',
@@ -54,6 +61,11 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
 const DemoBetterAuthRoute = DemoBetterAuthRouteImport.update({
   id: '/demo/better-auth',
   path: '/demo/better-auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSearchRoute = ApiSearchRouteImport.update({
+  id: '/api/search',
+  path: '/api/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPropertyHierarchyRoute = ApiPropertyHierarchyRouteImport.update({
@@ -112,12 +124,14 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
   '/facts': typeof FactsRouteWithChildren
+  '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/properties': typeof ApiPropertiesRoute
   '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
   '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
+  '/api/search': typeof ApiSearchRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -130,12 +144,14 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
   '/facts': typeof FactsRouteWithChildren
+  '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/properties': typeof ApiPropertiesRoute
   '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
   '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
+  '/api/search': typeof ApiSearchRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -149,12 +165,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
   '/facts': typeof FactsRouteWithChildren
+  '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/properties': typeof ApiPropertiesRoute
   '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
   '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
+  '/api/search': typeof ApiSearchRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -169,12 +187,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/cases'
     | '/facts'
+    | '/search'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
     | '/api/properties'
     | '/api/property-hierarchies'
     | '/api/property-hierarchy'
+    | '/api/search'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
     | '/api/auth/$'
@@ -187,12 +207,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/cases'
     | '/facts'
+    | '/search'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
     | '/api/properties'
     | '/api/property-hierarchies'
     | '/api/property-hierarchy'
+    | '/api/search'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
     | '/api/auth/$'
@@ -205,12 +227,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/cases'
     | '/facts'
+    | '/search'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
     | '/api/properties'
     | '/api/property-hierarchies'
     | '/api/property-hierarchy'
+    | '/api/search'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
     | '/api/auth/$'
@@ -224,12 +248,14 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   CasesRoute: typeof CasesRoute
   FactsRoute: typeof FactsRouteWithChildren
+  SearchRoute: typeof SearchRoute
   ApiCasesRoute: typeof ApiCasesRoute
   ApiFactsRoute: typeof ApiFactsRoute
   ApiMcpRoute: typeof ApiMcpRoute
   ApiPropertiesRoute: typeof ApiPropertiesRoute
   ApiPropertyHierarchiesRoute: typeof ApiPropertyHierarchiesRoute
   ApiPropertyHierarchyRoute: typeof ApiPropertyHierarchyRoute
+  ApiSearchRoute: typeof ApiSearchRoute
   DemoBetterAuthRoute: typeof DemoBetterAuthRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -239,6 +265,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/facts': {
       id: '/facts'
       path: '/facts'
@@ -279,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/better-auth'
       fullPath: '/demo/better-auth'
       preLoaderRoute: typeof DemoBetterAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/search': {
+      id: '/api/search'
+      path: '/api/search'
+      fullPath: '/api/search'
+      preLoaderRoute: typeof ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/property-hierarchy': {
@@ -369,12 +409,14 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   CasesRoute: CasesRoute,
   FactsRoute: FactsRouteWithChildren,
+  SearchRoute: SearchRoute,
   ApiCasesRoute: ApiCasesRoute,
   ApiFactsRoute: ApiFactsRoute,
   ApiMcpRoute: ApiMcpRoute,
   ApiPropertiesRoute: ApiPropertiesRoute,
   ApiPropertyHierarchiesRoute: ApiPropertyHierarchiesRoute,
   ApiPropertyHierarchyRoute: ApiPropertyHierarchyRoute,
+  ApiSearchRoute: ApiSearchRoute,
   DemoBetterAuthRoute: DemoBetterAuthRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

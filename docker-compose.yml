@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: buena-postgres
+    environment:
+      POSTGRES_DB: buena
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d buena"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - buena-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  buena-postgres-data:

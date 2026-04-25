@@ -1,11 +1,37 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 import * as relations from "./relations.ts";
 import * as schema from "./schema.ts";
 
-const dbUrl = process.env.DATABASE_URL ?? "local.db";
+const defaultDbUrl = "postgres://postgres:postgres@localhost:5433/buena";
 
-export const db = drizzle(dbUrl, {
+function resolveDatabaseUrl(): string {
+	const candidate = process.env.DATABASE_URL?.trim();
+	if (!candidate) {
+		return defaultDbUrl;
+	}
+
+	try {
+		const parsed = new URL(candidate);
+		if (parsed.protocol === "postgres:" || parsed.protocol === "postgresql:") {
+			return candidate;
+		}
+	} catch {
+		// Fall back to the repo-managed Postgres URL when a legacy SQLite path
+		// remains in the env file.
+	}
+
+	return defaultDbUrl;
+}
+
+const dbUrl = resolveDatabaseUrl();
+
+export const queryClient = postgres(dbUrl, {
+	prepare: false,
+});
+
+export const db = drizzle(queryClient, {
 	schema: {
 		...schema,
 		...relations,

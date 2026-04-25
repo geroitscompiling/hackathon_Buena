@@ -3,6 +3,7 @@ import { getGeminiServiceRuntimeEnv } from "../env";
 
 const GEMINI_RUNTIME_KEYS = [
   "GEMINI_API_KEY",
+  "GEMINI_MODEL_EMBEDDING",
   "GEMINI_MAX_RETRIES",
   "GEMINI_MIN_REQUEST_DELAY_MS",
   "GEMINI_DEBUG",
@@ -40,6 +41,7 @@ describe("getGeminiServiceRuntimeEnv", () => {
       expect(env.GEMINI_MAX_RETRIES).toBe(5);
       expect(env.GEMINI_MIN_REQUEST_DELAY_MS).toBe(1000);
       expect(env.GEMINI_API_KEY).toBeUndefined();
+      expect(env.GEMINI_MODEL_EMBEDDING).toBeUndefined();
     } finally {
       restoreGeminiRuntimeEnv(saved);
     }
@@ -62,6 +64,17 @@ describe("getGeminiServiceRuntimeEnv", () => {
       else process.env.GEMINI_MODEL_GATEKEEPER = savedGatekeeper;
       if (savedExtractor === undefined) delete process.env.GEMINI_MODEL_EXTRACTOR;
       else process.env.GEMINI_MODEL_EXTRACTOR = savedExtractor;
+    }
+  });
+
+  it("reads the embedding model from env when provided", () => {
+    const saved = snapshotGeminiRuntimeEnv();
+    try {
+      process.env.GEMINI_MODEL_EMBEDDING = "gemini-embedding-001";
+      const env = getGeminiServiceRuntimeEnv();
+      expect(env.GEMINI_MODEL_EMBEDDING).toBe("gemini-embedding-001");
+    } finally {
+      restoreGeminiRuntimeEnv(saved);
     }
   });
 });
