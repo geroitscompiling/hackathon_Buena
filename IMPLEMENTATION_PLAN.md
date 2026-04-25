@@ -55,6 +55,37 @@ The following rules are now mandatory for all implementation tickets:
 - **R1.4**: Implement `FactPersistencePolicy` to block silent overwrite and persist conflict/candidate outcomes.
 - **R1.5**: Refactor baseline pipeline to route all writes through resolver + policy service.
 
+#### R1 POC Safety Addendum (Demo-Focused Scope)
+
+For hackathon demo reliability, we are intentionally doing lightweight hardening and deferring deeper production behaviors.
+
+- **R1.6 [POC SAFETY] Load Existing Gold Facts Before History Replay**
+  - **Goal**: Prevent obvious ERP-overwrite regressions during `make run-history`.
+  - **Scope**:
+    1. Preload existing persisted gold facts (`scope + category + key`) before replay write decisions.
+    2. Reuse current policy logic; do not introduce full conflict engine yet.
+  - **Acceptance**:
+    1. Replay cannot insert non-gold fact that replaces matching gold semantic identity.
+    2. Integration test proves seeded gold fact remains effective after conflicting noisy input.
+
+- **R1.7 [POC SAFETY] Wire Resolver to Real Hierarchy Data**
+  - **Goal**: Ensure resolver defaults use real `property -> house -> apartment` data, not empty fixtures.
+  - **Scope**:
+    1. Build resolver input from DB hierarchy records during run initialization.
+    2. Keep matching simple (ID and normalized unit label).
+  - **Acceptance**:
+    1. At least one replay fact resolves to house scope and one to apartment scope using real hierarchy.
+    2. No test-only resolver mocks required for normal baseline/history runs.
+
+- **R1.8 [POC TRACEABILITY] Persist Lightweight Conflict Log**
+  - **Goal**: Make blocked writes explainable during demo.
+  - **Scope**:
+    1. Persist minimal conflict artifact (table or JSONL) with timestamp, source, semantic identity, and reason.
+    2. Add summary counter output in history run logs.
+  - **Acceptance**:
+    1. `make run-history` reports conflict count and where conflicts are stored.
+    2. Demo can show at least one blocked conflict record end-to-end.
+
 ### Epic R2: Case Extraction and Lifecycle
 *Goal: Create and evolve cases from unstructured files with ownership and traceability.*
 

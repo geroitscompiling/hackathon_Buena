@@ -178,28 +178,28 @@ export async function runBaselineDryRun({
     }
   }
 
-  const resolvedGatekeeper = gatekeeper ?? (() => {
-    throw new Error("Gatekeeper fallback resolver not initialized");
-  })();
-  const resolvedExtractor = extractor ?? (() => {
-    throw new Error("Extractor fallback resolver not initialized");
-  })();
+  let resolvedGatekeeper: RelevanceGatekeeper | undefined = gatekeeper;
+  let resolvedExtractor: BuildingFactExtractor | undefined = extractor;
 
   if (!gatekeeper || !extractor) {
     const { getServerEnv } = await import("#/env");
     const runtimeEnv = getServerEnv();
     if (!gatekeeper) {
       const llmClient = new GeminiService({ model: runtimeEnv.GEMINI_MODEL_GATEKEEPER });
-      (resolvedGatekeeper as unknown as Gatekeeper) = new Gatekeeper(llmClient, {
+      resolvedGatekeeper = new Gatekeeper(llmClient, {
         strictErrors: strictAiErrors,
       });
     }
     if (!extractor) {
       const llmClient = new GeminiService({ model: runtimeEnv.GEMINI_MODEL_EXTRACTOR });
-      (resolvedExtractor as unknown as FactExtractor) = new FactExtractor(llmClient, {
+      resolvedExtractor = new FactExtractor(llmClient, {
         strictErrors: strictAiErrors,
       });
     }
+  }
+
+  if (!resolvedGatekeeper || !resolvedExtractor) {
+    throw new Error("BaselineDryRunPipeline failed to initialize AI services");
   }
   const resolvedHierarchyResolver =
     hierarchyResolver ?? (await buildDefaultHierarchyResolver(db, propertyId));

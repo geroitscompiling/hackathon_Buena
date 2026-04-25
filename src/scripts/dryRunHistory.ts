@@ -41,41 +41,52 @@ async function preloadExistingGoldFacts(propertyId: string) {
 }
 
 async function main() {
+  const mode = (process.env.HISTORY_MODE ?? "mock").trim().toLowerCase();
+  if (mode !== "mock" && mode !== "live") {
+    throw new Error(`Unsupported HISTORY_MODE: ${mode}. Use "mock" or "live".`);
+  }
+
   const propertyId = "LIE-001";
   const dayRootPath = path.resolve("testfiles/HistoryPopulationData");
   const conflictLogPath = path.resolve("artifacts/history-conflicts.jsonl");
   await mkdir(path.dirname(conflictLogPath), { recursive: true });
 
-  const gatekeeper: RelevanceGatekeeper = {
-    isRelevant: async () => true,
-  };
-  const extractor: BuildingFactExtractor = {
-    extract: async (documentText) => {
-      if (documentText.includes("Subject:")) {
-        return [
-          {
-            category: "core_erp",
-            key: "baujahr",
-            value: "1992",
-            confidenceScore: 0.84,
+  const gatekeeper: RelevanceGatekeeper | undefined =
+    mode === "mock"
+      ? {
+          isRelevant: async () => true,
+        }
+      : undefined;
+  const extractor: BuildingFactExtractor | undefined =
+    mode === "mock"
+      ? {
+          extract: async (documentText) => {
+            if (documentText.includes("Subject:")) {
+              return [
+                {
+                  category: "core_erp",
+                  key: "baujahr",
+                  value: "1992",
+                  confidenceScore: 0.84,
+                },
+                {
+                  category: "maintenance",
+                  key: "window_issue",
+                  value: "LIE-001-H1-A1",
+                  confidenceScore: 0.91,
+                },
+                {
+                  category: "maintenance",
+                  key: "stairwell_issue",
+                  value: "LIE-001-H1",
+                  confidenceScore: 0.9,
+                },
+              ];
+            }
+            return [];
           },
-          {
-            category: "maintenance",
-            key: "window_issue",
-            value: "LIE-001-H1-A1",
-            confidenceScore: 0.91,
-          },
-          {
-            category: "maintenance",
-            key: "stairwell_issue",
-            value: "LIE-001-H1",
-            confidenceScore: 0.9,
-          },
-        ];
-      }
-      return [];
-    },
-  };
+        }
+      : undefined;
 
   const replay = await runPropertyHistoryReplay({
     dayRootPath,
@@ -102,6 +113,7 @@ async function main() {
   });
 
   console.log("History dry-run complete");
+  console.log(`Mode: ${mode}`);
   console.log(JSON.stringify(replay, null, 2));
   console.log(`Conflict log stored at: ${conflictLogPath}`);
   console.log(`Days processed: ${replay.totalDaysProcessed}`);
