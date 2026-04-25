@@ -89,6 +89,30 @@ describe("mcp tools", () => {
         FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action,
         FOREIGN KEY ("ownerUserId") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
       );
+
+      CREATE TABLE IF NOT EXISTS "fact_houses" (
+        "factId" text NOT NULL,
+        "houseId" text NOT NULL,
+        PRIMARY KEY ("factId", "houseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_apartments" (
+        "factId" text NOT NULL,
+        "apartmentId" text NOT NULL,
+        PRIMARY KEY ("factId", "apartmentId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_cases" (
+        "factId" text NOT NULL,
+        "caseId" text NOT NULL,
+        PRIMARY KEY ("factId", "caseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("caseId") REFERENCES "cases"("id") ON UPDATE no action ON DELETE no action
+      );
     `);
 
 		await db.insert(schema.properties).values({
@@ -138,6 +162,14 @@ describe("mcp tools", () => {
 			createdAt: "2026-04-25T10:00:00.000Z",
 			updatedAt: "2026-04-25T10:00:00.000Z",
 		});
+		await db.insert(schema.factHouses).values({
+			factId: "fact-1",
+			houseId: "LIE-001-H1",
+		});
+		await db.insert(schema.factApartments).values({
+			factId: "fact-1",
+			apartmentId: "LIE-001-H1-A1",
+		});
 	});
 
 	it("lists only the curated MCP tools", async () => {
@@ -173,13 +205,39 @@ describe("mcp tools", () => {
 		expect(
 			(
 				hierarchies as Array<{
-					houses: Array<{ apartments: Array<{ id: string }> }>;
+					facts: Array<{ key: string }>;
+					houses: Array<{
+						facts: Array<{ key: string }>;
+						apartments: Array<{ id: string; facts: Array<{ key: string }> }>;
+					}>;
 				}>
 			)[0].houses[0].apartments[0].id,
 		).toBe("LIE-001-H1-A1");
+		expect(
+			(
+				hierarchies as Array<{
+					facts: Array<{ key: string }>;
+					houses: Array<{
+						facts: Array<{ key: string }>;
+						apartments: Array<{ facts: Array<{ key: string }> }>;
+					}>;
+				}>
+			)[0].facts[0].key,
+		).toBe("door_status");
+		expect(
+			(
+				hierarchies as Array<{
+					houses: Array<{
+						facts: Array<{ key: string }>;
+						apartments: Array<{ facts: Array<{ key: string }> }>;
+					}>;
+				}>
+			)[0].houses[0].facts[0].key,
+		).toBe("door_status");
 		expect(hierarchy.id).toBe("LIE-001");
 		expect(hierarchy.houses).toHaveLength(1);
 		expect(hierarchy.houses[0].apartments[0].id).toBe("LIE-001-H1-A1");
+		expect(hierarchy.houses[0].apartments[0].facts[0].key).toBe("door_status");
 		expect(facts).toHaveLength(1);
 		expect(facts[0].key).toBe("door_status");
 		expect(cases).toHaveLength(1);

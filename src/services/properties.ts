@@ -38,6 +38,150 @@ export type CreatePropertyArgs = z.infer<typeof createPropertySchema>;
 export type UpdatePropertyArgs = z.infer<typeof updatePropertySchema>;
 export type DeletePropertyArgs = z.infer<typeof deletePropertySchema>;
 
+export type HierarchyFact = {
+	id: string;
+	category: string;
+	key: string;
+	value: string;
+	isGoldStandard: boolean;
+	confidenceScore: number;
+	source: {
+		id: string;
+		fileId: string;
+		fileType: string;
+	};
+};
+
+export type PropertyHierarchy = {
+	id: string;
+	name: string;
+	facts: HierarchyFact[];
+	houses: Array<{
+		id: string;
+		name: string;
+		propertyId: string;
+		facts: HierarchyFact[];
+		apartments: Array<{
+			id: string;
+			houseId: string;
+			name: string;
+			facts: HierarchyFact[];
+		}>;
+	}>;
+};
+
+function normalizeFact(
+	fact: Pick<
+		typeof schema.facts.$inferSelect,
+		| "id"
+		| "category"
+		| "key"
+		| "value"
+		| "isGoldStandard"
+		| "confidenceScore"
+	> & {
+		source: Pick<
+			typeof schema.sources.$inferSelect,
+			"id" | "fileId" | "fileType"
+		>;
+	},
+): HierarchyFact {
+	return {
+		category: fact.category,
+		confidenceScore: fact.confidenceScore,
+		id: fact.id,
+		isGoldStandard: fact.isGoldStandard,
+		key: fact.key,
+		source: {
+			fileId: fact.source.fileId,
+			fileType: fact.source.fileType,
+			id: fact.source.id,
+		},
+		value: fact.value,
+	};
+}
+
+function normalizePropertyHierarchy(property: {
+	id: string;
+	name: string;
+	facts: Array<
+		Pick<
+			typeof schema.facts.$inferSelect,
+			| "id"
+			| "category"
+			| "key"
+			| "value"
+			| "isGoldStandard"
+			| "confidenceScore"
+		> & {
+			source: Pick<
+				typeof schema.sources.$inferSelect,
+				"id" | "fileId" | "fileType"
+			>;
+		}
+	>;
+	houses: Array<{
+		id: string;
+		name: string;
+		propertyId: string;
+		factLinks: Array<{
+			fact: Pick<
+				typeof schema.facts.$inferSelect,
+				| "id"
+				| "category"
+				| "key"
+				| "value"
+				| "isGoldStandard"
+				| "confidenceScore"
+			> & {
+				source: Pick<
+					typeof schema.sources.$inferSelect,
+					"id" | "fileId" | "fileType"
+				>;
+			};
+		}>;
+		apartments: Array<{
+			id: string;
+			houseId: string;
+			name: string;
+			factLinks: Array<{
+				fact: Pick<
+					typeof schema.facts.$inferSelect,
+					| "id"
+					| "category"
+					| "key"
+					| "value"
+					| "isGoldStandard"
+					| "confidenceScore"
+				> & {
+					source: Pick<
+						typeof schema.sources.$inferSelect,
+						"id" | "fileId" | "fileType"
+					>;
+				};
+			}>;
+		}>;
+	}>;
+}): PropertyHierarchy {
+	return {
+		facts: property.facts.map(normalizeFact),
+		houses: property.houses.map((house) => ({
+			apartments: house.apartments.map((apartment) => ({
+				facts: apartment.factLinks.map((link) => normalizeFact(link.fact)),
+				houseId: apartment.houseId,
+				id: apartment.id,
+				name: apartment.name,
+			})),
+			facts: house.factLinks.map((link) => normalizeFact(link.fact)),
+			id: house.id,
+			name: house.name,
+			propertyId: house.propertyId,
+		})),
+		id: property.id,
+		name: property.name,
+	};
+}
+
 export async function listProperties(
 	database: AppDatabase = db,
 	args: ListPropertiesArgs,
@@ -57,37 +201,91 @@ export async function listProperties(
 export async function listPropertyHierarchies(
 	database: AppDatabase = db,
 	args: ListPropertiesArgs,
-) {
+): Promise<PropertyHierarchy[]> {
 	const { limit, search } = listPropertiesSchema.parse(args);
 	const searchFilter = search
 		? like(schema.properties.name, `%${search}%`)
 		: undefined;
 
-	return database.query.properties.findMany({
+	const properties = await database.query.properties.findMany({
 		where: searchFilter,
 		limit,
 		orderBy: [schema.properties.name],
 		with: {
+			facts: {
+				with: {
+					source: true,
+				},
+			},
 			houses: {
 				with: {
-					apartments: true,
+					apartments: {
+						with: {
+							factLinks: {
+								with: {
+									fact: {
+										with: {
+											source: true,
+										},
+									},
+								},
+							},
+						},
+					},
+					factLinks: {
+						with: {
+							fact: {
+								with: {
+									source: true,
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 	});
+
+	return properties.map(normalizePropertyHierarchy);
 }
 
 export async function getPropertyHierarchy(
 	database: AppDatabase = db,
 	args: GetPropertyHierarchyArgs,
-) {
+): Promise<PropertyHierarchy> {
 	const { propertyId } = getPropertyHierarchySchema.parse(args);
 	const property = await database.query.properties.findFirst({
 		where: eq(schema.properties.id, propertyId),
 		with: {
+			facts: {
+				with: {
+					source: true,
+				},
+			},
 			houses: {
 				with: {
-					apartments: true,
+					apartments: {
+						with: {
+							factLinks: {
+								with: {
+									fact: {
+										with: {
+											source: true,
+										},
+									},
+								},
+							},
+						},
+					},
+					factLinks: {
+						with: {
+							fact: {
+								with: {
+									source: true,
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -97,7 +295,7 @@ export async function getPropertyHierarchy(
 		throw new Error(`Property not found: ${propertyId}`);
 	}
 
-	return property;
+	return normalizePropertyHierarchy(property);
 }
 
 export async function createProperty(

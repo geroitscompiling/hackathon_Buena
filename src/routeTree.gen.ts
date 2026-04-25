@@ -19,6 +19,7 @@ import { Route as ApiPropertiesRouteImport } from './routes/api/properties'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiFactsRouteImport } from './routes/api/facts'
 import { Route as ApiCasesRouteImport } from './routes/api/cases'
+import { Route as FactsScopeTypeScopeIdRouteImport } from './routes/facts.$scopeType.$scopeId'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -73,6 +74,11 @@ const ApiCasesRoute = ApiCasesRouteImport.update({
   path: '/api/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FactsScopeTypeScopeIdRoute = FactsScopeTypeScopeIdRouteImport.update({
+  id: '/facts/$scopeType/$scopeId',
+  path: '/facts/$scopeType/$scopeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
   id: '/demo/form/simple',
   path: '/demo/form/simple',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/facts/$scopeType/$scopeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/facts/$scopeType/$scopeId'
   id:
     | '__root__'
     | '/'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/facts/$scopeType/$scopeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  FactsScopeTypeScopeIdRoute: typeof FactsScopeTypeScopeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/facts/$scopeType/$scopeId': {
+      id: '/facts/$scopeType/$scopeId'
+      path: '/facts/$scopeType/$scopeId'
+      fullPath: '/facts/$scopeType/$scopeId'
+      preLoaderRoute: typeof FactsScopeTypeScopeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/form/simple': {
       id: '/demo/form/simple'
       path: '/demo/form/simple'
@@ -309,6 +329,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
+  FactsScopeTypeScopeIdRoute: FactsScopeTypeScopeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

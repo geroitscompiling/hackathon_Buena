@@ -10,7 +10,7 @@ import {
 	updateApartment,
 } from "#/services/apartments";
 import { listCases } from "#/services/cases";
-import { listFacts } from "#/services/facts";
+import { listFacts, listFactsForScope } from "#/services/facts";
 import { createHouse, deleteHouse, updateHouse } from "#/services/houses";
 import {
 	createProperty,
@@ -171,6 +171,18 @@ describe("db queries", () => {
 			createdAt: "2026-04-25T10:00:00.000Z",
 			updatedAt: "2026-04-25T10:00:00.000Z",
 		});
+		await db.insert(schema.factHouses).values({
+			factId: "fact-1",
+			houseId: "LIE-001-H1",
+		});
+		await db.insert(schema.factApartments).values({
+			factId: "fact-1",
+			apartmentId: "LIE-001-H1-A1",
+		});
+		await db.insert(schema.factCases).values({
+			factId: "fact-1",
+			caseId: "case-1",
+		});
 	});
 
 	it("lists and resolves hierarchical property queries", async () => {
@@ -183,12 +195,33 @@ describe("db queries", () => {
 		expect(properties).toHaveLength(1);
 		expect(properties[0].id).toBe("LIE-001");
 		expect(hierarchies[0].houses[0].apartments[0].id).toBe("LIE-001-H1-A1");
+		expect(hierarchies[0].facts[0].key).toBe("door_status");
+		expect(hierarchies[0].houses[0].facts[0].key).toBe("door_status");
+		expect(hierarchies[0].houses[0].apartments[0].facts[0].key).toBe(
+			"door_status",
+		);
 		expect(hierarchy.id).toBe("LIE-001");
 		expect(hierarchy.houses[0].id).toBe("LIE-001-H1");
+		expect(hierarchy.facts[0].source.fileId).toBe("stammdaten.json");
 	});
 
 	it("lists related facts and cases", async () => {
 		const facts = await listFacts(db, { propertyId: "LIE-001", limit: 10 });
+		const propertyFacts = await listFactsForScope(db, {
+			limit: 10,
+			scopeId: "LIE-001",
+			scopeType: "property",
+		});
+		const houseFacts = await listFactsForScope(db, {
+			limit: 10,
+			scopeId: "LIE-001-H1",
+			scopeType: "house",
+		});
+		const apartmentFacts = await listFactsForScope(db, {
+			limit: 10,
+			scopeId: "LIE-001-H1-A1",
+			scopeType: "apartment",
+		});
 		const cases = await listCases(db, {
 			propertyId: "LIE-001",
 			status: "open",
@@ -197,6 +230,14 @@ describe("db queries", () => {
 
 		expect(facts).toHaveLength(1);
 		expect(facts[0].source.fileId).toBe("stammdaten.json");
+		expect(facts[0].houseIds).toEqual(["LIE-001-H1"]);
+		expect(facts[0].apartmentIds).toEqual(["LIE-001-H1-A1"]);
+		expect(facts[0].caseIds).toEqual(["case-1"]);
+		expect(propertyFacts).toHaveLength(1);
+		expect(houseFacts).toHaveLength(1);
+		expect(apartmentFacts).toHaveLength(1);
+		expect(houseFacts[0].key).toBe("door_status");
+		expect(apartmentFacts[0].key).toBe("door_status");
 		expect(cases).toHaveLength(1);
 		expect(cases[0].owner.name).toBe("Alice Manager");
 	});

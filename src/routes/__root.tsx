@@ -1,16 +1,22 @@
 import {
   HeadContent,
+  Outlet,
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
+import { AppSidebar } from '../components/AppSidebar'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '#/components/ui/sidebar'
+import { TooltipProvider } from '#/components/ui/tooltip'
 
 import type { QueryClient } from '@tanstack/react-query'
 
@@ -42,6 +48,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  component: RootLayout,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -53,9 +60,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
-        {children}
-        <Footer />
+        <TooltipProvider>{children}</TooltipProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
@@ -71,5 +76,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function RootLayout() {
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <div className="flex items-center gap-3 border-b border-[var(--line)] bg-[rgba(255,255,255,0.62)] px-4 py-3 backdrop-blur md:px-6">
+          <SidebarTrigger className="md:hidden" />
+          <div>
+            <p className="text-sm font-semibold text-[var(--sea-ink)]">Buena</p>
+            <p className="text-xs text-[var(--sea-ink-soft)]">Property management</p>
+          </div>
+        </div>
+        <Outlet />
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
