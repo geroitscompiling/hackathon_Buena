@@ -50,6 +50,75 @@ describe("mcp http transport", () => {
         "name" text NOT NULL,
         FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action
       );
+
+      CREATE TABLE IF NOT EXISTS "users" (
+        "id" text PRIMARY KEY NOT NULL,
+        "name" text NOT NULL,
+        "email" text
+      );
+
+      CREATE TABLE IF NOT EXISTS "sources" (
+        "id" text PRIMARY KEY NOT NULL,
+        "fileId" text NOT NULL,
+        "fileType" text NOT NULL,
+        "ingestionDate" text NOT NULL,
+        "documentDate" text,
+        "anchorReference" text
+      );
+
+      CREATE TABLE IF NOT EXISTS "facts" (
+        "id" text PRIMARY KEY NOT NULL,
+        "propertyId" text NOT NULL,
+        "category" text NOT NULL,
+        "key" text NOT NULL,
+        "value" text NOT NULL,
+        "sourceId" text NOT NULL,
+        "isGoldStandard" integer NOT NULL,
+        "confidenceScore" real NOT NULL,
+        FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("sourceId") REFERENCES "sources"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "cases" (
+        "id" text PRIMARY KEY NOT NULL,
+        "propertyId" text NOT NULL,
+        "houseId" text,
+        "apartmentId" text,
+        "ownerUserId" text NOT NULL,
+        "title" text NOT NULL,
+        "summary" text NOT NULL,
+        "status" text NOT NULL,
+        "createdAt" text NOT NULL,
+        "updatedAt" text NOT NULL,
+        FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("ownerUserId") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_houses" (
+        "factId" text NOT NULL,
+        "houseId" text NOT NULL,
+        PRIMARY KEY ("factId", "houseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("houseId") REFERENCES "houses"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_apartments" (
+        "factId" text NOT NULL,
+        "apartmentId" text NOT NULL,
+        PRIMARY KEY ("factId", "apartmentId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action
+      );
+
+      CREATE TABLE IF NOT EXISTS "fact_cases" (
+        "factId" text NOT NULL,
+        "caseId" text NOT NULL,
+        PRIMARY KEY ("factId", "caseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id") ON UPDATE no action ON DELETE no action,
+        FOREIGN KEY ("caseId") REFERENCES "cases"("id") ON UPDATE no action ON DELETE no action
+      );
     `);
 
 		await db.insert(schema.properties).values({
