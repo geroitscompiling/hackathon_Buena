@@ -1,0 +1,11 @@
+# Context from my IDE setup:
+
+## Open tabs:
+- README.md: properties/LIE-001/README.md
+- notes.md: properties/LIE-001/notes.md
+- overview.md: properties/LIE-001/overview.md
+- button.tsx: src/components/ui/button.tsx
+- notes.md: testfiles/properties/LIE-001/notes.md
+
+## My request for Codex:
+adjust the [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) . Completely remove epic 3 and epic 4 (and all related stuff). We are changing the approach so we just store the facts in the DB. We have a hierarchical DB schema. We have properties -> houses -> apartments. A fact can be related to each of those. For each there can also be cases. A case has an owner. Users can edit facts and cases in the UI. We should create a MCP server allowing users to connect an agent to the data. Through this MCP it should be possible to fetch all relevant data. E.g. I can connect it to codex and it can fetch relevant cases and facts using semantic queries (we might need to vectorize this then)
