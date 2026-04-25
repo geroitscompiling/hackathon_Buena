@@ -1,4 +1,4 @@
-import { and, desc, eq, like } from "drizzle-orm";
+import { and, desc, eq, inArray, like, or } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "#/db/index";
@@ -32,12 +32,68 @@ export const listCasesSchema = z.object({
 	limit: z.coerce.number().int().positive().max(100).default(50),
 });
 
+const hierarchyNameSchema = z.string().trim().min(1);
+const hierarchyIdSchema = z.string().trim().min(1);
+
+export const createPropertySchema = z.object({
+	id: hierarchyIdSchema,
+	name: hierarchyNameSchema,
+});
+
+export const updatePropertySchema = z.object({
+	id: hierarchyIdSchema,
+	name: hierarchyNameSchema,
+});
+
+export const deletePropertySchema = z.object({
+	id: hierarchyIdSchema,
+});
+
+export const createHouseSchema = z.object({
+	id: hierarchyIdSchema,
+	propertyId: hierarchyIdSchema,
+	name: hierarchyNameSchema,
+});
+
+export const updateHouseSchema = z.object({
+	id: hierarchyIdSchema,
+	name: hierarchyNameSchema,
+});
+
+export const deleteHouseSchema = z.object({
+	id: hierarchyIdSchema,
+});
+
+export const createApartmentSchema = z.object({
+	id: hierarchyIdSchema,
+	houseId: hierarchyIdSchema,
+	name: hierarchyNameSchema,
+});
+
+export const updateApartmentSchema = z.object({
+	id: hierarchyIdSchema,
+	name: hierarchyNameSchema,
+});
+
+export const deleteApartmentSchema = z.object({
+	id: hierarchyIdSchema,
+});
+
 export type ListPropertiesArgs = z.infer<typeof listPropertiesSchema>;
 export type GetPropertyHierarchyArgs = z.infer<
 	typeof getPropertyHierarchySchema
 >;
 export type ListFactsArgs = z.infer<typeof listFactsSchema>;
 export type ListCasesArgs = z.infer<typeof listCasesSchema>;
+export type CreatePropertyArgs = z.infer<typeof createPropertySchema>;
+export type UpdatePropertyArgs = z.infer<typeof updatePropertySchema>;
+export type DeletePropertyArgs = z.infer<typeof deletePropertySchema>;
+export type CreateHouseArgs = z.infer<typeof createHouseSchema>;
+export type UpdateHouseArgs = z.infer<typeof updateHouseSchema>;
+export type DeleteHouseArgs = z.infer<typeof deleteHouseSchema>;
+export type CreateApartmentArgs = z.infer<typeof createApartmentSchema>;
+export type UpdateApartmentArgs = z.infer<typeof updateApartmentSchema>;
+export type DeleteApartmentArgs = z.infer<typeof deleteApartmentSchema>;
 
 export async function listProperties(
 	database: AppDatabase = db,
@@ -150,4 +206,240 @@ export async function listCases(
 			property: true,
 		},
 	});
+}
+
+export async function createProperty(
+	database: AppDatabase = db,
+	args: CreatePropertyArgs,
+) {
+	const values = createPropertySchema.parse(args);
+
+	await database.insert(schema.properties).values(values);
+
+	return database.query.properties.findFirst({
+		where: eq(schema.properties.id, values.id),
+	});
+}
+
+export async function updateProperty(
+	database: AppDatabase = db,
+	args: UpdatePropertyArgs,
+) {
+	const { id, name } = updatePropertySchema.parse(args);
+
+	await database
+		.update(schema.properties)
+		.set({ name })
+		.where(eq(schema.properties.id, id));
+
+	return database.query.properties.findFirst({
+		where: eq(schema.properties.id, id),
+	});
+}
+
+export async function createHouse(
+	database: AppDatabase = db,
+	args: CreateHouseArgs,
+) {
+	const values = createHouseSchema.parse(args);
+
+	await database.insert(schema.houses).values(values);
+
+	return database.query.houses.findFirst({
+		where: eq(schema.houses.id, values.id),
+	});
+}
+
+export async function updateHouse(
+	database: AppDatabase = db,
+	args: UpdateHouseArgs,
+) {
+	const { id, name } = updateHouseSchema.parse(args);
+
+	await database
+		.update(schema.houses)
+		.set({ name })
+		.where(eq(schema.houses.id, id));
+
+	return database.query.houses.findFirst({
+		where: eq(schema.houses.id, id),
+	});
+}
+
+export async function createApartment(
+	database: AppDatabase = db,
+	args: CreateApartmentArgs,
+) {
+	const values = createApartmentSchema.parse(args);
+
+	await database.insert(schema.apartments).values(values);
+
+	return database.query.apartments.findFirst({
+		where: eq(schema.apartments.id, values.id),
+	});
+}
+
+export async function updateApartment(
+	database: AppDatabase = db,
+	args: UpdateApartmentArgs,
+) {
+	const { id, name } = updateApartmentSchema.parse(args);
+
+	await database
+		.update(schema.apartments)
+		.set({ name })
+		.where(eq(schema.apartments.id, id));
+
+	return database.query.apartments.findFirst({
+		where: eq(schema.apartments.id, id),
+	});
+}
+
+export async function deleteApartment(
+	database: AppDatabase = db,
+	args: DeleteApartmentArgs,
+) {
+	const { id } = deleteApartmentSchema.parse(args);
+
+	const caseRows = await database
+		.select({ id: schema.cases.id })
+		.from(schema.cases)
+		.where(eq(schema.cases.apartmentId, id));
+	const caseIds = caseRows.map((row) => row.id);
+
+	if (caseIds.length > 0) {
+		await database
+			.delete(schema.factCases)
+			.where(inArray(schema.factCases.caseId, caseIds));
+	}
+
+	await database
+		.delete(schema.factApartments)
+		.where(eq(schema.factApartments.apartmentId, id));
+	await database.delete(schema.cases).where(eq(schema.cases.apartmentId, id));
+	await database.delete(schema.apartments).where(eq(schema.apartments.id, id));
+}
+
+export async function deleteHouse(
+	database: AppDatabase = db,
+	args: DeleteHouseArgs,
+) {
+	const { id } = deleteHouseSchema.parse(args);
+
+	const apartmentRows = await database
+		.select({ id: schema.apartments.id })
+		.from(schema.apartments)
+		.where(eq(schema.apartments.houseId, id));
+	const apartmentIds = apartmentRows.map((row) => row.id);
+	const caseRows = await database
+		.select({ id: schema.cases.id })
+		.from(schema.cases)
+		.where(
+			apartmentIds.length > 0
+				? or(
+						eq(schema.cases.houseId, id),
+						inArray(schema.cases.apartmentId, apartmentIds),
+					)
+				: eq(schema.cases.houseId, id),
+		);
+	const caseIds = caseRows.map((row) => row.id);
+
+	if (caseIds.length > 0) {
+		await database
+			.delete(schema.factCases)
+			.where(inArray(schema.factCases.caseId, caseIds));
+	}
+
+	if (apartmentIds.length > 0) {
+		await database
+			.delete(schema.factApartments)
+			.where(inArray(schema.factApartments.apartmentId, apartmentIds));
+		await database
+			.delete(schema.cases)
+			.where(inArray(schema.cases.apartmentId, apartmentIds));
+		await database
+			.delete(schema.apartments)
+			.where(inArray(schema.apartments.id, apartmentIds));
+	}
+
+	await database
+		.delete(schema.factHouses)
+		.where(eq(schema.factHouses.houseId, id));
+	await database.delete(schema.cases).where(eq(schema.cases.houseId, id));
+	await database.delete(schema.houses).where(eq(schema.houses.id, id));
+}
+
+export async function deleteProperty(
+	database: AppDatabase = db,
+	args: DeletePropertyArgs,
+) {
+	const { id } = deletePropertySchema.parse(args);
+
+	const houseRows = await database
+		.select({ id: schema.houses.id })
+		.from(schema.houses)
+		.where(eq(schema.houses.propertyId, id));
+	const houseIds = houseRows.map((row) => row.id);
+	const apartmentRows =
+		houseIds.length > 0
+			? await database
+					.select({ id: schema.apartments.id })
+					.from(schema.apartments)
+					.where(inArray(schema.apartments.houseId, houseIds))
+			: [];
+	const apartmentIds = apartmentRows.map((row) => row.id);
+	const caseRows = await database
+		.select({ id: schema.cases.id })
+		.from(schema.cases)
+		.where(eq(schema.cases.propertyId, id));
+	const caseIds = caseRows.map((row) => row.id);
+	const factRows = await database
+		.select({ id: schema.facts.id })
+		.from(schema.facts)
+		.where(eq(schema.facts.propertyId, id));
+	const factIds = factRows.map((row) => row.id);
+
+	if (caseIds.length > 0) {
+		await database
+			.delete(schema.factCases)
+			.where(inArray(schema.factCases.caseId, caseIds));
+	}
+
+	if (factIds.length > 0) {
+		await database
+			.delete(schema.factCases)
+			.where(inArray(schema.factCases.factId, factIds));
+		await database
+			.delete(schema.factApartments)
+			.where(inArray(schema.factApartments.factId, factIds));
+		await database
+			.delete(schema.factHouses)
+			.where(inArray(schema.factHouses.factId, factIds));
+	}
+
+	if (apartmentIds.length > 0) {
+		await database
+			.delete(schema.factApartments)
+			.where(inArray(schema.factApartments.apartmentId, apartmentIds));
+	}
+
+	if (houseIds.length > 0) {
+		await database
+			.delete(schema.factHouses)
+			.where(inArray(schema.factHouses.houseId, houseIds));
+	}
+
+	await database.delete(schema.cases).where(eq(schema.cases.propertyId, id));
+	if (apartmentIds.length > 0) {
+		await database
+			.delete(schema.apartments)
+			.where(inArray(schema.apartments.id, apartmentIds));
+	}
+	if (houseIds.length > 0) {
+		await database
+			.delete(schema.houses)
+			.where(inArray(schema.houses.id, houseIds));
+	}
+	await database.delete(schema.facts).where(eq(schema.facts.propertyId, id));
+	await database.delete(schema.properties).where(eq(schema.properties.id, id));
 }

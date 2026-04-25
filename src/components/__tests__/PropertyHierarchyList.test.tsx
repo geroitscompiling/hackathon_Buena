@@ -1,4 +1,6 @@
-import { renderToStaticMarkup } from "react-dom/server";
+// @vitest-environment jsdom
+
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -29,12 +31,20 @@ describe("PropertyHierarchyList", () => {
 			},
 		];
 
-		const markup = renderToStaticMarkup(
-			<PropertyHierarchyList properties={properties} />,
-		);
+		render(<PropertyHierarchyList properties={properties} />);
 
-		expect(markup).toContain("Immanuelkirchstrasse 26");
-		expect(markup).toContain("Front House");
-		expect(markup).toContain("Unit 1");
+		expect(screen.getByText("Immanuelkirchstrasse 26")).toBeTruthy();
+		expect(screen.getByText("Front House")).toBeTruthy();
+		expect(screen.getByText("Unit 1")).toBeTruthy();
+	});
+
+	it("opens the create property dialog from the hierarchy UI", () => {
+		render(<PropertyHierarchyList properties={[]} />);
+
+		fireEvent.click(screen.getAllByRole("button", { name: "Add Property" })[0]);
+
+		expect(screen.getAllByText("Create Property").length).toBeGreaterThan(0);
+		expect(screen.getByLabelText("Property ID")).toBeTruthy();
+		expect(screen.getByLabelText("Property Name")).toBeTruthy();
 	});
 });

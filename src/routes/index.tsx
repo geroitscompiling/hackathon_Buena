@@ -1,8 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { useRouter } from "@tanstack/react-router";
 
 import { PropertyHierarchyList } from "#/components/PropertyHierarchyList";
-import { listPropertyHierarchies } from "#/db/queries";
+import {
+	createApartment,
+	createApartmentSchema,
+	createHouse,
+	createHouseSchema,
+	createProperty,
+	createPropertySchema,
+	deleteApartment,
+	deleteApartmentSchema,
+	deleteHouse,
+	deleteHouseSchema,
+	deleteProperty,
+	deletePropertySchema,
+	listPropertyHierarchies,
+	updateApartment,
+	updateApartmentSchema,
+	updateHouse,
+	updateHouseSchema,
+	updateProperty,
+	updatePropertySchema,
+} from "#/db/queries";
 
 const getPropertyHierarchies = createServerFn({
 	method: "GET",
@@ -12,6 +33,60 @@ const getPropertyHierarchies = createServerFn({
 	});
 });
 
+const createPropertyAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => createPropertySchema.parse(data))
+	.handler(async ({ data }) => createProperty(undefined, data));
+
+const updatePropertyAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => updatePropertySchema.parse(data))
+	.handler(async ({ data }) => updateProperty(undefined, data));
+
+const deletePropertyAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => deletePropertySchema.parse(data))
+	.handler(async ({ data }) => deleteProperty(undefined, data));
+
+const createHouseAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => createHouseSchema.parse(data))
+	.handler(async ({ data }) => createHouse(undefined, data));
+
+const updateHouseAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => updateHouseSchema.parse(data))
+	.handler(async ({ data }) => updateHouse(undefined, data));
+
+const deleteHouseAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => deleteHouseSchema.parse(data))
+	.handler(async ({ data }) => deleteHouse(undefined, data));
+
+const createApartmentAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => createApartmentSchema.parse(data))
+	.handler(async ({ data }) => createApartment(undefined, data));
+
+const updateApartmentAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => updateApartmentSchema.parse(data))
+	.handler(async ({ data }) => updateApartment(undefined, data));
+
+const deleteApartmentAction = createServerFn({
+	method: "POST",
+})
+	.inputValidator((data) => deleteApartmentSchema.parse(data))
+	.handler(async ({ data }) => deleteApartment(undefined, data));
+
 export const Route = createFileRoute("/")({
 	component: App,
 	loader: async () => await getPropertyHierarchies(),
@@ -19,6 +94,7 @@ export const Route = createFileRoute("/")({
 
 function App() {
 	const properties = Route.useLoaderData();
+	const router = useRouter();
 
 	return (
 		<main className="page-wrap px-4 pb-12 pt-14">
@@ -45,7 +121,19 @@ function App() {
 					</div>
 				</div>
 
-				<PropertyHierarchyList properties={properties} />
+				<PropertyHierarchyList
+					properties={properties}
+					onAfterMutation={() => router.invalidate()}
+					onCreateProperty={(args) => createPropertyAction({ data: args })}
+					onUpdateProperty={(args) => updatePropertyAction({ data: args })}
+					onDeleteProperty={(args) => deletePropertyAction({ data: args })}
+					onCreateHouse={(args) => createHouseAction({ data: args })}
+					onUpdateHouse={(args) => updateHouseAction({ data: args })}
+					onDeleteHouse={(args) => deleteHouseAction({ data: args })}
+					onCreateApartment={(args) => createApartmentAction({ data: args })}
+					onUpdateApartment={(args) => updateApartmentAction({ data: args })}
+					onDeleteApartment={(args) => deleteApartmentAction({ data: args })}
+				/>
 			</section>
 		</main>
 	);
