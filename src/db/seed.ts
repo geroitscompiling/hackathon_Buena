@@ -1,29 +1,32 @@
 import Database from "better-sqlite3";
 import dotenv from "dotenv";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+
+import * as schema from "./schema";
+import { seedDatabase } from "./seed-data";
 
 dotenv.config({ path: [".env.local", ".env"] });
 
-// Ensure we have a database URL (defaults to local.db)
 const dbUrl = process.env.DATABASE_URL || "local.db";
 
-const sqlite = new Database(dbUrl);
-
 async function seed() {
+	const sqlite = new Database(dbUrl);
+	const db = drizzle(sqlite, { schema });
+
 	console.log("🌱 Seeding database...");
 
-	// Reset existing data (optional, be careful in production!)
-	sqlite.exec("DELETE FROM fact_cases");
-	sqlite.exec("DELETE FROM fact_apartments");
-	sqlite.exec("DELETE FROM fact_houses");
-	sqlite.exec("DELETE FROM cases");
-	sqlite.exec("DELETE FROM facts");
-	sqlite.exec("DELETE FROM sources");
-	sqlite.exec("DELETE FROM apartments");
-	sqlite.exec("DELETE FROM houses");
-	sqlite.exec("DELETE FROM properties");
-	sqlite.exec("DELETE FROM users");
+	try {
+		const summary = await seedDatabase(db, sqlite);
 
-	console.log("✅ Database seeded!");
+		console.log("✅ Database seeded with demo hierarchy data.");
+		console.table(summary);
+	} finally {
+		sqlite.close();
+	}
 }
 
-seed().catch(console.error);
+seed().catch((error) => {
+	console.error("❌ Failed to seed database.");
+	console.error(error);
+	process.exitCode = 1;
+});

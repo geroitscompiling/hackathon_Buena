@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { beforeAll, describe, expect, it } from "vitest";
+import * as schemaModule from "../schema";
 import {
 	apartmentsRelations,
 	casesRelations,
@@ -148,6 +149,10 @@ describe("Database Schema", () => {
         FOREIGN KEY ("caseId") REFERENCES "cases"("id") ON UPDATE no action ON DELETE no action
       );
     `);
+	});
+
+	it("should not expose the removed todos table", () => {
+		expect("todos" in schemaModule).toBe(false);
 	});
 
 	it("should insert and retrieve a source and a fact", async () => {

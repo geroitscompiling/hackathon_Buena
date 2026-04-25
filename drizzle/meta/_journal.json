@@ -15,6 +15,20 @@
       "when": 1777127690185,
       "tag": "0001_last_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1777129518328,
+      "tag": "0002_cool_preak",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1777130803750,
+      "tag": "0003_mysterious_black_queen",
+      "breakpoints": true
     }
   ]
 }
