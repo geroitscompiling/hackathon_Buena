@@ -13,7 +13,7 @@ describe("EmlIngestor", () => {
     const ingestor = new EmlIngestor(gatekeeper, extractor);
 
     const facts = await ingestor.ingest(
-      new URL("../../../../testfiles/incremental/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml", import.meta.url).pathname,
+      new URL("../../../../testfiles/HistoryPopulationData/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml", import.meta.url).pathname,
       "20260101_083800_EMAIL-06547.eml"
     );
 
@@ -38,7 +38,7 @@ describe("EmlIngestor", () => {
     const ingestor = new EmlIngestor(gatekeeper, extractor);
 
     const facts = await ingestor.ingest(
-      new URL("../../../../testfiles/incremental/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml", import.meta.url).pathname,
+      new URL("../../../../testfiles/HistoryPopulationData/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml", import.meta.url).pathname,
       "20260101_083800_EMAIL-06547.eml"
     );
 

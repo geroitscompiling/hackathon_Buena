@@ -17,6 +17,21 @@ pnpm run db:push
 pnpm run db:seed
 ```
 
+## Initial Setup from Test Data
+
+Run the baseline ingestion dry-run against local test data:
+
+```bash
+pnpm run db:push
+pnpm run dry-run:baseline
+```
+
+This baseline flow ingests:
+- core ERP files from `testfiles/stammdaten` as gold facts
+- selected noisy files from `testfiles/emails` and `testfiles/rechnungen` via Gatekeeper + FactExtractor
+
+`testfiles/HistoryPopulationData/day-01` to `day-10` are intentionally separate and used for the history replay/population epic, not baseline ingestion.
+
 ## Running the App
 
 ```bash
@@ -40,6 +55,11 @@ This project uses [Vitest](https://vitest.dev/) for testing.
 Run all tests:
 ```bash
 pnpm test
+```
+
+Run the baseline dry-run integration test only:
+```bash
+pnpm test src/engine/__tests__/baselineDryRun.test.ts
 ```
 
 Run specific test suites:
