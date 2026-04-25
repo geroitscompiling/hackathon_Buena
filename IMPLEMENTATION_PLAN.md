@@ -50,9 +50,10 @@ export interface BuildingFact {
 - **Ticket 1.3**: Write tests asserting standard `Fact` generation.
 
 ### Epic 2: The Agentic Signal-Filter (The Brain)
-*Goal: Extract `BuildingFacts` from unstructured data (`isGoldStandard: false`) safely.*
+*Goal: Extract `BuildingFacts` from unstructured data like PDFs and EMLs (`isGoldStandard: false`) safely.*
 - **Ticket 2.1**: Implement the "Gatekeeper" prompt (is this document relevant?).
 - **Ticket 2.2**: Implement the "Fact Extractor" prompt using **Google Gemini** (configured via `GEMINI_API_KEY` in `.env`). **CRITICAL:** Use `temperature: 0` to completely eliminate AI hallucinations during fact generation.
+- **Ticket 2.3**: Implement `PdfIngestor` and `EmlIngestor`. These classes will read the raw text/files and pass them through the Gatekeeper and Fact Extractor (Tickets 2.1 & 2.2) to yield `BuildingFact` arrays.
 
 ### Epic 3: Surgical Markdown Patcher & Git Versioning (The USP)
 *Goal: Update the categorized Markdown files and commit to Git.*
