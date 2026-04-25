@@ -1,6 +1,6 @@
-import { promises as fs } from "fs";
-import { BuildingFact, Ingestor } from "../types";
-import crypto from "crypto";
+import { promises as fs } from "node:fs";
+import type { BuildingFact, Ingestor } from "../types";
+import crypto from "node:crypto";
 
 export class CsvIngestor implements Ingestor {
   async ingest(filePath: string, fileId: string): Promise<BuildingFact[]> {
