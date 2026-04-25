@@ -28,6 +28,10 @@ export interface PropertyHistoryReplaySummary {
     | "factsPersisted"
     | "noisySourcesEvaluated"
     | "noisySourcesWithFacts"
+    | "casesOpened"
+    | "casesUpdated"
+    | "casesResolved"
+    | "factCaseLinksCreated"
   >;
 }
 
@@ -88,6 +92,10 @@ export async function runPropertyHistoryReplay({
     factsPersisted: 0,
     noisySourcesEvaluated: 0,
     noisySourcesWithFacts: 0,
+    casesOpened: 0,
+    casesUpdated: 0,
+    casesResolved: 0,
+    factCaseLinksCreated: 0,
   };
 
   for (const dayDirectory of dayDirectories) {
@@ -107,6 +115,10 @@ export async function runPropertyHistoryReplay({
     totals.factsPersisted += summary.factsPersisted;
     totals.noisySourcesEvaluated += summary.noisySourcesEvaluated;
     totals.noisySourcesWithFacts += summary.noisySourcesWithFacts;
+    totals.casesOpened += summary.casesOpened;
+    totals.casesUpdated += summary.casesUpdated;
+    totals.casesResolved += summary.casesResolved;
+    totals.factCaseLinksCreated += summary.factCaseLinksCreated;
   }
 
   return {

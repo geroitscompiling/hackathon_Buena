@@ -29,6 +29,13 @@
       "when": 1777130803750,
       "tag": "0003_mysterious_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1777142061993,
+      "tag": "0004_case_key_closure",
+      "breakpoints": true
     }
   ]
 }

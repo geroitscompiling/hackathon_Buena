@@ -5,13 +5,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import * as relations from "../../db/relations";
 import * as schema from "../../db/schema";
 import {
+  cases,
   factApartments,
+  factCases,
   factHouses,
   facts,
   properties,
   sources,
 } from "../../db/schema";
 import { runBaselineDryRun } from "../pipelines/BaselineDryRunPipeline";
+import type { CaseDocumentExtractor } from "../services/CaseExtractor";
 import type { BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 
 describe("Baseline dry-run pipeline", () => {
@@ -72,12 +75,44 @@ describe("Baseline dry-run pipeline", () => {
         "houseId" text NOT NULL,
         "name" text NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS "users" (
+        "id" text PRIMARY KEY NOT NULL,
+        "name" text NOT NULL,
+        "email" text
+      );
+      CREATE TABLE IF NOT EXISTS "cases" (
+        "id" text PRIMARY KEY NOT NULL,
+        "propertyId" text NOT NULL,
+        "houseId" text,
+        "apartmentId" text,
+        "ownerUserId" text NOT NULL,
+        "caseKey" text NOT NULL,
+        "closurePredicate" text,
+        "title" text NOT NULL,
+        "summary" text NOT NULL,
+        "status" text NOT NULL,
+        "createdAt" text NOT NULL,
+        "updatedAt" text NOT NULL,
+        FOREIGN KEY ("propertyId") REFERENCES "properties"("id"),
+        FOREIGN KEY ("houseId") REFERENCES "houses"("id"),
+        FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id"),
+        FOREIGN KEY ("ownerUserId") REFERENCES "users"("id")
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS "cases_property_case_key" ON "cases" ("propertyId","caseKey");
+      CREATE TABLE IF NOT EXISTS "fact_cases" (
+        "factId" text NOT NULL,
+        "caseId" text NOT NULL,
+        PRIMARY KEY ("factId", "caseId"),
+        FOREIGN KEY ("factId") REFERENCES "facts"("id"),
+        FOREIGN KEY ("caseId") REFERENCES "cases"("id")
+      );
     `);
 
     sqlite.exec(`
       INSERT INTO properties ("id", "name") VALUES ('LIE-001', 'WEG Immanuelkirchstraße 26');
       INSERT INTO houses ("id", "propertyId", "name") VALUES ('LIE-001-H1', 'LIE-001', 'Front House');
       INSERT INTO apartments ("id", "houseId", "name") VALUES ('LIE-001-H1-A1', 'LIE-001-H1', 'Unit 1');
+      INSERT INTO users ("id", "name", "email") VALUES ('user-1', 'Owner', 'o@test');
     `);
   });
 
@@ -294,5 +329,55 @@ describe("Baseline dry-run pipeline", () => {
       reason: "existing_gold_fact_same_semantic_identity",
       key: "baujahr",
     });
+  });
+
+  it("persists cases and fact_case links when caseExtractor is configured", async () => {
+    const gatekeeper: RelevanceGatekeeper = { isRelevant: async () => true };
+    const extractor: BuildingFactExtractor = {
+      extract: async (documentText) => {
+        if (documentText.includes("Subject:")) {
+          return [
+            {
+              category: "maintenance",
+              key: "windowtrack_signal",
+              value: "LIE-001-H1-A1",
+              confidenceScore: 0.9,
+            },
+          ];
+        }
+        return [];
+      },
+    };
+    const caseExtractor: CaseDocumentExtractor = {
+      extract: async (documentText) => {
+        if (!documentText.includes("Subject:")) return [];
+        return [
+          {
+            title: "Window follow-up",
+            summary: "From email",
+            status: "open",
+            scopeHint: "apartment",
+            primarySignal: "windowtrack",
+            confidence: 0.88,
+          },
+        ];
+      },
+    };
+
+    const summary = await runBaselineDryRun({
+      db,
+      propertyId: "LIE-001",
+      datasetRootPath: "testfiles",
+      noisyInputFiles: ["emails/2026-01/20260101_074000_EMAIL-06545.eml"],
+      gatekeeper,
+      extractor,
+      caseExtractor,
+    });
+
+    expect(summary.casesOpened).toBeGreaterThanOrEqual(1);
+    const caseRows = await db.select().from(cases);
+    expect(caseRows.length).toBeGreaterThanOrEqual(1);
+    const links = await db.select().from(factCases);
+    expect(links.length).toBeGreaterThanOrEqual(1);
   });
 });

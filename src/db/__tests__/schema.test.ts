@@ -114,6 +114,8 @@ describe("Database Schema", () => {
         "houseId" text,
         "apartmentId" text,
         "ownerUserId" text NOT NULL,
+        "caseKey" text NOT NULL,
+        "closurePredicate" text,
         "title" text NOT NULL,
         "summary" text NOT NULL,
         "status" text NOT NULL,
@@ -124,6 +126,7 @@ describe("Database Schema", () => {
         FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action,
         FOREIGN KEY ("ownerUserId") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
       );
+      CREATE UNIQUE INDEX IF NOT EXISTS "cases_property_case_key" ON "cases" ("propertyId","caseKey");
 
       CREATE TABLE IF NOT EXISTS "fact_houses" (
         "factId" text NOT NULL,
@@ -258,6 +261,8 @@ describe("Database Schema", () => {
 			houseId,
 			apartmentId,
 			ownerUserId: userId,
+			caseKey: "test-a-leak|leak|water-leak-in-apartment",
+			closurePredicate: null,
 			title: "Water leak in apartment",
 			summary: "Leak reported under kitchen sink",
 			status: "open",

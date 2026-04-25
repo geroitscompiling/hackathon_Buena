@@ -1,7 +1,13 @@
 import dotenv from "dotenv";
 import { db } from "../db";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
+import {
+  GeminiCaseExtractor,
+  type CaseDocumentExtractor,
+} from "../engine/services/CaseExtractor";
+import { GeminiService } from "../engine/services/GeminiService";
 import type { BuildingFactExtractor, RelevanceGatekeeper } from "../engine/types";
+import { getServerEnv } from "../env";
 
 dotenv.config({ path: [".env.local", ".env"] });
 
@@ -43,11 +49,45 @@ async function main() {
         }
       : undefined;
 
+  const caseExtractor: CaseDocumentExtractor | undefined =
+    mode === "mock"
+      ? {
+          extract: async (documentText) => {
+            if (!documentText.includes("Subject:")) {
+              return [];
+            }
+            return [
+              {
+                title: "Demo case from baseline email",
+                summary: "Synthetic case for mock dry-run",
+                status: "open" as const,
+                scopeHint: "property" as const,
+                primarySignal: "baseline-demo",
+                confidence: 0.85,
+              },
+            ];
+          },
+        }
+      : new GeminiCaseExtractor(
+          new GeminiService({ model: getServerEnv().GEMINI_MODEL_EXTRACTOR }),
+          { strictErrors: true },
+        );
+
+  const maxCasesPerRun =
+    mode === "mock"
+      ? Number.parseInt(process.env.MAX_CASES_PER_RUN ?? "1", 10)
+      : undefined;
+  if (maxCasesPerRun !== undefined && Number.isNaN(maxCasesPerRun)) {
+    throw new Error("MAX_CASES_PER_RUN must be a number when set");
+  }
+
   const summary = await runBaselineDryRun({
     db,
     strictAiErrors: true,
     gatekeeper,
     extractor,
+    caseExtractor,
+    maxCasesPerRun,
   });
   console.log("Baseline dry-run complete");
   console.log(`Mode: ${mode}`);
