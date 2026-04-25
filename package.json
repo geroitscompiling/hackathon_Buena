@@ -20,7 +20,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "dry-run:baseline": "tsx src/scripts/dryRunBaseline.ts",
-    "dry-run:history": "tsx src/scripts/dryRunHistory.ts"
+    "dry-run:history": "tsx src/scripts/dryRunHistory.ts",
+    "gemini:diagnose": "tsx src/scripts/diagnoseGemini.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.10",

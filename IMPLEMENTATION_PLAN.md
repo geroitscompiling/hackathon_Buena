@@ -84,6 +84,12 @@ export interface Case {
 - **Ticket 2.2**: Implement the Fact Extractor prompt using Google Gemini via `GEMINI_API_KEY`. **CRITICAL:** All fact-generation calls run at `temperature: 0`.
 - **Ticket 2.3**: Implement case extraction and linking so emails/PDFs can open or enrich cases on the property, house, or apartment level.
 - **Ticket 2.4 [TEST]**: Write tests covering scope resolution, case creation, and ERP protection against silent overwrite.
+- **Ticket 2.5 [RELIABILITY]**: Harden Gemini runtime for local demos:
+  - verify active quota dimension (RPM/TPM/RPD) for the exact project + key before demo runs
+  - support split models (`GEMINI_MODEL_GATEKEEPER`, `GEMINI_MODEL_EXTRACTOR`) with Gatekeeper on lightweight flash-lite and FactExtractor on higher-quality flash
+  - add retry with exponential backoff + jitter for `429`/`503`, honoring `Retry-After`
+  - add a small configurable delay between LLM calls in baseline flow
+  - cache Gatekeeper/Extractor results by source file hash to avoid duplicate calls on unchanged reruns
 
 ### Epic 3: Facts & Cases Operator UI
 *Goal: Give users a clean interface to inspect and edit the hierarchy, facts, and cases.*
