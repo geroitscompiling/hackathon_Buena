@@ -23,9 +23,10 @@ Our USP (Unique Selling Proposition) for the hackathon:
 The primary developer strictly enforces high-quality software engineering:
 
 1. **Test-Driven Development (TDD) First!**
-   - **Rule**: NEVER write or modify application logic without writing the test first.
+   - **Rule**: For backend, database, engine, and other non-UI application logic, NEVER write or modify the logic without writing the test first.
    - **Workflow**: Write the test -> Run the test (it must fail to reflect the missing feature/bug) -> Write the logic -> Run the test (it must pass).
-   - **Bugfixes**: If fixing a bug, write a test that exposes the bug first, then fix the code.
+   - **Bugfixes**: If fixing a bug outside the frontend presentation layer, write a test that exposes the bug first, then fix the code.
+   - **Frontend Exception**: UI-only frontend work does NOT require tests by default. Add frontend tests only when they are really necessary, such as for non-trivial user interaction logic, regression-prone behavior, shared reusable components, or a bugfix that needs a guardrail.
    - **Framework**: We use `vitest` for all testing.
 
 2. **SOLID Principles**
