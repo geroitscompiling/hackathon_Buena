@@ -1,12 +1,21 @@
-import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core'
-import { sql } from 'drizzle-orm'
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
-export const todos = sqliteTable('todos', {
-  id: integer({ mode: 'number' }).primaryKey({
-    autoIncrement: true,
-  }),
-  title: text().notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).default(
-    sql`(unixepoch())`,
-  ),
-})
+export const sources = sqliteTable('sources', {
+  id: text('id').primaryKey(),
+  fileId: text('fileId').notNull(),
+  fileType: text('fileType').notNull(),
+  ingestionDate: text('ingestionDate').notNull(),
+  documentDate: text('documentDate'),
+  anchorReference: text('anchorReference'),
+});
+
+export const facts = sqliteTable('facts', {
+  id: text('id').primaryKey(),
+  propertyId: text('propertyId').notNull(),
+  category: text('category').notNull(),
+  key: text('key').notNull(),
+  value: text('value').notNull(),
+  sourceId: text('sourceId').notNull().references(() => sources.id),
+  isGoldStandard: integer('isGoldStandard', { mode: 'boolean' }).notNull(),
+  confidenceScore: real('confidenceScore').notNull(),
+});
