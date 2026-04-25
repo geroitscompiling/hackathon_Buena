@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "ca472fcee5b7",
+  "strategy": "manual-commit",
+  "branch": "epic_2_runner",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "src/engine/__tests__/baselineDryRun.test.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/services/FactExtractor.ts",
+    "src/engine/services/Gatekeeper.ts",
+    "src/engine/services/__tests__/FactExtractor.test.ts",
+    "src/engine/services/__tests__/Gatekeeper.test.ts",
+    "src/scripts/dryRunBaseline.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ca/472fcee5b7/0/metadata.json",
+      "transcript": "/ca/472fcee5b7/0/full.jsonl",
+      "content_hash": "/ca/472fcee5b7/0/content_hash.txt",
+      "prompt": "/ca/472fcee5b7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

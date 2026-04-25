@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "ca472fcee5b7",
+  "session_id": "51666c4a-9196-404f-bb2c-21d811b334a5",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-25T15:15:22.217127Z",
+  "branch": "epic_2_runner",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "src/engine/__tests__/baselineDryRun.test.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/services/FactExtractor.ts",
+    "src/engine/services/Gatekeeper.ts",
+    "src/engine/services/__tests__/FactExtractor.test.ts",
+    "src/engine/services/__tests__/Gatekeeper.test.ts",
+    "src/scripts/dryRunBaseline.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "f800f197ecbf",
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-25T15:15:22.213444Z",
+    "agent_lines": 76,
+    "agent_removed": 7,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 76,
+    "total_lines_changed": 83,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
