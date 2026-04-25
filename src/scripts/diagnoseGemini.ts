@@ -4,9 +4,9 @@ dotenv.config({ path: [".env.local", ".env"] });
 
 const apiKey = process.env.GEMINI_API_KEY ?? "";
 const configuredGatekeeperModel =
-  process.env.GEMINI_MODEL_GATEKEEPER ?? process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  process.env.GEMINI_MODEL_GATEKEEPER ?? process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const configuredExtractorModel =
-  process.env.GEMINI_MODEL_EXTRACTOR ?? process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  process.env.GEMINI_MODEL_EXTRACTOR ?? process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
 async function fetchJson(url: string): Promise<{
   status: number;
@@ -36,7 +36,7 @@ async function probeModel(model: string): Promise<void> {
         generationConfig: {
           temperature: 0,
           responseMimeType: "application/json",
-          maxOutputTokens: 32,
+          maxOutputTokens: 128,
         },
       }),
     }
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
   if (configuredExtractorModel !== configuredGatekeeperModel) {
     await probeModel(configuredExtractorModel);
   }
-  await probeModel("gemini-2.0-flash");
+  await probeModel("gemini-2.5-flash");
 }
 
 main().catch((error) => {

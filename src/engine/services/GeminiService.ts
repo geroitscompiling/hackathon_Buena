@@ -10,7 +10,7 @@ interface GeminiGenerateResponse {
   }>;
 }
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_MIN_REQUEST_DELAY_MS = 300;
 const RETRYABLE_STATUS_CODES = new Set([429, 503]);

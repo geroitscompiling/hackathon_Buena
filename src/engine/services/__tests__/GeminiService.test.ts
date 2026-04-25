@@ -97,7 +97,7 @@ describe("GeminiService", () => {
     const service = new GeminiService("test-key", "gemini-1.5-flash");
 
     await expect(service.generateJson("Prompt")).rejects.toThrow(
-      'Gemini request failed with status 404: {"error":{"message":"models/gemini-1.5-flash is not found for API version v1beta"}}'
+      'Gemini request failed for model gemini-1.5-flash (attempt 1/4) with status 404: {"error":{"message":"models/gemini-1.5-flash is not found for API version v1beta"}}'
     );
   });
 
@@ -139,7 +139,7 @@ describe("GeminiService", () => {
     const service = new GeminiService("test-key", "gemini-test-model");
 
     await expect(service.generateJson("Extract")).rejects.toThrow(
-      'Gemini request failed with status 503: {"error":{"message":"service unavailable"}}'
+      'Gemini request failed for model gemini-test-model (attempt 2/2) with status 503: {"error":{"message":"service unavailable"}}'
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
