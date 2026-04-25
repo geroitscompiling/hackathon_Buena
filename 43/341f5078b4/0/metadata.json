@@ -1,0 +1,152 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "43341f5078b4",
+  "session_id": "46520898-d69b-41a6-8ebd-4ec1f0575cbd",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-25T19:13:01.993005Z",
+  "branch": "Epic_2",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "IMPLEMENTATION_PLAN.md",
+    "drizzle/0004_case_key_closure.sql",
+    "drizzle/meta/0004_snapshot.json",
+    "drizzle/meta/_journal.json",
+    "src/db/__tests__/queries.test.ts",
+    "src/db/__tests__/schema.test.ts",
+    "src/db/__tests__/seed.test.ts",
+    "src/db/schema.ts",
+    "src/db/seed-data.ts",
+    "src/engine/__tests__/baselineDryRun.test.ts",
+    "src/engine/__tests__/caseLifecycle.integration.test.ts",
+    "src/engine/__tests__/propertyHistoryRunner.test.ts",
+    "src/engine/case/__tests__/caseDomain.test.ts",
+    "src/engine/case/__tests__/caseIdentity.test.ts",
+    "src/engine/case/__tests__/caseIntentMerge.test.ts",
+    "src/engine/case/caseDomain.ts",
+    "src/engine/case/caseIdentity.ts",
+    "src/engine/case/caseIntentMerge.ts",
+    "src/engine/case/deriveDocumentMetadataFromText.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/pipelines/PropertyHistoryRunner.ts",
+    "src/engine/services/CaseExtractor.ts",
+    "src/engine/services/CaseLifecycleService.ts",
+    "src/engine/services/__tests__/CaseExtractor.test.ts",
+    "src/mcp/__tests__/registry.test.ts",
+    "src/mcp/__tests__/server.test.ts",
+    "src/scripts/dryRunBaseline.ts",
+    "src/scripts/dryRunHistory.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "c42893c1ef15",
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-25T19:13:01.984187Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 59,
+    "human_modified": 60,
+    "human_removed": 0,
+    "total_committed": 59,
+    "total_lines_changed": 119,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2370,
+      "user_lines_removed": 34,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "IMPLEMENTATION_PLAN.md": 104,
+        "drizzle/0004_case_key_closure.sql": 7,
+        "drizzle/meta/0004_snapshot.json": 641,
+        "drizzle/meta/_journal.json": 7,
+        "src/db/__tests__/queries.test.ts": 5,
+        "src/db/__tests__/schema.test.ts": 5,
+        "src/db/__tests__/seed.test.ts": 3,
+        "src/db/schema.ts": 23,
+        "src/db/seed-data.ts": 8,
+        "src/engine/__tests__/baselineDryRun.test.ts": 85,
+        "src/engine/__tests__/caseLifecycle.integration.test.ts": 389,
+        "src/engine/__tests__/propertyHistoryRunner.test.ts": 4,
+        "src/engine/case/__tests__/caseDomain.test.ts": 57,
+        "src/engine/case/__tests__/caseIdentity.test.ts": 42,
+        "src/engine/case/__tests__/caseIntentMerge.test.ts": 55,
+        "src/engine/case/caseDomain.ts": 100,
+        "src/engine/case/caseIdentity.ts": 43,
+        "src/engine/case/caseIntentMerge.ts": 70,
+        "src/engine/case/deriveDocumentMetadataFromText.ts": 28,
+        "src/engine/pipelines/BaselineDryRunPipeline.ts": 107,
+        "src/engine/pipelines/PropertyHistoryRunner.ts": 12,
+        "src/engine/services/CaseExtractor.ts": 67,
+        "src/engine/services/CaseLifecycleService.ts": 358,
+        "src/engine/services/__tests__/CaseExtractor.test.ts": 46,
+        "src/mcp/__tests__/registry.test.ts": 5,
+        "src/mcp/__tests__/server.test.ts": 3,
+        "src/scripts/dryRunBaseline.ts": 40,
+        "src/scripts/dryRunHistory.ts": 56
+      },
+      "user_removed_per_file": {
+        "IMPLEMENTATION_PLAN.md": 12,
+        "src/db/schema.ts": 17,
+        "src/engine/pipelines/BaselineDryRunPipeline.ts": 1,
+        "src/scripts/dryRunHistory.ts": 4
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2370,
+      "agent_lines_removed": 34
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 30,
+      "user_lines_removed": 7,
+      "agent_lines_added": 2370,
+      "agent_lines_removed": 34,
+      "user_added_per_file": {
+        "src/engine/__tests__/caseLifecycle.integration.test.ts": 16,
+        "src/engine/services/CaseLifecycleService.ts": 14
+      },
+      "user_removed_per_file": {
+        "src/engine/services/CaseLifecycleService.ts": 7
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 35,
+      "user_lines_removed": 9,
+      "agent_lines_added": 2370,
+      "agent_lines_removed": 34,
+      "user_added_per_file": {
+        "src/engine/__tests__/caseLifecycle.integration.test.ts": 20,
+        "src/engine/services/CaseLifecycleService.ts": 15
+      },
+      "user_removed_per_file": {
+        "src/engine/__tests__/caseLifecycle.integration.test.ts": 1,
+        "src/engine/services/CaseLifecycleService.ts": 8
+      }
+    }
+  ]
+}

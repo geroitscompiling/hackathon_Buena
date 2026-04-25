@@ -1,0 +1,118 @@
+Handover: Buena Context-Loom POC (for the next agent)
+Product intent (what “good” looks like for the hackathon)
+We are building a DB-first property intelligence POC where:
+
+ERP exports are gold (isGoldStandard: true) and must not be silently overwritten by AI-derived facts.
+Unstructured inputs (emails/PDFs) produce non-gold facts with traceability to sources.
+History is demonstrated by replaying testfiles/HistoryPopulationData/day-01 … day-10.
+Cases (Epic R2 next) are workflow records in cases, distinct from facts. The user wants auto-close when later facts satisfy explicit closure predicates (must be deterministic for POC).
+Current implementation state (what already works)
+Schema: Drizzle models for hierarchy + facts + cases + link tables (fact_houses, fact_apartments, fact_cases) exist.
+Baseline ingestion: JsonIngestor / CsvIngestor produce gold facts; noisy paths use Gatekeeper + FactExtractor + GeminiService at temperature: 0.
+R1 POC mechanics (implemented in code):
+HierarchyResolver: resolves property/house/apartment scope from metadata + simple signals.
+FactPersistencePolicy: blocks AI overwrite when semantic identity matches existing gold in the same scope.
+runBaselineDryRun: routes writes through resolver/policy; can skip core ERP ingestion via includeCoreIngestions: false (needed for day folders).
+History replay orchestration: PropertyHistoryRunner walks day directories and collects .eml/.pdf paths.
+History script: src/scripts/dryRunHistory.ts supports HISTORY_MODE=mock|live, preloads existing gold facts, appends conflict JSONL under artifacts/history-conflicts.jsonl.
+Makefile: targets exist for baseline/history mock vs live (verify exact names in Makefile in your branch; it has been evolving).
+Where to start reading (fast orientation)
+Pipeline: src/engine/pipelines/BaselineDryRunPipeline.ts
+History runner: src/engine/pipelines/PropertyHistoryRunner.ts
+History entrypoint: src/scripts/dryRunHistory.ts
+Baseline entrypoint: src/scripts/dryRunBaseline.ts
+Gemini client: src/engine/services/GeminiService.ts
+Env validation: src/env.ts (note: scripts use dotenv; tests may stub env)
+Plan of record: IMPLEMENTATION_PLAN.md (includes refined Epic R2 tickets R2.0–R2.8, including auto-close requirements)
+Operational commands (typical POC loop)
+Reset + seed DB: make db-reset && make db-setup (or make run-initial* depending on target)
+Baseline: make run-initial-live / make run-initial-mock (per Makefile)
+History replay: make run-history-mock / make run-history-live (per Makefile)
+Tests: pnpm test
+Engineering constraints you must follow
+TDD first for new behavior: add/adjust a failing Vitest test, then implement (AGENTS.md).
+No silent gold overwrite by AI output (policy-based).
+LLM fact/case generation must remain temperature: 0.
+Known gaps / what is not done yet (important)
+Cases are not created by ingestion yet (no CaseExtractor / lifecycle persistence wired into replay). Facts-only history does not equal cases.
+Auto-close is specified in IMPLEMENTATION_PLAN.md under R2, but still needs implementation + tests.
+“Full dataset integrity” for cases (no duplicate spam) is ticketed (R2.7) but not implemented.
+Recommended next work order (for Epic R2)
+Follow IMPLEMENTATION_PLAN.md R2.0 → R2.8:
+
+Types/validators for CaseIntent + deterministic caseKey
+CaseExtractor (mock/live parity)
+CaseLifecycleService upsert + status transitions + closure predicates
+DB writes to cases + linking fact_cases
+Wire into dryRunHistory after facts persist (ordering matters for auto-close)
+Add integration tests proving multi-day updates + auto-close
+Quick pitfalls to avoid
+Day folders do not include baseline ERP paths; history runs should keep includeCoreIngestions: false.
+Resolver fallback: if hierarchy query fails, resolver may degrade; treat empty hierarchy as a signal to fix DB wiring, not “OK silently” for demos.
+Policy idempotency: current policy returns updated_idempotent for semantic matches; ensure case lifecycle doesn’t fight fact dedupe semantics—keep responsibilities separated.
+Handoff question (only if unclear)
+Confirm whether terminal case status should be resolved vs closed consistently across UI/seed/demo scripts before implementing auto-close transitions.
+
+
+Tickets are in ImplementationPlan.md, we do R2.0 so your job is getting tickets until 2.8 done (not epic no 3)
+
+---
+
+where are we right now? We got disconnected
+
+---
+
+yes, please proceed
+
+---
+
+Please fix linter warnings:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:993-1025
+
+---
+
+Findings
+High — Case extraction is gated on “new facts persisted”, so valid cases can be skipped.
+In BaselineDryRunPipeline, case extraction only runs when persistedInThisFile.length > 0. If a document yields case intents but fact extraction returns none (or all facts are blocked/idempotent), no case is created/updated. That breaks the “cases are first-class” behavior.
+
+BaselineDryRunPipeline.ts
+Lines 425-433
+    if (caseExtractor && !isCoreIngestion && persistedInThisFile.length > 0) {
+      const documentText = await fs.readFile(filePath, "utf-8");
+      let intents = await caseExtractor.extract(documentText, { propertyId });
+High — Auto-close can be missed because closure evaluation only sees newly inserted facts.
+evaluateAutoClose is fed from persistedInThisFile only. If a closure signal arrives but gets classified as updated_idempotent (or blocked), it won’t be in that list, so the case may stay open even with closing evidence.
+
+BaselineDryRunPipeline.ts
+Lines 444-450
+      const newFacts = persistedInThisFile.map((f) => ({
+        id: f.id,
+        propertyId,
+        key: f.key,
+        value: f.value,
+
+BaselineDryRunPipeline.ts
+Lines 318-320
+      if (policyDecision.outcome === "updated_idempotent") {
+        factsUpdatedIdempotent += 1;
+        continue;
+Medium — maxCasesPerRun is applied per file, not per run.
+Naming/intent says run-level cap, but implementation slices intents inside each ingestion-file loop, so mock mode can still produce multiple cases across multiple files.
+
+BaselineDryRunPipeline.ts
+Lines 430-432
+      if (maxCasesPerRun !== undefined && maxCasesPerRun >= 0) {
+        intents = intents.slice(0, maxCasesPerRun);
+      }
+Medium — Fact-to-case linking heuristic is very permissive and may over-link unrelated facts.
+Token overlap logic uses broad contains checks on normalized key fragments; this can attach noisy/weakly-related facts to cases in larger datasets.
+
+CaseLifecycleService.ts
+Lines 252-260
+				const overlap = keyTokens.some((token) => {
+...
+						compactFactKey.includes(compactToken) ||
+						compactToken.includes(compactFactKey)
+Open questions / assumptions
+Should closure evaluation consider all new evidence in the document (including idempotent fact updates), or strictly only inserted facts?
+Do you want MAX_CASES_PER_RUN to mean global run cap (across all files) or per-file cap?

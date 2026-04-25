@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "43341f5078b4",
+  "strategy": "manual-commit",
+  "branch": "Epic_2",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "IMPLEMENTATION_PLAN.md",
+    "drizzle/0004_case_key_closure.sql",
+    "drizzle/meta/0004_snapshot.json",
+    "drizzle/meta/_journal.json",
+    "src/db/__tests__/queries.test.ts",
+    "src/db/__tests__/schema.test.ts",
+    "src/db/__tests__/seed.test.ts",
+    "src/db/schema.ts",
+    "src/db/seed-data.ts",
+    "src/engine/__tests__/baselineDryRun.test.ts",
+    "src/engine/__tests__/caseLifecycle.integration.test.ts",
+    "src/engine/__tests__/propertyHistoryRunner.test.ts",
+    "src/engine/case/__tests__/caseDomain.test.ts",
+    "src/engine/case/__tests__/caseIdentity.test.ts",
+    "src/engine/case/__tests__/caseIntentMerge.test.ts",
+    "src/engine/case/caseDomain.ts",
+    "src/engine/case/caseIdentity.ts",
+    "src/engine/case/caseIntentMerge.ts",
+    "src/engine/case/deriveDocumentMetadataFromText.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/pipelines/PropertyHistoryRunner.ts",
+    "src/engine/services/CaseExtractor.ts",
+    "src/engine/services/CaseLifecycleService.ts",
+    "src/engine/services/__tests__/CaseExtractor.test.ts",
+    "src/mcp/__tests__/registry.test.ts",
+    "src/mcp/__tests__/server.test.ts",
+    "src/scripts/dryRunBaseline.ts",
+    "src/scripts/dryRunHistory.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/43/341f5078b4/0/metadata.json",
+      "transcript": "/43/341f5078b4/0/full.jsonl",
+      "content_hash": "/43/341f5078b4/0/content_hash.txt",
+      "prompt": "/43/341f5078b4/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
