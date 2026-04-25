@@ -26,11 +26,10 @@ By demo day, we must show one property whose timeline evolves by replaying `day-
 
 ### Missing / incomplete
 
-1. Automatic hierarchy resolver for non-ERP facts/cases (house/apartment resolution in pipeline).
-2. Case extraction + upsert/linking from unstructured docs.
-3. Deterministic ERP overwrite protection policy in write path.
-4. Hash-based caching for Gatekeeper/Extractor outputs.
-5. Day-by-day history runner (`day-01` ... `day-10`) that persists a timeline of changes.
+1. Case extraction + upsert/linking from unstructured docs into `cases` / `fact_cases` (facts-only history today).
+2. Deterministic ERP overwrite protection policy in write path (POC slice exists; extend as needed).
+3. Hash-based caching for Gatekeeper/Extractor outputs.
+4. Full timeline event model (`ingestion_events`) for UI/MCP (optional beyond POC counters).
 
 ## 3. Data and Domain Contracts (Locked)
 
@@ -89,12 +88,105 @@ For hackathon demo reliability, we are intentionally doing lightweight hardening
 ### Epic R2: Case Extraction and Lifecycle
 *Goal: Create and evolve cases from unstructured files with ownership and traceability.*
 
-- **R2.1 [TEST]**: Add failing tests for case extraction output shape and scope mapping.
-- **R2.2**: Implement `CaseExtractor` prompt and parser (Gemini, `temperature: 0`) to produce case intents.
-- **R2.3 [TEST]**: Add failing tests for case upsert behavior (open new, enrich existing, transition status).
-- **R2.4**: Implement `CaseLifecycleService` with deterministic matching + status transitions.
-- **R2.5**: Link extracted facts to case records (`fact_cases`) where confidence and matching rules permit.
-- **R2.6**: Add owner assignment strategy (default queue user with deterministic assignment override hooks).
+High-level milestones (details are ticketed below as **R2.0–R2.8**):
+
+- **Milestone A [TEST]**: Case extraction contract + fixtures (mock/live parity).
+- **Milestone B**: Live `CaseExtractor` (Gemini JSON, `temperature: 0`) + parser hardening.
+- **Milestone C [TEST]**: Deterministic case identity + upsert across multi-day evidence.
+- **Milestone D**: DB persistence + `fact_cases` linking + history wiring + summary counters.
+- **Milestone E [TEST]**: Full-dataset integrity guardrails (no duplicate case spam).
+
+#### R2 Refined Ticket Cards (POC + Full Dataset)
+
+**What a Case is (POC definition)**  
+A **case** is an operational workflow record stored in `cases` (title, summary, status, owner, scope to property/house/apartment, timestamps). **Facts** are evidence atoms in `facts`. Cases may reference many sources; facts link back to a single `sources` row. The demo may highlight **one** case narrative, but the engine must support **many** cases across the full `day-01`…`day-10` dataset without collisions or duplicate spam.
+
+---
+
+**R2.0 — Case domain types and validation**
+- **Objective**: Lock JSON shapes and invariants before any LLM or DB wiring.
+- **Tasks**:
+  1. Add `CaseIntent` / `CaseUpsertCommand` types (id hints optional; `caseKey` required for matching).
+  2. Zod (or equivalent) validators: required fields, allowed `status` enum, scope consistency.
+- **Acceptance**: Unit tests fail on malformed extractor output; valid payloads parse.
+
+---
+
+**R2.1 [TEST] — Case extraction contract (mock + live parity)**
+- **Objective**: Same interface for `HISTORY_MODE=mock` and live Gemini.
+- **Tasks**:
+  1. Define `CaseExtractor` interface: `(documentText, metadata) -> CaseIntent[]`.
+  2. Tests with **fixture strings** covering: open incident, invoice dispute, generic noise (empty intents).
+- **Acceptance**: Mock implementation passes tests; live implementation behind same interface (tests mock the HTTP layer).
+
+---
+
+**R2.2 — `CaseExtractor` (live): prompt + parser at `temperature: 0`**
+- **Objective**: Extract 0..N case intents from an email/PDF text chunk.
+- **Tasks**:
+  1. Prompt returns strict JSON: `{ "cases": [ { "caseKey", "title", "summary", "status", "scopeHint", "confidence" } ] }`.
+  2. Reuse `GeminiService` (`responseMimeType: application/json`, `temperature: 0`).
+- **Acceptance**: Golden tests with stubbed `fetch` / client (no real API in CI).
+
+---
+
+**R2.3 [TEST] — `CaseLifecycleService`: deterministic identity across days**
+- **Objective**: Same physical issue across multiple files/days maps to **one** `cases.id`.
+- **Tasks**:
+  1. `caseKey = normalize(scopeBucket + primarySignal + titleFingerprint)` (document exact formula in tests).
+  2. Tests: day-2 email + day-5 email with same key → **update** same row (summary/status evolution), not insert duplicate.
+  3. Tests: different keys → distinct rows.
+  4. **Auto-close rule (POC)**: When a case is `open`/`in_progress` and a newly ingested fact satisfies a **declared closure predicate** for that `caseKey` (example predicates: `resolution_confirmed`, `invoice_paid`, `repair_completed`), transition status to `resolved` (or `closed` if you prefer terminal state) and bump `updatedAt`.
+  5. Tests: ingest “closing fact” in a later day → same `cases.id` ends in terminal status without manual UI.
+- **Acceptance**: Full-dataset simulation test builds N unique keys from a directory listing fixture (or snapshot subset), asserts no duplicate `caseKey` rows.
+
+---
+
+**R2.4 — Persist cases: upsert + timestamps + owner**
+- **Objective**: Write to `cases` table with idempotent upsert.
+- **Tasks**:
+  1. `upsertCaseByKey` using `caseKey` unique index (add migration if missing) or deterministic UUID v5 from `caseKey`.
+  2. Owner: default `user-1` (or first seed user) with override hook for demos.
+  3. `updatedAt` always bumps on merge; `createdAt` stable.
+- **Acceptance**: Integration test inserts then updates same case across two synthetic “days”.
+
+---
+
+**R2.5 — Link facts to cases (`fact_cases`)**
+- **Objective**: When a fact is clearly evidence for a case, attach it.
+- **Tasks**:
+  1. Heuristic v1: same ingestion batch + overlapping `caseKey` signal in fact key/value → link.
+  2. Avoid duplicate `(factId, caseId)` pairs (respect PK).
+- **Acceptance**: Query `fact_cases` returns expected links in integration test.
+
+---
+
+**R2.6 — Wire into history + baseline paths**
+- **Objective**: Cases appear during `dryRunHistory` (live) and optionally mock dry-run with **one** highlighted case.
+- **Tasks**:
+  1. After facts for a file are persisted, run `CaseExtractor` → `CaseLifecycleService` → DB.
+  2. **Mock dry-run**: config cap `MAX_CASES_PER_RUN=1` (or hardcode demo case key) so output stays readable; **live/history**: no cap (full dataset).
+  3. Extend per-day summary JSON: `casesOpened`, `casesUpdated`, `casesResolved` (counters).
+  4. Ensure **auto-close evaluation runs after facts are persisted** for the day/file batch so closure facts never get “skipped” because case processing happened too early.
+- **Acceptance**: `make run-history-mock` shows ≥1 case movement for demo; live run processes all `.eml`/`.pdf` without artificial case limit.
+
+---
+
+**R2.7 [TEST] — End-to-end “full dataset” case integrity**
+- **Objective**: Prove scale behavior for POC, not just happy path.
+- **Tasks**:
+  1. Integration test: replay **two** synthetic day folders with 5+ files, assert case cardinality bounds (e.g. no duplicate `caseKey`, bounded orphan cases).
+  2. Optional: snapshot `cases` count upper bound vs files ingested (document ratio in test name).
+- **Acceptance**: Test documents assumptions; fails if duplicate case rows appear for same `caseKey`.
+
+---
+
+**R2.8 — Case conflict / merge policy (minimal)**
+- **Objective**: If two intents collide on same `caseKey` with incompatible titles, merge deterministically (prefer higher confidence, append summary bullet).
+- **Tasks**:
+  1. Unit tests for merge rules.
+  2. If merge introduces a “closure signal” (per R2.3 predicates), apply the same auto-close transition rules deterministically.
+- **Acceptance**: No silent data loss; merged result always traceable in `summary` text.
 
 ### Epic R3: LLM Reliability and Cost Control Hardening
 *Goal: Avoid duplicate calls and improve demo reliability under quota pressure.*
@@ -124,7 +216,7 @@ For hackathon demo reliability, we are intentionally doing lightweight hardening
 ## 5. Ticket Execution Order (Do This Next)
 
 1. **Week Slice A (foundation fix)**: R1.1 -> R1.5
-2. **Week Slice B (cases)**: R2.1 -> R2.6
+2. **Week Slice B (cases)**: R2.0 -> R2.8
 3. **Week Slice C (history core)**: R4.1 -> R4.5
 4. **Week Slice D (reliability + demo polish)**: R3.1 -> R3.4, then R5.1 -> R5.4
 

@@ -88,6 +88,8 @@ describe("db queries", () => {
         "houseId" text,
         "apartmentId" text,
         "ownerUserId" text NOT NULL,
+        "caseKey" text NOT NULL,
+        "closurePredicate" text,
         "title" text NOT NULL,
         "summary" text NOT NULL,
         "status" text NOT NULL,
@@ -98,6 +100,7 @@ describe("db queries", () => {
         FOREIGN KEY ("apartmentId") REFERENCES "apartments"("id") ON UPDATE no action ON DELETE no action,
         FOREIGN KEY ("ownerUserId") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
       );
+      CREATE UNIQUE INDEX IF NOT EXISTS "cases_property_case_key" ON "cases" ("propertyId","caseKey");
 
       CREATE TABLE IF NOT EXISTS "fact_houses" (
         "factId" text NOT NULL,
@@ -165,6 +168,8 @@ describe("db queries", () => {
 			houseId: "LIE-001-H1",
 			apartmentId: "LIE-001-H1-A1",
 			ownerUserId: "user-1",
+			caseKey: "test-door|door|broken-apartment-door",
+			closurePredicate: null,
 			title: "Broken apartment door",
 			summary: "Tenant reported a broken lock.",
 			status: "open",

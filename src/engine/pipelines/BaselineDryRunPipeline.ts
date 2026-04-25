@@ -9,8 +9,21 @@ import { FactExtractor } from "../services/FactExtractor";
 import { Gatekeeper } from "../services/Gatekeeper";
 import { GeminiService } from "../services/GeminiService";
 import { HierarchyResolver } from "../services/HierarchyResolver";
+import { deriveDocumentMetadataFromText } from "../case/deriveDocumentMetadataFromText";
+import type { CaseDocumentExtractor } from "../services/CaseExtractor";
+import {
+  CaseLifecycleService,
+  type NewFactSnapshot,
+} from "../services/CaseLifecycleService";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
-import { factApartments, factHouses, facts, properties, sources } from "../../db/schema";
+import {
+  factApartments,
+  factHouses,
+  facts,
+  properties,
+  sources,
+  users,
+} from "../../db/schema";
 import type { db as appDb } from "../../db";
 
 type BaselineDryRunDb = typeof appDb;
@@ -52,6 +65,11 @@ export interface BaselineDryRunOptions {
     key: string;
     reason: "existing_gold_fact_same_semantic_identity";
   }) => Promise<void> | void;
+  /** When set, runs case extraction + lifecycle after noisy facts persist (R2.6). */
+  caseExtractor?: CaseDocumentExtractor;
+  /** Caps merged case intents for the whole run (mock dry-run readability). */
+  maxCasesPerRun?: number;
+  caseLifecycleService?: CaseLifecycleService;
 }
 
 export interface BaselineDryRunSummary {
@@ -64,6 +82,10 @@ export interface BaselineDryRunSummary {
   nonGoldFactsPersisted: number;
   noisySourcesEvaluated: number;
   noisySourcesWithFacts: number;
+  casesOpened: number;
+  casesUpdated: number;
+  casesResolved: number;
+  factCaseLinksCreated: number;
 }
 
 const defaultNoisyInputFiles = [
@@ -152,6 +174,20 @@ async function buildDefaultHierarchyResolver(
   }
 }
 
+async function ensureDefaultCaseOwner(db: BaselineDryRunDb): Promise<void> {
+  try {
+    await db.insert(users).values({
+      id: "user-1",
+      name: "Default Owner",
+      email: "owner@buena.test",
+    });
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+  }
+}
+
 export async function runBaselineDryRun({
   db,
   datasetRootPath = "testfiles",
@@ -166,6 +202,9 @@ export async function runBaselineDryRun({
   factPersistencePolicy,
   preloadedExistingFacts = [],
   onConflict,
+  caseExtractor,
+  maxCasesPerRun,
+  caseLifecycleService,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
   try {
     await db.insert(properties).values({
@@ -201,6 +240,8 @@ export async function runBaselineDryRun({
   if (!resolvedGatekeeper || !resolvedExtractor) {
     throw new Error("BaselineDryRunPipeline failed to initialize AI services");
   }
+
+  const lifecycle = caseLifecycleService ?? new CaseLifecycleService(db);
   const resolvedHierarchyResolver =
     hierarchyResolver ?? (await buildDefaultHierarchyResolver(db, propertyId));
   const resolvedFactPersistencePolicy =
@@ -244,38 +285,55 @@ export async function runBaselineDryRun({
   let factsInserted = 0;
   let factsBlockedAsConflicts = 0;
   let factsUpdatedIdempotent = 0;
+  let casesOpened = 0;
+  let casesUpdated = 0;
+  let casesResolved = 0;
+  let factCaseLinksCreated = 0;
+
+  if (caseExtractor) {
+    await ensureDefaultCaseOwner(db);
+  }
 
   const ingestions = [
     ...(includeCoreIngestions ? coreIngestions : []),
     ...noisyIngestions,
   ];
+  let remainingCaseBudget =
+    maxCasesPerRun !== undefined && maxCasesPerRun >= 0 ? maxCasesPerRun : undefined;
 
   for (const ingestion of ingestions) {
     const filePath = path.resolve(datasetRootPath, ingestion.relativePath);
     await fs.access(filePath);
     const fileId = path.basename(filePath);
     const factsForFile = await ingestion.ingestor.ingest(filePath, fileId);
-    if (factsForFile.length === 0) {
-      continue;
-    }
+    const isCoreIngestion =
+      ingestion.relativePath === "stammdaten/stammdaten.json" ||
+      ingestion.relativePath === "stammdaten/eigentuemer.csv";
     if (ingestion.relativePath !== "stammdaten/stammdaten.json" && ingestion.relativePath !== "stammdaten/eigentuemer.csv") {
-      noisySourcesWithFacts += 1;
+      if (factsForFile.length > 0) {
+        noisySourcesWithFacts += 1;
+      }
     }
 
     const sourceId = `source-${ingestion.relativePath.replaceAll("/", "-")}`;
-    sourceIds.add(sourceId);
-    try {
-      await db.insert(sources).values({
-        id: sourceId,
-        fileId: factsForFile[0].source.fileId,
-        fileType: factsForFile[0].source.fileType,
-        ingestionDate: factsForFile[0].source.ingestionDate,
-      });
-    } catch (error) {
-      if (!isUniqueConstraintError(error)) {
-        throw error;
+    if (factsForFile.length > 0) {
+      sourceIds.add(sourceId);
+      try {
+        await db.insert(sources).values({
+          id: sourceId,
+          fileId: factsForFile[0].source.fileId,
+          fileType: factsForFile[0].source.fileType,
+          ingestionDate: factsForFile[0].source.ingestionDate,
+        });
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) {
+          throw error;
+        }
       }
     }
+
+    const persistedInThisFile: Array<{ id: string; key: string; value: string }> = [];
+    const closureEvidenceThisFile: NewFactSnapshot[] = [];
 
     for (const fact of factsForFile) {
       const resolvedScope = await resolvedHierarchyResolver.resolve({
@@ -317,6 +375,13 @@ export async function runBaselineDryRun({
 
       if (policyDecision.outcome === "updated_idempotent") {
         factsUpdatedIdempotent += 1;
+        closureEvidenceThisFile.push({
+          id: fact.id,
+          propertyId: resolvedScope.propertyId,
+          key: fact.key,
+          value: String(fact.value),
+          scope: resolvedScope,
+        });
         continue;
       }
 
@@ -362,6 +427,53 @@ export async function runBaselineDryRun({
         sourceId,
         isGoldStandard: fact.isGoldStandard,
       });
+
+      persistedInThisFile.push({
+        id: fact.id,
+        key: fact.key,
+        value: String(fact.value),
+      });
+      closureEvidenceThisFile.push({
+        id: fact.id,
+        propertyId: resolvedScope.propertyId,
+        key: fact.key,
+        value: String(fact.value),
+        scope: resolvedScope,
+      });
+    }
+
+    if (caseExtractor && !isCoreIngestion) {
+      if (remainingCaseBudget !== undefined && remainingCaseBudget <= 0) {
+        continue;
+      }
+      const documentText = await fs.readFile(filePath, "utf-8");
+      let intents = await caseExtractor.extract(documentText, { propertyId });
+      if (remainingCaseBudget !== undefined) {
+        intents = intents.slice(0, remainingCaseBudget);
+        remainingCaseBudget -= intents.length;
+      }
+      const docMeta = deriveDocumentMetadataFromText(documentText);
+      const nowIso = new Date().toISOString();
+      const batch = await lifecycle.processIntentsForDocument({
+        propertyId,
+        intents,
+        resolver: resolvedHierarchyResolver,
+        documentMetadata: docMeta,
+        nowIso,
+      });
+      casesOpened += batch.casesOpened;
+      casesUpdated += batch.casesUpdated;
+      const linkCount = await lifecycle.linkFactsToCasesHeuristic({
+        caseKeys: batch.caseKeys,
+        propertyId,
+        factsForBatch: persistedInThisFile,
+      });
+      factCaseLinksCreated += linkCount;
+      casesResolved += await lifecycle.evaluateAutoClose({
+        propertyId,
+        newFacts: closureEvidenceThisFile,
+        nowIso,
+      });
     }
   }
 
@@ -378,5 +490,9 @@ export async function runBaselineDryRun({
     nonGoldFactsPersisted,
     noisySourcesEvaluated: noisyIngestions.length,
     noisySourcesWithFacts,
+    casesOpened,
+    casesUpdated,
+    casesResolved,
+    factCaseLinksCreated,
   };
 }

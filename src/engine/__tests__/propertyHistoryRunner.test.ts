@@ -60,6 +60,10 @@ describe("PropertyHistoryRunner", () => {
           nonGoldFactsPersisted: noisyInputFiles.length,
           noisySourcesEvaluated: noisyInputFiles.length,
           noisySourcesWithFacts: noisyInputFiles.length,
+          casesOpened: 0,
+          casesUpdated: 0,
+          casesResolved: 0,
+          factCaseLinksCreated: 0,
         };
       },
     });

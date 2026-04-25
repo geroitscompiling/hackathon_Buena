@@ -5,7 +5,13 @@ import dotenv from "dotenv";
 import { db } from "../db";
 import { runPropertyHistoryReplay } from "../engine/pipelines/PropertyHistoryRunner";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
+import {
+  GeminiCaseExtractor,
+  type CaseDocumentExtractor,
+} from "../engine/services/CaseExtractor";
+import { GeminiService } from "../engine/services/GeminiService";
 import type { BuildingFactExtractor, RelevanceGatekeeper } from "../engine/types";
+import { getServerEnv } from "../env";
 
 dotenv.config({ path: [".env.local", ".env"] });
 
@@ -46,6 +52,7 @@ async function main() {
     throw new Error(`Unsupported HISTORY_MODE: ${mode}. Use "mock" or "live".`);
   }
 
+  let subjectEmailCount = 0;
   const propertyId = "LIE-001";
   const dayRootPath = path.resolve("testfiles/HistoryPopulationData");
   const conflictLogPath = path.resolve("artifacts/history-conflicts.jsonl");
@@ -62,31 +69,74 @@ async function main() {
       ? {
           extract: async (documentText) => {
             if (documentText.includes("Subject:")) {
-              return [
+              subjectEmailCount += 1;
+              const rows = [
                 {
-                  category: "core_erp",
+                  category: "core_erp" as const,
                   key: "baujahr",
                   value: "1992",
                   confidenceScore: 0.84,
                 },
                 {
-                  category: "maintenance",
+                  category: "maintenance" as const,
                   key: "window_issue",
                   value: "LIE-001-H1-A1",
                   confidenceScore: 0.91,
                 },
                 {
-                  category: "maintenance",
+                  category: "maintenance" as const,
                   key: "stairwell_issue",
                   value: "LIE-001-H1",
                   confidenceScore: 0.9,
                 },
               ];
+              if (subjectEmailCount > 1) {
+                rows.push({
+                  category: "maintenance",
+                  key: "repair_completed",
+                  value: "yes",
+                  confidenceScore: 0.99,
+                });
+              }
+              return rows;
             }
             return [];
           },
         }
       : undefined;
+
+  const caseExtractor: CaseDocumentExtractor | undefined =
+    mode === "mock"
+      ? {
+          extract: async (documentText) => {
+            if (!documentText.includes("Subject:")) {
+              return [];
+            }
+            return [
+              {
+                title: "Window repair batch",
+                summary: "Tracked from history email",
+                status: "open",
+                scopeHint: "apartment",
+                primarySignal: "windowtrack",
+                closurePredicate: "repair_completed",
+                confidence: 0.9,
+              },
+            ];
+          },
+        }
+      : new GeminiCaseExtractor(
+          new GeminiService({ model: getServerEnv().GEMINI_MODEL_EXTRACTOR }),
+          { strictErrors: true },
+        );
+
+  const maxCasesPerRun =
+    mode === "mock"
+      ? Number.parseInt(process.env.MAX_CASES_PER_RUN ?? "1", 10)
+      : undefined;
+  if (maxCasesPerRun !== undefined && Number.isNaN(maxCasesPerRun)) {
+    throw new Error("MAX_CASES_PER_RUN must be a number when set");
+  }
 
   const replay = await runPropertyHistoryReplay({
     dayRootPath,
@@ -100,6 +150,8 @@ async function main() {
         noisyInputFiles,
         gatekeeper,
         extractor,
+        caseExtractor,
+        maxCasesPerRun,
         preloadedExistingFacts,
         onConflict: async (entry) => {
           await appendFile(

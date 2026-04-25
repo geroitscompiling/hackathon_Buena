@@ -1,4 +1,4 @@
-import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const properties = sqliteTable("properties", {
 	id: text("id").primaryKey(),
@@ -51,22 +51,28 @@ export const facts = sqliteTable("facts", {
 	confidenceScore: real("confidenceScore").notNull(),
 });
 
-export const cases = sqliteTable("cases", {
-	id: text("id").primaryKey(),
-	propertyId: text("propertyId")
-		.notNull()
-		.references(() => properties.id),
-	houseId: text("houseId").references(() => houses.id),
-	apartmentId: text("apartmentId").references(() => apartments.id),
-	ownerUserId: text("ownerUserId")
-		.notNull()
-		.references(() => users.id),
-	title: text("title").notNull(),
-	summary: text("summary").notNull(),
-	status: text("status").notNull(),
-	createdAt: text("createdAt").notNull(),
-	updatedAt: text("updatedAt").notNull(),
-});
+export const cases = sqliteTable(
+	"cases",
+	{
+		id: text("id").primaryKey(),
+		propertyId: text("propertyId")
+			.notNull()
+			.references(() => properties.id),
+		houseId: text("houseId").references(() => houses.id),
+		apartmentId: text("apartmentId").references(() => apartments.id),
+		ownerUserId: text("ownerUserId")
+			.notNull()
+			.references(() => users.id),
+		caseKey: text("caseKey").notNull(),
+		closurePredicate: text("closurePredicate"),
+		title: text("title").notNull(),
+		summary: text("summary").notNull(),
+		status: text("status").notNull(),
+		createdAt: text("createdAt").notNull(),
+		updatedAt: text("updatedAt").notNull(),
+	},
+	(table) => [uniqueIndex("cases_property_case_key").on(table.propertyId, table.caseKey)],
+);
 
 export const factHouses = sqliteTable(
 	"fact_houses",
