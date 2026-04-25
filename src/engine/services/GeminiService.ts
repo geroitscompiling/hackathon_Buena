@@ -11,8 +11,8 @@ interface GeminiGenerateResponse {
 }
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
-const DEFAULT_MAX_RETRIES = 3;
-const DEFAULT_MIN_REQUEST_DELAY_MS = 300;
+const DEFAULT_MAX_RETRIES = 5;
+const DEFAULT_MIN_REQUEST_DELAY_MS = 1000;
 const RETRYABLE_STATUS_CODES = new Set([429, 503]);
 
 export class GeminiService {
@@ -29,11 +29,19 @@ export class GeminiService {
 
   async generateJson<T>(prompt: string): Promise<T> {
     const maxRetries = Number(process.env.GEMINI_MAX_RETRIES ?? DEFAULT_MAX_RETRIES);
+    const totalAttempts = maxRetries + 1;
+    const debugEnabled = process.env.GEMINI_DEBUG === "1";
     let attempt = 0;
     let response: Response | null = null;
 
     while (attempt <= maxRetries) {
+      const attemptNumber = attempt + 1;
       await this.enforceMinimumDelay();
+      if (debugEnabled) {
+        console.log(
+          `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} sending request`
+        );
+      }
       response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
         {
@@ -53,12 +61,17 @@ export class GeminiService {
       this.lastRequestAt = Date.now();
 
       if (response.ok) {
+        if (debugEnabled) {
+          console.log(
+            `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} success`
+          );
+        }
         break;
       }
 
       const errorDetails = await response.text();
       const detailSuffix = errorDetails ? `: ${errorDetails}` : "";
-      const errorMessage = `Gemini request failed with status ${response.status}${detailSuffix}`;
+      const errorMessage = `Gemini request failed for model ${this.model} (attempt ${attemptNumber}/${totalAttempts}) with status ${response.status}${detailSuffix}`;
       const shouldRetry =
         RETRYABLE_STATUS_CODES.has(response.status) && attempt < maxRetries;
       if (!shouldRetry) {
@@ -66,6 +79,11 @@ export class GeminiService {
       }
 
       const retryAfterMs = this.getRetryDelayMs(response, attempt);
+      if (debugEnabled) {
+        console.warn(
+          `[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} status=${response.status} retrying_in_ms=${retryAfterMs}`
+        );
+      }
       await this.sleep(retryAfterMs);
       attempt += 1;
     }

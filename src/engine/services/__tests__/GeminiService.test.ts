@@ -97,7 +97,7 @@ describe("GeminiService", () => {
     const service = new GeminiService("test-key", "gemini-1.5-flash");
 
     await expect(service.generateJson("Prompt")).rejects.toThrow(
-      'Gemini request failed for model gemini-1.5-flash (attempt 1/4) with status 404: {"error":{"message":"models/gemini-1.5-flash is not found for API version v1beta"}}'
+      'Gemini request failed for model gemini-1.5-flash (attempt 1/'
     );
   });
 

@@ -45,8 +45,9 @@ Environment variables for AI extraction:
 - `GEMINI_API_KEY` (required)
 - `GEMINI_MODEL_GATEKEEPER` (optional, defaults to `GEMINI_MODEL` if set)
 - `GEMINI_MODEL_EXTRACTOR` (optional, defaults to `GEMINI_MODEL` if set)
-- `GEMINI_MAX_RETRIES` (optional, default `3`; retries on 429/503)
-- `GEMINI_MIN_REQUEST_DELAY_MS` (optional, default `300`; minimum delay between Gemini calls per service instance)
+- `GEMINI_MAX_RETRIES` (optional, default `5`; retries on 429/503)
+- `GEMINI_MIN_REQUEST_DELAY_MS` (optional, default `1000`; minimum delay between Gemini calls per service instance)
+- `GEMINI_DEBUG` (optional, set `1` to print retry/attempt diagnostics)
 
 This baseline flow ingests:
 - core ERP files from `testfiles/stammdaten` as gold facts
