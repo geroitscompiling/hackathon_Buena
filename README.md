@@ -22,6 +22,7 @@ Key targets:
 - `make db-setup` runs schema push + seed on a clean DB
 - `make run-initial` executes this ticket's baseline dry-run flow end-to-end
 - `make run-history` currently calls the history placeholder and is reserved for the next epic
+- `make diagnose` checks Gemini model reachability and quota-style throttle signals (`429`, `Retry-After`)
 
 ## Database Setup
 
@@ -39,6 +40,13 @@ Run the baseline ingestion dry-run against local test data:
 ```bash
 make run-initial
 ```
+
+Environment variables for AI extraction:
+- `GEMINI_API_KEY` (required)
+- `GEMINI_MODEL_GATEKEEPER` (optional, defaults to `GEMINI_MODEL` if set)
+- `GEMINI_MODEL_EXTRACTOR` (optional, defaults to `GEMINI_MODEL` if set)
+- `GEMINI_MAX_RETRIES` (optional, default `3`; retries on 429/503)
+- `GEMINI_MIN_REQUEST_DELAY_MS` (optional, default `300`; minimum delay between Gemini calls per service instance)
 
 This baseline flow ingests:
 - core ERP files from `testfiles/stammdaten` as gold facts

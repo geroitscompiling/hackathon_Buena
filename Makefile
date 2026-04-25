@@ -1,4 +1,4 @@
-.PHONY: help install db-reset db-setup run-initial run-history dev test lint check
+.PHONY: help install db-reset db-setup run-initial run-history diagnose dev test lint check
 
 DATABASE_URL ?= local.db
 
@@ -9,6 +9,7 @@ help:
 	@echo "  make db-setup     - push schema and seed clean db"
 	@echo "  make run-initial  - reset db and run baseline dry-run"
 	@echo "  make run-history  - placeholder for history replay epic"
+	@echo "  make diagnose     - check Gemini models/probe quota signals"
 	@echo "  make dev          - run app locally"
 	@echo "  make test         - run test suite"
 	@echo "  make lint         - run linter"
@@ -29,6 +30,9 @@ run-initial: db-reset db-setup
 
 run-history:
 	pnpm run dry-run:history
+
+diagnose:
+	pnpm run gemini:diagnose
 
 dev:
 	pnpm dev
