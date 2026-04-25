@@ -6,6 +6,8 @@ import { eq, and } from 'drizzle-orm';
 import path from 'path';
 import { JsonIngestor } from '../ingestors/JsonIngestor';
 import { CsvIngestor } from '../ingestors/CsvIngestor';
+import { EmlIngestor } from '../ingestors/EmlIngestor';
+import { BuildingFactExtractor, RelevanceGatekeeper } from '../types';
 
 describe('Integration: ERP Ingestors Pipeline', () => {
   let sqlite: Database.Database;
@@ -129,5 +131,67 @@ describe('Integration: ERP Ingestors Pipeline', () => {
     expect(ownerFact[0].value).toBe('Herr Marcus Dowerg');
     expect(ownerFact[0].isGoldStandard).toBe(true);
     expect(ownerFact[0].category).toBe('governance');
+  });
+
+  it('EML AI Pipeline: persists non-gold facts from mocked AI extraction', async () => {
+    const mockGatekeeper: RelevanceGatekeeper = {
+      isRelevant: async () => true,
+    };
+    const mockExtractor: BuildingFactExtractor = {
+      extract: async () => [
+        {
+          category: 'maintenance',
+          key: 'water_damage_status',
+          value: 'reported',
+          confidenceScore: 0.93,
+        },
+      ],
+    };
+
+    const ingestor = new EmlIngestor(mockGatekeeper, mockExtractor);
+    const filePath = path.resolve(
+      __dirname,
+      '../../../testfiles/incremental/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml'
+    );
+    const fileId = '20260101_083800_EMAIL-06547.eml';
+
+    const buildingFacts = await ingestor.ingest(filePath, fileId);
+
+    expect(buildingFacts.length).toBe(1);
+    expect(buildingFacts[0].isGoldStandard).toBe(false);
+    expect(buildingFacts[0].source.fileType).toBe('eml');
+
+    const sourceRef = buildingFacts[0].source;
+    const sourceDbId = `source-${fileId}`;
+
+    await db.insert(sources).values({
+      id: sourceDbId,
+      fileId: sourceRef.fileId,
+      fileType: sourceRef.fileType,
+      ingestionDate: sourceRef.ingestionDate,
+    });
+
+    for (const fact of buildingFacts) {
+      await db.insert(facts).values({
+        id: fact.id,
+        propertyId: fact.propertyId,
+        category: fact.category,
+        key: fact.key,
+        value: String(fact.value),
+        sourceId: sourceDbId,
+        isGoldStandard: fact.isGoldStandard,
+        confidenceScore: fact.confidenceScore,
+      });
+    }
+
+    const persistedFacts = await db.select().from(facts).where(and(
+      eq(facts.key, 'water_damage_status'),
+      eq(facts.sourceId, sourceDbId)
+    ));
+
+    expect(persistedFacts.length).toBe(1);
+    expect(persistedFacts[0].value).toBe('reported');
+    expect(persistedFacts[0].isGoldStandard).toBe(false);
+    expect(persistedFacts[0].category).toBe('maintenance');
   });
 });
