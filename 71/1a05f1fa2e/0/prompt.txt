@@ -1,0 +1,2 @@
+Okay, so maybe it is time for a makefile now. Because since this is a POC we basically need to reset db in case something fucks up.
+So basically make install, make run-initial (This ticket), make run-history (Following Epic) and whatever comes to your mind. In addition check if README.MD and AGENTS.md  needs update, especially on the makefile part
