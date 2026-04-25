@@ -10,10 +10,12 @@ interface GeminiGenerateResponse {
   }>;
 }
 
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+
 export class GeminiService {
   constructor(
     private readonly apiKey: string = process.env.GEMINI_API_KEY ?? "",
-    private readonly model: string = "gemini-1.5-flash"
+    private readonly model: string = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL
   ) {
     if (!this.apiKey) {
       throw new Error("GEMINI_API_KEY is required");
@@ -39,7 +41,9 @@ export class GeminiService {
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini request failed with status ${response.status}`);
+      const errorDetails = await response.text();
+      const detailSuffix = errorDetails ? `: ${errorDetails}` : "";
+      throw new Error(`Gemini request failed with status ${response.status}${detailSuffix}`);
     }
 
     const payload = (await response.json()) as GeminiGenerateResponse;
@@ -55,3 +59,5 @@ export class GeminiService {
     return JSON.parse(jsonText) as T;
   }
 }
+
+export { DEFAULT_GEMINI_MODEL };

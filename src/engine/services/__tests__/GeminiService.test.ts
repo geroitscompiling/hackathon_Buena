@@ -4,6 +4,7 @@ import { GeminiService } from "../GeminiService";
 describe("GeminiService", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    delete process.env.GEMINI_MODEL;
   });
 
   it("throws when api key is missing", () => {
@@ -55,5 +56,46 @@ describe("GeminiService", () => {
     const service = new GeminiService("test-key");
     const result = await service.generateJson<{ facts: unknown[] }>("Extract");
     expect(result).toEqual({ facts: [] });
+  });
+
+  it("uses GEMINI_MODEL when model argument is omitted", async () => {
+    process.env.GEMINI_MODEL = "gemini-from-env";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: "{\"ok\":true}" }],
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const service = new GeminiService("test-key");
+    await service.generateJson<{ ok: boolean }>("Ping");
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/models/gemini-from-env:generateContent");
+  });
+
+  it("includes response body when request fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: async () =>
+          '{"error":{"message":"models/gemini-1.5-flash is not found for API version v1beta"}}',
+      })
+    );
+
+    const service = new GeminiService("test-key", "gemini-1.5-flash");
+
+    await expect(service.generateJson("Prompt")).rejects.toThrow(
+      'Gemini request failed with status 404: {"error":{"message":"models/gemini-1.5-flash is not found for API version v1beta"}}'
+    );
   });
 });
