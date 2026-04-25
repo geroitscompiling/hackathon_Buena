@@ -56,11 +56,14 @@ export async function runBaselineDryRun({
     name: propertyName,
   });
 
-  const buildLlmClient = () => new GeminiService();
+  const gatekeeperModel = process.env.GEMINI_MODEL_GATEKEEPER ?? process.env.GEMINI_MODEL;
+  const extractorModel = process.env.GEMINI_MODEL_EXTRACTOR ?? process.env.GEMINI_MODEL;
+  const buildGatekeeperLlmClient = () => new GeminiService(undefined, gatekeeperModel);
+  const buildExtractorLlmClient = () => new GeminiService(undefined, extractorModel);
   const resolvedGatekeeper =
-    gatekeeper ?? new Gatekeeper(buildLlmClient(), { strictErrors: strictAiErrors });
+    gatekeeper ?? new Gatekeeper(buildGatekeeperLlmClient(), { strictErrors: strictAiErrors });
   const resolvedExtractor =
-    extractor ?? new FactExtractor(buildLlmClient(), { strictErrors: strictAiErrors });
+    extractor ?? new FactExtractor(buildExtractorLlmClient(), { strictErrors: strictAiErrors });
 
   const coreIngestions = [
     {
