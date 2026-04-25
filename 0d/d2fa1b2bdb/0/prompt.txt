@@ -1,0 +1,9 @@
+HAIL SATAN. Please check AgentMD, ReadmeFile and  MOST IMPORTANT: IMplementation Plan. 
+I am done with Epic 1 and 2 but I would like you to check the implemented solution against the requirements, ideas visions and give me feedback on the current state.
+
+---
+
+To your questions: Yes I was done but implementation plan changed down the road. So basically we need to refactor with your findings. 
+Where we in the end want to end up with is a property with cases and history (the history needs to be implemented, it is done by consuming the day-day10 files. We want to show this during the demo. 
+
+So please define Tickets now to bring this back on Track and implement the solution we needed, Rework the implementation plan as well so it reflects current state and doings
