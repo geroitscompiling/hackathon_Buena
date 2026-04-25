@@ -1,5 +1,7 @@
 .PHONY: help install db-reset db-setup run-initial run-history dev test lint check
 
+DATABASE_URL ?= local.db
+
 help:
 	@echo "Available commands:"
 	@echo "  make install      - install dependencies"
@@ -19,11 +21,11 @@ db-reset:
 	rm -f local.db local.db-shm local.db-wal
 
 db-setup:
-	pnpm run db:push
-	pnpm run db:seed
+	DATABASE_URL=$(DATABASE_URL) pnpm run db:push
+	DATABASE_URL=$(DATABASE_URL) pnpm run db:seed
 
 run-initial: db-reset db-setup
-	pnpm run dry-run:baseline
+	DATABASE_URL=$(DATABASE_URL) pnpm run dry-run:baseline
 
 run-history:
 	pnpm run dry-run:history
