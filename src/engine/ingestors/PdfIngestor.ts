@@ -1,6 +1,6 @@
-import { promises as fs } from "fs";
-import crypto from "crypto";
-import {
+import crypto from "node:crypto";
+import { promises as fs } from "node:fs";
+import type {
   BuildingFact,
   BuildingFactExtractor,
   Ingestor,
