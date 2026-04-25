@@ -8,6 +8,21 @@ To run this application:
 pnpm install
 ```
 
+### Makefile Shortcuts
+
+For POC-friendly recovery and repeatable flows:
+
+```bash
+make install
+make run-initial
+```
+
+Key targets:
+- `make db-reset` removes local SQLite files (`local.db`, `local.db-shm`, `local.db-wal`)
+- `make db-setup` runs schema push + seed on a clean DB
+- `make run-initial` executes this ticket's baseline dry-run flow end-to-end
+- `make run-history` currently calls the history placeholder and is reserved for the next epic
+
 ## Database Setup
 
 Initialize the SQLite database and seed initial test data:
@@ -22,8 +37,7 @@ pnpm run db:seed
 Run the baseline ingestion dry-run against local test data:
 
 ```bash
-pnpm run db:push
-pnpm run dry-run:baseline
+make run-initial
 ```
 
 This baseline flow ingests:
