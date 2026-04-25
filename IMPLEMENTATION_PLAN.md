@@ -1,134 +1,116 @@
-# Buena Context-Loom: Implementation Plan
+# Buena Context-Loom: Recovery Implementation Plan
 
-This document outlines the architecture, epics, tickets, and go-to strategy for building the Buena Context-Loom as a DB-first property intelligence app. The engine consolidates scattered property data into a hierarchical local database with full traceability, editable facts and cases, and agent access through an MCP server.
+This plan replaces the earlier sprint framing and reflects current reality: the DB-first base exists, but hierarchy resolution, case lifecycle, and day-by-day history replay must be completed for a demo-ready story.
 
 > [!IMPORTANT]
-> **User Review Required**: Please review the updated DB-first architecture, hierarchical data model, and MCP scope. Once approved, we will execute from Epic 1.
+> **Execution Mode**: Every ticket follows strict TDD (`test -> fail -> implement -> pass`) and preserves ERP gold-data protection.
 
-## 1. Architecture Overview (The App Vision)
+## 1. Target Demo Outcome
 
-The core product is an app that ingests property documents, resolves them onto a property hierarchy, and makes the resulting facts and cases queryable by both humans and connected agents.
+By demo day, we must show one property whose timeline evolves by replaying `day-01` through `day-10` and results in:
 
-1. **The Property Runner**: A central orchestrator iterates over the testfiles for a single property and feeds chronological `day-*` inputs into the ingestion pipeline.
-2. **The Ingestor Layer (FileType Focus)**: We mock live webhooks by feeding local files into `JsonIngestor`, `CsvIngestor`, `PdfIngestor`, and `EmlIngestor`.
-3. **ERP is "Gold" (Read-Only)**: Facts derived from core ERP exports (`stammdaten.json`, `eigentuemer.csv`) are immutable gold standards. AI-extracted facts can never silently overwrite them.
-4. **Hierarchical Source of Truth**: Data lives in a local hierarchical database with `properties -> houses -> apartments`. Facts can belong to any level in that hierarchy, and cases can also be attached to any of those levels.
-5. **Cases with Ownership**: Cases represent operational issues or workflows. Every case has an owner and may reference supporting facts and source documents.
-6. **The Operator UI**: A React app renders the hierarchy, facts, and cases. Users can edit facts and cases directly in the UI, with a warning when changing protected or AI-generated data.
-7. **The MCP Server**: A local MCP server exposes structured and semantic access to the hierarchy, facts, and cases so external agents such as Codex can fetch relevant data for a task.
+1. **Hierarchy-aware records**: Facts and cases correctly scoped to property, house, or apartment.
+2. **Traceable decisions**: Every fact/case points to source documents.
+3. **Case lifecycle**: New cases are opened, updated, and resolved across days.
+4. **History proof**: We can show how state changed from baseline to latest day.
+5. **Gold safety**: ERP facts stay protected unless explicitly overridden by a human workflow.
 
-## 2. The Data Perspective (Hierarchical Facts + Cases)
+## 2. Current State Snapshot (Reality Check)
 
-The database is the source of truth. Facts and cases are attached to exactly one scope in the hierarchy, while preserving source traceability.
+### Already implemented
 
-```typescript
-export type EntityScope = "property" | "house" | "apartment";
+1. SQLite/Drizzle schema for hierarchy, facts, cases, users, source tracking, and relation tables.
+2. Core ERP ingestion (`JsonIngestor`, `CsvIngestor`) producing gold facts.
+3. LLM stack (`Gatekeeper`, `FactExtractor`, `GeminiService`) with `temperature: 0`, model split, retry/backoff, and throttling delay.
+4. Baseline dry-run and passing test suite.
 
-export interface HierarchyNodeRef {
-  entityType: EntityScope;
-  entityId: string;
-  propertyId: string;
-  houseId?: string;
-  apartmentId?: string;
-}
+### Missing / incomplete
 
-export interface BuildingFact {
-  id: string;
-  scope: HierarchyNodeRef;
-  category: "core_erp" | "financial" | "maintenance" | "governance" | "communication";
-  key: string;
-  value: string | number | boolean | null;
-  caseId?: string;
-  source: {
-    fileId: string;
-    fileType: "csv" | "json" | "pdf" | "eml";
-    ingestionDate: string;
-  };
-  isGoldStandard: boolean;
-  confidenceScore: number;
-  embeddingId?: string;
-}
+1. Automatic hierarchy resolver for non-ERP facts/cases (house/apartment resolution in pipeline).
+2. Case extraction + upsert/linking from unstructured docs.
+3. Deterministic ERP overwrite protection policy in write path.
+4. Hash-based caching for Gatekeeper/Extractor outputs.
+5. Day-by-day history runner (`day-01` ... `day-10`) that persists a timeline of changes.
 
-export interface Case {
-  id: string;
-  scope: HierarchyNodeRef;
-  title: string;
-  status: "open" | "in_progress" | "resolved" | "closed";
-  ownerUserId: string;
-  summary: string;
-  sourceFileIds: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-```
+## 3. Data and Domain Contracts (Locked)
 
-### Data Model Principles
+The following rules are now mandatory for all implementation tickets:
 
-1. **Hierarchy-first**: Every fact and case must resolve to a property, house, or apartment.
-2. **Traceability-first**: Every extracted fact keeps a source reference back to the original file.
-3. **Protected ERP facts**: Gold facts remain immutable unless a human explicitly overrides them.
-4. **Case-centric operations**: Cases are first-class records, not derived UI views.
-5. **Semantic retrieval ready**: Facts and cases should be vectorizable so the MCP server can support semantic lookup when keyword filters are insufficient.
+1. **Single-scope records**: Every fact and case is attached to exactly one scope (`property`, `house`, or `apartment`), while retaining parent IDs.
+2. **Case identity strategy**: Cases use deterministic matching keys (source refs + normalized title/signals) to decide open/new vs update existing.
+3. **Gold conflict strategy**:
+   - AI may append evidence or create non-gold candidate facts.
+   - AI may not overwrite effective value of a matching gold fact.
+   - Violations are persisted as conflict metadata or separate candidate facts.
+4. **History eventing**: Every daily replay step emits a machine-readable ingest summary and persists change events.
 
-## 3. Epics & Tickets (The Hackathon Sprint)
+## 4. Recovery Epics and Tickets
 
-### Epic 1: Hierarchical Schema & Identity Resolver
-*Goal: Create the local database and reliably map incoming records onto `property`, `house`, and `apartment` entities.*
-- **Ticket 1.1**: Set up the SQLite schema with Drizzle for `Property`, `House`, `Apartment`, `Fact`, `Case`, `User`, and source-tracking tables.
-- **Ticket 1.2**: Implement hierarchy resolution for ERP inputs so incoming rows/files can be matched to the correct property node.
-- **Ticket 1.3 [TEST]**: Write tests asserting correct hierarchy creation and gold-fact generation from CSV/JSON inputs.
+### Epic R1: Scope Resolution and Gold-Safe Persistence
+*Goal: Make ingestion hierarchy-aware and enforce ERP safety rules in persistence.*
 
-### Epic 2: Agentic Extraction Pipeline
-*Goal: Extract non-ERP facts and cases from unstructured files and attach them to the right hierarchy level without violating the gold-data rule.*
-- **Ticket 2.1**: Implement the Gatekeeper prompt to decide whether a document contains relevant operational information.
-- **Ticket 2.2**: Implement the Fact Extractor prompt using Google Gemini via `GEMINI_API_KEY`. **CRITICAL:** All fact-generation calls run at `temperature: 0`.
-- **Ticket 2.3**: Implement case extraction and linking so emails/PDFs can open or enrich cases on the property, house, or apartment level.
-- **Ticket 2.4 [TEST]**: Write tests covering scope resolution, case creation, and ERP protection against silent overwrite.
-- **Ticket 2.5 [RELIABILITY]**: Harden Gemini runtime for local demos:
-  - verify active quota dimension (RPM/TPM/RPD) for the exact project + key before demo runs
-  - support split models (`GEMINI_MODEL_GATEKEEPER`, `GEMINI_MODEL_EXTRACTOR`) with Gatekeeper on lightweight flash-lite and FactExtractor on higher-quality flash
-  - add retry with exponential backoff + jitter for `429`/`503`, honoring `Retry-After`
-  - add a small configurable delay between LLM calls in baseline flow
-  - cache Gatekeeper/Extractor results by source file hash to avoid duplicate calls on unchanged reruns
+- **R1.1 [TEST]**: Add failing tests for scope resolver inputs/outputs (`property`, `house`, `apartment`) using ERP + noisy fixture combinations.
+- **R1.2**: Implement `HierarchyResolver` service for deterministic node resolution from document/fact signals.
+- **R1.3 [TEST]**: Add failing tests for gold-overwrite scenarios (same semantic key/scope from AI vs ERP).
+- **R1.4**: Implement `FactPersistencePolicy` to block silent overwrite and persist conflict/candidate outcomes.
+- **R1.5**: Refactor baseline pipeline to route all writes through resolver + policy service.
 
-### Epic 3: Facts & Cases Operator UI
-*Goal: Give users a clean interface to inspect and edit the hierarchy, facts, and cases.*
-- **Ticket 3.1**: Build the hierarchy navigation for `property -> house -> apartment`.
-- **Ticket 3.2**: Build editable detail views for facts and cases, including ownership and source references.
-- **Ticket 3.3**: Implement the human-over-AI warning flow before saving edits to protected or AI-generated records.
-- **Ticket 3.4 [TEST]**: Add frontend tests for editing flows, warning states, and scope-specific rendering.
+### Epic R2: Case Extraction and Lifecycle
+*Goal: Create and evolve cases from unstructured files with ownership and traceability.*
 
-### Epic 4: MCP Server & Semantic Retrieval
-*Goal: Expose the database to external agents through a local MCP server with both structured and semantic querying.*
-- **Ticket 4.1**: Implement an MCP server that can fetch properties, houses, apartments, facts, and cases by identifiers and filters.
-- **Ticket 4.2**: Define agent-friendly MCP tools for common workflows such as "get apartment facts", "get open cases", and "get related records for this issue".
-- **Ticket 4.3**: Add semantic query support for facts and cases, with vector storage/indexing if keyword search is not sufficient.
-- **Ticket 4.4 [TEST]**: Write integration tests for MCP tool responses and semantic retrieval quality on representative prompts.
+- **R2.1 [TEST]**: Add failing tests for case extraction output shape and scope mapping.
+- **R2.2**: Implement `CaseExtractor` prompt and parser (Gemini, `temperature: 0`) to produce case intents.
+- **R2.3 [TEST]**: Add failing tests for case upsert behavior (open new, enrich existing, transition status).
+- **R2.4**: Implement `CaseLifecycleService` with deterministic matching + status transitions.
+- **R2.5**: Link extracted facts to case records (`fact_cases`) where confidence and matching rules permit.
+- **R2.6**: Add owner assignment strategy (default queue user with deterministic assignment override hooks).
 
-### Epic 5: Property Runner & End-to-End Simulation
-*Goal: Simulate the chronological flow and prove the full ingest-to-query loop.*
-- **Ticket 5.1**: Build the `PropertyRunner` that orchestrates the 10-day cycle and persists every ingestion result into the hierarchical database.
-- **Ticket 5.2 [TEST]**: Execute the runner against the `day-01` to `day-10` folders and verify resulting facts, cases, and ownership assignments.
-- **Ticket 5.3**: Demo the MCP connection from an external agent such as Codex and validate real semantic lookups over the stored data.
+### Epic R3: LLM Reliability and Cost Control Hardening
+*Goal: Avoid duplicate calls and improve demo reliability under quota pressure.*
 
----
+- **R3.1 [TEST]**: Add failing tests for source-hash cache behavior (same file rerun must skip LLM call).
+- **R3.2**: Implement cache store keyed by `sourceHash + model + promptVersion` for Gatekeeper/Extractor/CaseExtractor.
+- **R3.3 [TEST]**: Add tests for cache invalidation when file content changes.
+- **R3.4**: Extend diagnose script output to include cache hit/miss and recommended model pairing for demo runs.
 
-## 4. Presentation Strategy / Go-To Flow (The Pitch)
+### Epic R4: Day-01 to Day-10 History Replay
+*Goal: Build the timeline engine required for the demo story.*
 
-1. **The Baseline (Day 0)**: Run the engine on base ERP data and show the seeded hierarchy: property, houses, apartments, and protected gold facts.
-2. **The Iterations**: Live-run the `day-*` inputs and show new facts and cases landing on the correct hierarchy nodes.
-3. **The Operator Workflow**: Open the UI, inspect a case, change its owner or update a fact, and show the warning flow for protected edits.
-4. **The Agent Workflow**: Connect an external agent through MCP and ask for relevant facts and cases, for example: "show me all open water-damage cases related to this house".
-5. **The Retrieval Reveal**: Demonstrate semantic lookup by asking for related issues without exact keyword matches, backed by vector search if needed.
+- **R4.1 [TEST]**: Add failing integration test for chronological replay from `HistoryPopulationData/day-01` to `day-10`.
+- **R4.2**: Implement `PropertyHistoryRunner` orchestrator for day-folder ingestion sequence.
+- **R4.3 [TEST]**: Add tests for idempotent rerun behavior (same day replay does not duplicate facts/cases/events).
+- **R4.4**: Implement `ingestion_events`/history persistence model (day, file, action, entity type/id, before/after fingerprints).
+- **R4.5**: Produce per-day summary artifacts for demo (`created_facts`, `updated_facts`, `opened_cases`, `resolved_cases`, conflicts).
 
-## 5. Resolved Strategic Constraints (The "Winning" Rules)
+### Epic R5: Demo Surface and Verification
+*Goal: Ensure the app can visibly prove hierarchy + cases + history to judges.*
 
-Based on the updated direction, we are locking in these principles:
+- **R5.1 [TEST]**: Add UI/API tests for timeline rendering and day-by-day case evolution.
+- **R5.2**: Implement timeline/history view wired to persisted ingestion events.
+- **R5.3**: Add one-click demo script (`make run-demo-history`) that resets DB, replays days, and prints headline metrics.
+- **R5.4**: Final hardening checklist run (tests, lint/check, dry-run baseline, dry-run history, diagnose).
 
-1. **DB-first architecture**: The database is the product source of truth. We are no longer planning around categorized Markdown files as the main persistence layer.
-2. **Mocked webhooks are sufficient**: Local file ingestors are enough to prove the workflow and simulate production event streams.
-3. **ERP is protected**: Facts originating from core ERP exports remain gold-standard and cannot be silently replaced by AI output.
-4. **Cases are first-class records**: Operational workflows live as explicit `Case` records with owners, statuses, and traceable supporting evidence.
-5. **Human edits stay simple**: Users can edit facts and cases in the UI, but the system warns before protected or AI-generated data is changed.
-6. **Zero hallucination tolerance**: All LLM calls that create facts or cases run at `temperature: 0`.
-7. **Semantic access is part of the product**: The MCP layer must support practical retrieval for agents, and we can add vectorization where semantic search materially improves relevance.
+## 5. Ticket Execution Order (Do This Next)
+
+1. **Week Slice A (foundation fix)**: R1.1 -> R1.5
+2. **Week Slice B (cases)**: R2.1 -> R2.6
+3. **Week Slice C (history core)**: R4.1 -> R4.5
+4. **Week Slice D (reliability + demo polish)**: R3.1 -> R3.4, then R5.1 -> R5.4
+
+If time is constrained, do not skip R1/R2/R4; they are the minimum for the promised demo narrative.
+
+## 6. Demo Go-To Flow (Updated Pitch)
+
+1. **Baseline load**: Show property hierarchy + gold ERP facts.
+2. **Chronological replay**: Run day-by-day ingestion and show timeline counters changing.
+3. **Case story**: Open one case trail and demonstrate how new evidence updates status/summary/ownership context.
+4. **Safety proof**: Show an example where AI proposes conflicting value and gold policy prevents silent overwrite.
+5. **Agent query**: Ask for open cases or scoped facts and verify answers against timeline/history entries.
+
+## 7. Non-Negotiable Constraints
+
+1. DB-first remains the product source of truth.
+2. Mocked local file ingestors remain the webhook simulation mechanism.
+3. All fact/case generation prompts use `temperature: 0`.
+4. ERP-derived gold facts cannot be silently overwritten by AI output.
+5. History replay across `day-01` to `day-10` is mandatory for demo completeness.
