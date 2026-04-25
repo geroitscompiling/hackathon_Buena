@@ -1,92 +1,128 @@
 # Buena Context-Loom: Implementation Plan
 
-This document outlines the architecture, epics, tickets, and go-to strategy for building the "Buena Context-Loom", an intelligent property management app. The engine consolidates scattered property data into a decentralized, Git-backed **"Golden Folder"** of categorized Markdown files per property, complete with traceability, AI query capabilities, and a conflict resolution interface.
+This document outlines the architecture, epics, tickets, and go-to strategy for building the Buena Context-Loom as a DB-first property intelligence app. The engine consolidates scattered property data into a hierarchical local database with full traceability, editable facts and cases, and agent access through an MCP server.
 
 > [!IMPORTANT]
-> **User Review Required**: Please review the updated Epics, Data Model, and Frontend Vision reflecting the new split Markdown folder architecture. Once approved, we will begin execution with Epic 1.
+> **User Review Required**: Please review the updated DB-first architecture, hierarchical data model, and MCP scope. Once approved, we will execute from Epic 1.
 
 ## 1. Architecture Overview (The App Vision)
 
-The core product is an app that visualizes the history of facts for each property and makes them queryable by AI. 
+The core product is an app that ingests property documents, resolves them onto a property hierarchy, and makes the resulting facts and cases queryable by both humans and connected agents.
 
-1. **The Property Runner**: A central orchestrator that iterates over the testfiles for a single property. It creates a dedicated folder structure (`properties/LIE-001/`) containing category-specific Markdown files (`overview.md`, `repairs.md`, `payments.md`, `ownership.md`, `notes.md`).
-2. **The Ingestor Layer (FileType Focus)**: We mock live Webhooks by feeding the chronological `testfiles/incremental/day-*` folders into FileType ingestors (`JsonIngestor`, `PdfIngestor`, `EmlIngestor`).
-3. **ERP is "Gold" (Read-Only)**: Facts derived from core ERP exports (`stammdaten.json`) are immutable "gold" standards. AI-extracted facts can never silently overwrite them.
-4. **The Surgical Patcher & Folder Git History**: The engine maintains the Golden Folder. Every AI update to ANY Markdown file in this folder is instantly committed to a local Git repository. This Git history translates into the "Timeline of Facts" consumed by the frontend.
-5. **The UI & Conflict Resolution**: A React app rendering the categorized Markdowns and the History. If AI wants to overwrite a human edit or a "Gold" fact, a Conflict Resolution Interface pops up.
-6. **The Queryable Agent**: An AI agent connected to the UI that can query the facts and history (e.g., "show me everything door related").
+1. **The Property Runner**: A central orchestrator iterates over the testfiles for a single property and feeds chronological `day-*` inputs into the ingestion pipeline.
+2. **The Ingestor Layer (FileType Focus)**: We mock live webhooks by feeding local files into `JsonIngestor`, `CsvIngestor`, `PdfIngestor`, and `EmlIngestor`.
+3. **ERP is "Gold" (Read-Only)**: Facts derived from core ERP exports (`stammdaten.json`, `eigentuemer.csv`) are immutable gold standards. AI-extracted facts can never silently overwrite them.
+4. **Hierarchical Source of Truth**: Data lives in a local hierarchical database with `properties -> houses -> apartments`. Facts can belong to any level in that hierarchy, and cases can also be attached to any of those levels.
+5. **Cases with Ownership**: Cases represent operational issues or workflows. Every case has an owner and may reference supporting facts and source documents.
+6. **The Operator UI**: A React app renders the hierarchy, facts, and cases. Users can edit facts and cases directly in the UI, with a warning when changing protected or AI-generated data.
+7. **The MCP Server**: A local MCP server exposes structured and semantic access to the hierarchy, facts, and cases so external agents such as Codex can fetch relevant data for a task.
 
-## 2. The Data Perspective (BuildingFact Model)
+## 2. The Data Perspective (Hierarchical Facts + Cases)
 
-Every piece of extracted information becomes a `BuildingFact`. This perfectly supports the "ERP is Gold" rule.
+The database is the source of truth. Facts and cases are attached to exactly one scope in the hierarchy, while preserving source traceability.
 
 ```typescript
+export type EntityScope = "property" | "house" | "apartment";
+
+export interface HierarchyNodeRef {
+  entityType: EntityScope;
+  entityId: string;
+  propertyId: string;
+  houseId?: string;
+  apartmentId?: string;
+}
+
 export interface BuildingFact {
-  id: string;               // UUID
-  propertyId: string;       // e.g., "LIE-001"
-  category: "core_erp" | "financial" | "maintenance" | "governance"; 
-  key: string;              // e.g., "baujahr"
-  value: string | number | boolean; 
-  
-  // Traceability to the file/iteration
+  id: string;
+  scope: HierarchyNodeRef;
+  category: "core_erp" | "financial" | "maintenance" | "governance" | "communication";
+  key: string;
+  value: string | number | boolean | null;
+  caseId?: string;
   source: {
-    fileId: string;         // e.g., "stammdaten.json" or "LTR-0001.pdf"
-    fileType: "csv" | "json" | "pdf" | "eml"; 
-    ingestionDate: string;  
+    fileId: string;
+    fileType: "csv" | "json" | "pdf" | "eml";
+    ingestionDate: string;
   };
-  
-  // THE "GOLD" RULE: If true, this came from ERP. AI cannot overwrite this silently.
-  isGoldStandard: boolean;  
-  confidenceScore: number;  
+  isGoldStandard: boolean;
+  confidenceScore: number;
+  embeddingId?: string;
+}
+
+export interface Case {
+  id: string;
+  scope: HierarchyNodeRef;
+  title: string;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  ownerUserId: string;
+  summary: string;
+  sourceFileIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 
+### Data Model Principles
+
+1. **Hierarchy-first**: Every fact and case must resolve to a property, house, or apartment.
+2. **Traceability-first**: Every extracted fact keeps a source reference back to the original file.
+3. **Protected ERP facts**: Gold facts remain immutable unless a human explicitly overrides them.
+4. **Case-centric operations**: Cases are first-class records, not derived UI views.
+5. **Semantic retrieval ready**: Facts and cases should be vectorizable so the MCP server can support semantic lookup when keyword filters are insufficient.
+
 ## 3. Epics & Tickets (The Hackathon Sprint)
 
-### Epic 1: Identity & Schema Resolver (The Sensors)
-*Goal: Load CSVs/JSONs and map everything to the `BuildingFact` model with `isGoldStandard: true`.*
-- **Ticket 1.1**: Set up SQLite schema with Drizzle (`Fact` table).
-- **Ticket 1.2**: Implement `CsvIngestor` and `JsonIngestor`.
-- **Ticket 1.3**: Write tests asserting standard `Fact` generation.
+### Epic 1: Hierarchical Schema & Identity Resolver
+*Goal: Create the local database and reliably map incoming records onto `property`, `house`, and `apartment` entities.*
+- **Ticket 1.1**: Set up the SQLite schema with Drizzle for `Property`, `House`, `Apartment`, `Fact`, `Case`, `User`, and source-tracking tables.
+- **Ticket 1.2**: Implement hierarchy resolution for ERP inputs so incoming rows/files can be matched to the correct property node.
+- **Ticket 1.3 [TEST]**: Write tests asserting correct hierarchy creation and gold-fact generation from CSV/JSON inputs.
 
-### Epic 2: The Agentic Signal-Filter (The Brain)
-*Goal: Extract `BuildingFacts` from unstructured data (`isGoldStandard: false`) safely.*
-- **Ticket 2.1**: Implement the "Gatekeeper" prompt (is this document relevant?).
-- **Ticket 2.2**: Implement the "Fact Extractor" prompt using **Google Gemini** (configured via `GEMINI_API_KEY` in `.env`). **CRITICAL:** Use `temperature: 0` to completely eliminate AI hallucinations during fact generation.
+### Epic 2: Agentic Extraction Pipeline
+*Goal: Extract non-ERP facts and cases from unstructured files and attach them to the right hierarchy level without violating the gold-data rule.*
+- **Ticket 2.1**: Implement the Gatekeeper prompt to decide whether a document contains relevant operational information.
+- **Ticket 2.2**: Implement the Fact Extractor prompt using Google Gemini via `GEMINI_API_KEY`. **CRITICAL:** All fact-generation calls run at `temperature: 0`.
+- **Ticket 2.3**: Implement case extraction and linking so emails/PDFs can open or enrich cases on the property, house, or apartment level.
+- **Ticket 2.4 [TEST]**: Write tests covering scope resolution, case creation, and ERP protection against silent overwrite.
 
-### Epic 3: Surgical Markdown Patcher & Git Versioning (The USP)
-*Goal: Update the categorized Markdown files and commit to Git.*
-- **Ticket 3.1**: Map Fact Categories to specific files (e.g., `maintenance` -> `repairs.md`). Define the template schemas with hidden anchors.
-- **Ticket 3.2**: Implement `SectionPatcher` to inject facts using Regex/AST into the correct file.
-- **Ticket 3.3**: Implement `GitTrackerService` for automatic commits on the Golden Folder.
+### Epic 3: Facts & Cases Operator UI
+*Goal: Give users a clean interface to inspect and edit the hierarchy, facts, and cases.*
+- **Ticket 3.1**: Build the hierarchy navigation for `property -> house -> apartment`.
+- **Ticket 3.2**: Build editable detail views for facts and cases, including ownership and source references.
+- **Ticket 3.3**: Implement the human-over-AI warning flow before saving edits to protected or AI-generated records.
+- **Ticket 3.4 [TEST]**: Add frontend tests for editing flows, warning states, and scope-specific rendering.
 
-### Epic 4: Traceability UI & The Query Agent (The Frontend App)
-*Goal: A frontend visualizing the Golden Folder, History, and providing Agentic queries.*
-- **Ticket 4.1**: Build the Layout (Markdown tabs on left, Timeline/Sources on right).
-- **Ticket 4.2**: Implement Click-to-Source (Clicking a Ref badge highlights the exact file/row).
-- **Ticket 4.3**: **Human-Over-AI Interface**. Keep it simple: Humans can freely overwrite AI edits, but the UI throws a simple warning message before saving.
-- **Ticket 4.4**: **The Analysis Agent (Chat UI)**. An AI assistant that can query the folder and the Git history to answer: *"show me all water damages"* or *"What is the status of the doors?"*.
+### Epic 4: MCP Server & Semantic Retrieval
+*Goal: Expose the database to external agents through a local MCP server with both structured and semantic querying.*
+- **Ticket 4.1**: Implement an MCP server that can fetch properties, houses, apartments, facts, and cases by identifiers and filters.
+- **Ticket 4.2**: Define agent-friendly MCP tools for common workflows such as "get apartment facts", "get open cases", and "get related records for this issue".
+- **Ticket 4.3**: Add semantic query support for facts and cases, with vector storage/indexing if keyword search is not sufficient.
+- **Ticket 4.4 [TEST]**: Write integration tests for MCP tool responses and semantic retrieval quality on representative prompts.
 
-### Epic 5: The Property Runner & "Living" Iterations
-*Goal: Simulate the chronological flow and generate the Git-backed Folder structure.*
-- **Ticket 5.1**: Build the `PropertyRunner`. It orchestrates the 10-Day cycle, uses the Gatekeeper/Patcher, and creates/updates the multi-file schema (`overview.md`, `repairs.md`, etc.) per property.
-- **Ticket 5.2 [TEST]**: Execute the runner against the `day-01` to `day-10` folders to generate the complete Git history consumed by the frontend.
-- **Ticket 5.3**: Integrate Entire.io and Aikido AI.
+### Epic 5: Property Runner & End-to-End Simulation
+*Goal: Simulate the chronological flow and prove the full ingest-to-query loop.*
+- **Ticket 5.1**: Build the `PropertyRunner` that orchestrates the 10-day cycle and persists every ingestion result into the hierarchical database.
+- **Ticket 5.2 [TEST]**: Execute the runner against the `day-01` to `day-10` folders and verify resulting facts, cases, and ownership assignments.
+- **Ticket 5.3**: Demo the MCP connection from an external agent such as Codex and validate real semantic lookups over the stored data.
 
 ---
 
 ## 4. Presentation Strategy / Go-To Flow (The Pitch)
 
-1. **The Baseline (Day 0)**: Run the engine on base test data (`stammdaten`). Show the pristine Golden Folder and the "Gold Standard" facts across the category tabs.
-2. **The Iterations (Creating History)**: Live-run the "iterations" (`day-*`).
-3. **The Reveal**: Visual updates happen in real-time. The Git log populates the timeline. 
-4. **The Agent Query**: Ask the Chat UI "Show me all events related to the heating system."
-5. **The Failover/Conflict**: Simulate a destructive AI edit and show the Conflict Resolution Interface blocking it.
+1. **The Baseline (Day 0)**: Run the engine on base ERP data and show the seeded hierarchy: property, houses, apartments, and protected gold facts.
+2. **The Iterations**: Live-run the `day-*` inputs and show new facts and cases landing on the correct hierarchy nodes.
+3. **The Operator Workflow**: Open the UI, inspect a case, change its owner or update a fact, and show the warning flow for protected edits.
+4. **The Agent Workflow**: Connect an external agent through MCP and ask for relevant facts and cases, for example: "show me all open water-damage cases related to this house".
+5. **The Retrieval Reveal**: Demonstrate semantic lookup by asking for related issues without exact keyword matches, backed by vector search if needed.
 
 ## 5. Resolved Strategic Constraints (The "Winning" Rules)
 
-Based on our refinements, we have locked in these core principles:
-1. **Mocked Webhooks are Sufficient**: We do not need live APIs. The major win for the judges is proving the *history generation* and the *distilled querying* (e.g., "Show me all water damages" via the frontend agent).
-2. **Simple Human Override**: We will not overcomplicate conflict resolution. Humans can freely overwrite AI edits; the system just presents a simple warning message first.
-3. **Zero Hallucination Tolerance**: The 10-day iteration runs 100% automatically. To prevent hallucinations during record creation, all Fact-Extraction LLM calls will strictly run at `temperature: 0`.
-4. **Edge Cases**: We will handle schema alignment dynamically and adapt as we encounter issues in the `incremental` data.
+Based on the updated direction, we are locking in these principles:
+
+1. **DB-first architecture**: The database is the product source of truth. We are no longer planning around categorized Markdown files as the main persistence layer.
+2. **Mocked webhooks are sufficient**: Local file ingestors are enough to prove the workflow and simulate production event streams.
+3. **ERP is protected**: Facts originating from core ERP exports remain gold-standard and cannot be silently replaced by AI output.
+4. **Cases are first-class records**: Operational workflows live as explicit `Case` records with owners, statuses, and traceable supporting evidence.
+5. **Human edits stay simple**: Users can edit facts and cases in the UI, but the system warns before protected or AI-generated data is changed.
+6. **Zero hallucination tolerance**: All LLM calls that create facts or cases run at `temperature: 0`.
+7. **Semantic access is part of the product**: The MCP layer must support practical retrieval for agents, and we can add vectorization where semantic search materially improves relevance.
