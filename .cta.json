@@ -1,0 +1,29 @@
+{
+  "projectName": "buena",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "pnpm",
+  "includeExamples": true,
+  "tailwind": true,
+  "addOnOptions": {
+    "drizzle": {
+      "database": "sqlite"
+    }
+  },
+  "envVarValues": {},
+  "git": true,
+  "install": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "biome",
+    "nitro",
+    "drizzle",
+    "shadcn",
+    "t3env",
+    "better-auth",
+    "tanstack-query",
+    "form"
+  ]
+}
