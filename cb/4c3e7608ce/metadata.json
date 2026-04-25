@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "cb4c3e7608ce",
+  "strategy": "manual-commit",
+  "branch": "epic_2_runner",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    "src/engine/services/GeminiService.ts",
+    "src/scripts/diagnoseGemini.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/cb/4c3e7608ce/0/metadata.json",
+      "transcript": "/cb/4c3e7608ce/0/full.jsonl",
+      "content_hash": "/cb/4c3e7608ce/0/content_hash.txt",
+      "prompt": "/cb/4c3e7608ce/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

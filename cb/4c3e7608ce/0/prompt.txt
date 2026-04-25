@@ -1,0 +1,5 @@
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:947-1024
+
+---
+
+I switched and update the env file, please do the rest
