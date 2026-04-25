@@ -1,0 +1,16 @@
+Ah shit: Merge conflict
+
+---
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:1012-1025
+
+---
+
+Can you help me, maybe aut soplving?
+
+---
+
+Okay, now we have a test failing after merge:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:984-1024 
+
+Might be the test is failing for goooooood
