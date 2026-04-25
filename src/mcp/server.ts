@@ -8,14 +8,12 @@ import type { ZodTypeAny } from "zod";
 import { z } from "zod";
 
 import type { db } from "#/db/index";
+import { listCases, listCasesSchema } from "#/services/cases";
+import { listFacts, listFactsSchema } from "#/services/facts";
 import {
-	listCases,
-	listCasesSchema,
-	listFacts,
-	listFactsSchema,
 	listPropertiesSchema,
 	listPropertyHierarchies,
-} from "#/db/queries";
+} from "#/services/properties";
 
 type AppDatabase = typeof db;
 

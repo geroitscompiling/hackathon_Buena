@@ -23,15 +23,19 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import type {
 	CreateApartmentArgs,
-	CreateHouseArgs,
-	CreatePropertyArgs,
 	DeleteApartmentArgs,
-	DeleteHouseArgs,
-	DeletePropertyArgs,
 	UpdateApartmentArgs,
+} from "#/services/apartments";
+import type {
+	CreateHouseArgs,
+	DeleteHouseArgs,
 	UpdateHouseArgs,
+} from "#/services/houses";
+import type {
+	CreatePropertyArgs,
+	DeletePropertyArgs,
 	UpdatePropertyArgs,
-} from "#/db/queries";
+} from "#/services/properties";
 
 export type PropertyHierarchyListItem = {
 	id: string;

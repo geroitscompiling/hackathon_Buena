@@ -6,20 +6,20 @@ import * as relations from "#/db/relations";
 import * as schema from "#/db/schema";
 import {
 	createApartment,
-	createHouse,
-	createProperty,
 	deleteApartment,
-	deleteHouse,
+	updateApartment,
+} from "#/services/apartments";
+import { listCases } from "#/services/cases";
+import { listFacts } from "#/services/facts";
+import { createHouse, deleteHouse, updateHouse } from "#/services/houses";
+import {
+	createProperty,
 	deleteProperty,
 	getPropertyHierarchy,
-	listCases,
-	listFacts,
 	listProperties,
 	listPropertyHierarchies,
-	updateApartment,
-	updateHouse,
 	updateProperty,
-} from "#/db/queries";
+} from "#/services/properties";
 
 describe("db queries", () => {
 	let sqlite: Database.Database;

@@ -6,24 +6,28 @@ import { PropertyHierarchyList } from "#/components/PropertyHierarchyList";
 import {
 	createApartment,
 	createApartmentSchema,
-	createHouse,
-	createHouseSchema,
-	createProperty,
-	createPropertySchema,
 	deleteApartment,
 	deleteApartmentSchema,
+	updateApartment,
+	updateApartmentSchema,
+} from "#/services/apartments";
+import {
+	createHouse,
+	createHouseSchema,
 	deleteHouse,
 	deleteHouseSchema,
+	updateHouse,
+	updateHouseSchema,
+} from "#/services/houses";
+import {
+	createProperty,
+	createPropertySchema,
 	deleteProperty,
 	deletePropertySchema,
 	listPropertyHierarchies,
-	updateApartment,
-	updateApartmentSchema,
-	updateHouse,
-	updateHouseSchema,
 	updateProperty,
 	updatePropertySchema,
-} from "#/db/queries";
+} from "#/services/properties";
 
 const getPropertyHierarchies = createServerFn({
 	method: "GET",
@@ -107,7 +111,7 @@ function App() {
 				</h1>
 				<p className="max-w-3xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
 					The home page now renders the live hierarchy stored in Drizzle, using
-					the same tool registry exposed through the MCP server and HTTP API.
+					the same shared services exposed through the MCP server and HTTP API.
 				</p>
 			</section>
 
