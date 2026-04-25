@@ -8,6 +8,13 @@
       "when": 1777123371805,
       "tag": "0000_typical_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777127690185,
+      "tag": "0001_last_serpent_society",
+      "breakpoints": true
     }
   ]
 }
