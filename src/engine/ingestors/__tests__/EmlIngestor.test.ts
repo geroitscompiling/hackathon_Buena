@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { EmlIngestor } from "../EmlIngestor";
-import { BuildingFactExtractor, RelevanceGatekeeper } from "../../types";
+import type { BuildingFactExtractor, RelevanceGatekeeper } from "../../types";
 
 describe("EmlIngestor", () => {
   it("returns empty array when document is irrelevant", async () => {

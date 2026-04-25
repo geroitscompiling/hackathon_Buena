@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { PdfIngestor } from "../PdfIngestor";
-import { BuildingFactExtractor, RelevanceGatekeeper } from "../../types";
+import type { BuildingFactExtractor, RelevanceGatekeeper } from "../../types";
 
 describe("PdfIngestor", () => {
   it("returns empty array when document is irrelevant", async () => {

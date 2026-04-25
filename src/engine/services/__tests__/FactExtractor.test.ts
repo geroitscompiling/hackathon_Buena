@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { FactExtractor } from "../FactExtractor";
-import { LlmJsonClient } from "../../types";
+import type { LlmJsonClient } from "../../types";
 
 describe("FactExtractor", () => {
   it("returns normalized extracted facts", async () => {

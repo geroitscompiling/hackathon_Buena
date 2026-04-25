@@ -1,4 +1,4 @@
-import { GatekeeperResult, LlmJsonClient, RelevanceGatekeeper } from "../types";
+import type { GatekeeperResult, LlmJsonClient, RelevanceGatekeeper } from "../types";
 
 export class Gatekeeper implements RelevanceGatekeeper {
   constructor(private readonly llmClient: LlmJsonClient) {}

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { Gatekeeper } from "../Gatekeeper";
-import { LlmJsonClient } from "../../types";
+import type { LlmJsonClient } from "../../types";
 
 describe("Gatekeeper", () => {
   it("returns true for relevant response", async () => {

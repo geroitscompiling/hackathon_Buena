@@ -3,11 +3,11 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { sources, facts } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
-import path from 'path';
+import path from 'node:path';
 import { JsonIngestor } from '../ingestors/JsonIngestor';
 import { CsvIngestor } from '../ingestors/CsvIngestor';
 import { EmlIngestor } from '../ingestors/EmlIngestor';
-import { BuildingFactExtractor, RelevanceGatekeeper } from '../types';
+import type { BuildingFactExtractor, RelevanceGatekeeper } from '../types';
 
 describe('Integration: ERP Ingestors Pipeline', () => {
   let sqlite: Database.Database;
