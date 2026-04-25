@@ -1,0 +1,69 @@
+📂 Handover Summary: Buena Context-Loom POC
+🎯 Project Vision
+We are building the Buena Context-Loom, a "Golden Record" engine for Property Management. It consolidates scattered data (ERP, Emails, PDFs) into a decentralized "Golden Folder" (properties/LIE-001/) containing categorized Markdown files (overview.md, repairs.md, etc.).
+
+USP 1: Traceability: Every fact in MD links back to a source file ([Ref: source]).
+USP 2: Git Failover: Every automated update is a Git commit. History is the timeline.
+USP 3: Surgical Updates: AI patches specific sections without destroying human notes.
+🛠️ Tech Stack
+Framework: Vite + React + TanStack Start.
+Database: better-sqlite3 + Drizzle ORM.
+Testing: vitest (Strict TDD culture).
+AI: Google Gemini (temperature: 0 for zero hallucinations).
+Styling: Tailwind CSS + shadcn/ui.
+📍 Current Status
+Epic 1 (Sensors & Identity): COMPLETE.
+Database schema (sources, facts) is live in src/db/schema.ts.
+JsonIngestor and CsvIngestor are implemented and tested.
+Integration tests prove the ERP -> DB pipeline works end-to-end.
+Environment: .env is expected to hold GEMINI_API_KEY.
+📂 Critical Files
+IMPLEMENTATION_PLAN.md: The master roadmap.
+agents.md: The system prompt/rules for all agents (TDD, SOLID, Gold Rules).
+src/engine/types.ts: The core domain models (BuildingFact, SourceRef).
+testfiles/properties/LIE-001/: The target "Golden Folder" schema.
+testfiles/incremental/day-01 to day-10: The simulation data for the 10-day cycle.
+⏭️ Immediate Next Steps (Epic 2)
+The next agent should pick up at Epic 2: The Agentic Signal-Filter. The goal is to wire up Gemini to handle the "noisy" data (EMLs/PDFs) from the incremental folders.
+
+Suggested first tickets for the next agent:
+
+Ticket 2.1: Implement GeminiService and the Gatekeeper (relevance filter).
+Ticket 2.2: Implement the FactExtractor (structured JSON extraction at temp: 0).
+Ticket 2.3: Implement PdfIngestor and EmlIngestor to wrap the AI services.
+
+---
+
+📂 Handover Summary: Buena Context-Loom POC
+🎯 Project Vision
+We are building the Buena Context-Loom, a "Golden Record" engine for Property Management. It consolidates scattered data (ERP, Emails, PDFs) into a decentralized "Golden Folder" (properties/LIE-001/) containing categorized Markdown files (overview.md, repairs.md, etc.).
+
+USP 1: Traceability: Every fact in MD links back to a source file ([Ref: source]).
+USP 2: Git Failover: Every automated update is a Git commit. History is the timeline.
+USP 3: Surgical Updates: AI patches specific sections without destroying human notes.
+🛠️ Tech Stack
+Framework: Vite + React + TanStack Start.
+Database: better-sqlite3 + Drizzle ORM.
+Testing: vitest (Strict TDD culture).
+AI: Google Gemini (temperature: 0 for zero hallucinations).
+Styling: Tailwind CSS + shadcn/ui.
+📍 Current Status
+Epic 1 (Sensors & Identity): COMPLETE.
+Database schema (sources, facts) is live in src/db/schema.ts.
+JsonIngestor and CsvIngestor are implemented and tested.
+Integration tests prove the ERP -> DB pipeline works end-to-end.
+Environment: .env is expected to hold GEMINI_API_KEY.
+📂 Critical Files
+IMPLEMENTATION_PLAN.md: The master roadmap.
+agents.md: The system prompt/rules for all agents (TDD, SOLID, Gold Rules).
+src/engine/types.ts: The core domain models (BuildingFact, SourceRef).
+testfiles/properties/LIE-001/: The target "Golden Folder" schema.
+testfiles/incremental/day-01 to day-10: The simulation data for the 10-day cycle.
+⏭️ Immediate Next Steps (Epic 2)
+The next agent should pick up at Epic 2: The Agentic Signal-Filter. The goal is to wire up Gemini to handle the "noisy" data (EMLs/PDFs) from the incremental folders.
+
+Suggested first tickets for the next agent:
+
+Ticket 2.1: Implement GeminiService and the Gatekeeper (relevance filter).
+Ticket 2.2: Implement the FactExtractor (structured JSON extraction at temp: 0).
+Ticket 2.3: Implement PdfIngestor and EmlIngestor to wrap the AI services.
