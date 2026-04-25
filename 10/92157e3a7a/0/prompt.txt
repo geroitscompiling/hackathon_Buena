@@ -1,0 +1,32 @@
+done
+
+---
+
+Question on the side, can I run "make run-initial" several times because it skips already know data? Probably not and a reset is probably needed? Should we add those reset in the Makefile if we need to do it anyway?
+
+---
+
+is it destrctive by default righr now?
+And I get this issue:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:718-741
+
+---
+
+so, whatÄS the best model for the designated task (Evaluate INformation in PDF and EML and decide if Noise or FactExtractor Material)
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:196-1025
+
+---
+
+So here we are:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:998-1025
+
+---
+
+Can you show me the 12 non gold facts, and the 2 noisy facts?
+
+---
+
+Nevermind, let's fix an IDE reported errir for now:
+BaselineDryRunPipeline
+
+The IDe mentiones there is an error starting from Line 54. MAybe a false Alert but please check.
