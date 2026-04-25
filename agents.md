@@ -1,6 +1,6 @@
 # Buena Context-Loom: Agent System Context
 
-**Welcome, AI Agent!** If you are reading this, you are assisting with the Buena Context-Loom Hackathon project. This document defines our goals, architectural rules, and strict coding standards. You MUST adhere to these rules at all times.
+**Welcome, AI Agent!** If you are reading this, you are assisting with the Buena Context-Loom Hackathon project. This document defines our goals, architectural rules, and strict coding standards. You MUST adhere to these rules at all times. **Before starting, you MUST also read the [README.md](file:///Users/gerograms/workspace/hackathon/README.md) for technical setup and environment details.**
 
 ## 🎯 The Mission
 We are building a highly polished, AI-native Property Management App. 
