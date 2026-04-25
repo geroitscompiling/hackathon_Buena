@@ -4,11 +4,13 @@ import { CsvIngestor } from "../ingestors/CsvIngestor";
 import { EmlIngestor } from "../ingestors/EmlIngestor";
 import { JsonIngestor } from "../ingestors/JsonIngestor";
 import { PdfIngestor } from "../ingestors/PdfIngestor";
+import { FactPersistencePolicy } from "../services/FactPersistencePolicy";
 import { FactExtractor } from "../services/FactExtractor";
 import { Gatekeeper } from "../services/Gatekeeper";
 import { GeminiService } from "../services/GeminiService";
+import { HierarchyResolver } from "../services/HierarchyResolver";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
-import { facts, properties, sources } from "../../db/schema";
+import { factApartments, factHouses, facts, properties, sources } from "../../db/schema";
 import { getServerEnv } from "#/env";
 
 interface BaselineDryRunDb {
@@ -26,10 +28,15 @@ export interface BaselineDryRunOptions {
   gatekeeper?: RelevanceGatekeeper;
   extractor?: BuildingFactExtractor;
   strictAiErrors?: boolean;
+  hierarchyResolver?: Pick<HierarchyResolver, "resolve">;
+  factPersistencePolicy?: Pick<FactPersistencePolicy, "evaluate">;
 }
 
 export interface BaselineDryRunSummary {
   sourcesPersisted: number;
+  factsInserted: number;
+  factsBlockedAsConflicts: number;
+  factsUpdatedIdempotent: number;
   factsPersisted: number;
   goldFactsPersisted: number;
   nonGoldFactsPersisted: number;
@@ -51,6 +58,8 @@ export async function runBaselineDryRun({
   gatekeeper,
   extractor,
   strictAiErrors = false,
+  hierarchyResolver,
+  factPersistencePolicy,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
   await db.insert(properties).values({
     id: propertyId,
@@ -66,6 +75,14 @@ export async function runBaselineDryRun({
     gatekeeper ?? new Gatekeeper(buildGatekeeperLlmClient(), { strictErrors: strictAiErrors });
   const resolvedExtractor =
     extractor ?? new FactExtractor(buildExtractorLlmClient(), { strictErrors: strictAiErrors });
+  const resolvedHierarchyResolver =
+    hierarchyResolver ??
+    new HierarchyResolver({
+      propertyId,
+      houses: [],
+    });
+  const resolvedFactPersistencePolicy =
+    factPersistencePolicy ?? new FactPersistencePolicy();
 
   const coreIngestions = [
     {
@@ -85,9 +102,26 @@ export async function runBaselineDryRun({
     relativePath,
   }));
 
-  const allFacts: BuildingFact[] = [];
+  const persistedFacts: BuildingFact[] = [];
+  const existingPolicyFacts: Array<{
+    id: string;
+    scope: {
+      scopeType: "property" | "house" | "apartment";
+      propertyId: string;
+      houseId?: string;
+      apartmentId?: string;
+    };
+    category: string;
+    key: string;
+    value: string;
+    sourceId: string;
+    isGoldStandard: boolean;
+  }> = [];
   const sourceIds = new Set<string>();
   let noisySourcesWithFacts = 0;
+  let factsInserted = 0;
+  let factsBlockedAsConflicts = 0;
+  let factsUpdatedIdempotent = 0;
 
   for (const ingestion of [...coreIngestions, ...noisyIngestions]) {
     const filePath = path.resolve(datasetRootPath, ingestion.relativePath);
@@ -111,10 +145,41 @@ export async function runBaselineDryRun({
     });
 
     for (const fact of factsForFile) {
-      allFacts.push(fact);
+      const resolvedScope = await resolvedHierarchyResolver.resolve({
+        propertyId: fact.propertyId,
+        extractedFact: {
+          key: fact.key,
+          value: fact.value,
+        },
+      });
+
+      const policyDecision = await resolvedFactPersistencePolicy.evaluate({
+        existingFacts: existingPolicyFacts,
+        incomingFact: {
+          scope: resolvedScope,
+          category: fact.category,
+          key: fact.key,
+          value: String(fact.value),
+          sourceId,
+          isGoldStandard: fact.isGoldStandard,
+        },
+      });
+
+      if (policyDecision.outcome === "blocked_as_conflict") {
+        factsBlockedAsConflicts += 1;
+        continue;
+      }
+
+      if (policyDecision.outcome === "updated_idempotent") {
+        factsUpdatedIdempotent += 1;
+        continue;
+      }
+
+      factsInserted += 1;
+      persistedFacts.push(fact);
       await db.insert(facts).values({
         id: fact.id,
-        propertyId: fact.propertyId,
+        propertyId: resolvedScope.propertyId,
         category: fact.category,
         key: fact.key,
         value: String(fact.value),
@@ -122,15 +187,48 @@ export async function runBaselineDryRun({
         isGoldStandard: fact.isGoldStandard,
         confidenceScore: fact.confidenceScore,
       });
+
+      if (resolvedScope.scopeType === "house" || resolvedScope.scopeType === "apartment") {
+        if (!resolvedScope.houseId) {
+          throw new Error("Resolved house/apartment scope is missing required houseId");
+        }
+        await db.insert(factHouses).values({
+          factId: fact.id,
+          houseId: resolvedScope.houseId,
+        });
+      }
+
+      if (resolvedScope.scopeType === "apartment") {
+        if (!resolvedScope.apartmentId) {
+          throw new Error("Resolved apartment scope is missing required apartmentId");
+        }
+        await db.insert(factApartments).values({
+          factId: fact.id,
+          apartmentId: resolvedScope.apartmentId,
+        });
+      }
+
+      existingPolicyFacts.push({
+        id: fact.id,
+        scope: resolvedScope,
+        category: fact.category,
+        key: fact.key,
+        value: String(fact.value),
+        sourceId,
+        isGoldStandard: fact.isGoldStandard,
+      });
     }
   }
 
-  const goldFactsPersisted = allFacts.filter((fact) => fact.isGoldStandard).length;
-  const nonGoldFactsPersisted = allFacts.length - goldFactsPersisted;
+  const goldFactsPersisted = persistedFacts.filter((fact) => fact.isGoldStandard).length;
+  const nonGoldFactsPersisted = persistedFacts.length - goldFactsPersisted;
 
   return {
     sourcesPersisted: sourceIds.size,
-    factsPersisted: allFacts.length,
+    factsInserted,
+    factsBlockedAsConflicts,
+    factsUpdatedIdempotent,
+    factsPersisted: factsInserted,
     goldFactsPersisted,
     nonGoldFactsPersisted,
     noisySourcesEvaluated: noisyIngestions.length,
