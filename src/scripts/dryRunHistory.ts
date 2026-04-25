@@ -51,6 +51,7 @@ async function main() {
   if (mode !== "mock" && mode !== "live") {
     throw new Error(`Unsupported HISTORY_MODE: ${mode}. Use "mock" or "live".`);
   }
+  const dayFilter = process.env.HISTORY_DAY?.trim() || process.env.DAY?.trim() || undefined;
 
   let subjectEmailCount = 0;
   const propertyId = "LIE-001";
@@ -140,6 +141,7 @@ async function main() {
 
   const replay = await runPropertyHistoryReplay({
     dayRootPath,
+    dayFilter,
     runDay: async ({ dayLabel, datasetRootPath, noisyInputFiles }) => {
       const preloadedExistingFacts = await preloadExistingGoldFacts(propertyId);
       return runBaselineDryRun({
@@ -166,6 +168,9 @@ async function main() {
 
   console.log("History dry-run complete");
   console.log(`Mode: ${mode}`);
+  if (dayFilter) {
+    console.log(`Day filter: ${dayFilter}`);
+  }
   console.log(JSON.stringify(replay, null, 2));
   console.log(`Conflict log stored at: ${conflictLogPath}`);
   console.log(`Days processed: ${replay.totalDaysProcessed}`);

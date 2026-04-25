@@ -78,12 +78,24 @@ export async function collectNoisyFilesForDay(
 
 export async function runPropertyHistoryReplay({
   dayRootPath,
+  dayFilter,
   runDay,
 }: {
   dayRootPath: string;
+  dayFilter?: string;
   runDay: (input: RunDayInput) => Promise<BaselineDryRunSummary>;
 }): Promise<PropertyHistoryReplaySummary> {
   const dayDirectories = await collectDayDirectories(dayRootPath);
+  const normalizedDayFilter = normalizeDayFilter(dayFilter);
+  const selectedDayDirectories = normalizedDayFilter
+    ? dayDirectories.filter((dayDirectory) => dayDirectory.dayLabel === normalizedDayFilter)
+    : dayDirectories;
+
+  if (normalizedDayFilter && selectedDayDirectories.length === 0) {
+    throw new Error(
+      `Requested history day "${dayFilter}" was not found under ${dayRootPath}.`,
+    );
+  }
   const replayDays: PropertyHistoryReplaySummary["days"] = [];
   const totals: PropertyHistoryReplaySummary["totals"] = {
     factsInserted: 0,
@@ -98,7 +110,7 @@ export async function runPropertyHistoryReplay({
     factCaseLinksCreated: 0,
   };
 
-  for (const dayDirectory of dayDirectories) {
+  for (const dayDirectory of selectedDayDirectories) {
     const noisyInputFiles = await collectNoisyFilesForDay(dayDirectory.absolutePath);
     const summary = await runDay({
       dayLabel: dayDirectory.dayLabel,
@@ -131,4 +143,22 @@ export async function runPropertyHistoryReplay({
 function parseDayIndex(dayLabel: string): number {
   const match = dayLabel.match(/day-(\d+)/i);
   return match?.[1] ? Number.parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+function normalizeDayFilter(dayFilter?: string): string | undefined {
+  if (!dayFilter) {
+    return undefined;
+  }
+
+  const trimmedDayFilter = dayFilter.trim();
+  if (!trimmedDayFilter) {
+    return undefined;
+  }
+
+  const match = trimmedDayFilter.match(/^(?:day-)?(\d+)$/i);
+  if (!match?.[1]) {
+    return trimmedDayFilter;
+  }
+
+  return `day-${match[1].padStart(2, "0")}`;
 }

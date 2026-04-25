@@ -21,7 +21,7 @@ Key targets:
 - `make db-reset` removes local SQLite files (`local.db`, `local.db-shm`, `local.db-wal`)
 - `make db-setup` runs schema push + seed on a clean DB
 - `make run-initial` executes this ticket's baseline dry-run flow end-to-end
-- `make run-history` currently calls the history placeholder and is reserved for the next epic
+- `make run-history` replays history in mock mode; add `DAY=day-03` to limit the run to a single day
 - `make diagnose` checks Gemini model reachability and quota-style throttle signals (`429`, `Retry-After`)
 
 ## Database Setup

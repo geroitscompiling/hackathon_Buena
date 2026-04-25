@@ -76,4 +76,43 @@ describe("PropertyHistoryRunner", () => {
     expect(replay.totalDaysProcessed).toBe(2);
     expect(replay.totals.factsInserted).toBe(2);
   });
+
+  it("replays only the requested day when a day filter is provided", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "history-single-day-"));
+    tempRoots.push(root);
+    const dayOne = path.join(root, "day-01");
+    const dayTwo = path.join(root, "day-02");
+    await fs.mkdir(path.join(dayOne, "emails"), { recursive: true });
+    await fs.mkdir(path.join(dayTwo, "emails"), { recursive: true });
+    await fs.writeFile(path.join(dayOne, "emails", "one.eml"), "Subject: Day one", "utf8");
+    await fs.writeFile(path.join(dayTwo, "emails", "two.eml"), "Subject: Day two", "utf8");
+
+    const calls: Array<{ dayLabel: string; datasetRootPath: string }> = [];
+    const replay = await runPropertyHistoryReplay({
+      dayRootPath: root,
+      dayFilter: "day-02",
+      runDay: async ({ dayLabel, datasetRootPath }: RunDayInput) => {
+        calls.push({ dayLabel, datasetRootPath });
+        return {
+          sourcesPersisted: 1,
+          factsInserted: 1,
+          factsBlockedAsConflicts: 0,
+          factsUpdatedIdempotent: 0,
+          factsPersisted: 1,
+          goldFactsPersisted: 0,
+          nonGoldFactsPersisted: 1,
+          noisySourcesEvaluated: 1,
+          noisySourcesWithFacts: 1,
+          casesOpened: 0,
+          casesUpdated: 0,
+          casesResolved: 0,
+          factCaseLinksCreated: 0,
+        };
+      },
+    });
+
+    expect(calls).toEqual([{ dayLabel: "day-02", datasetRootPath: dayTwo }]);
+    expect(replay.days.map((day) => day.dayLabel)).toEqual(["day-02"]);
+    expect(replay.totalDaysProcessed).toBe(1);
+  });
 });
