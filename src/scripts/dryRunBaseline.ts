@@ -1,5 +1,8 @@
+import dotenv from "dotenv";
 import { db } from "../db";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
+
+dotenv.config({ path: [".env.local", ".env"] });
 
 async function main() {
   const summary = await runBaselineDryRun({ db });
