@@ -12,8 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as DemoDrizzleRouteImport } from './routes/demo/drizzle'
 import { Route as DemoBetterAuthRouteImport } from './routes/demo/better-auth'
+import { Route as ApiPropertyHierarchyRouteImport } from './routes/api/property-hierarchy'
+import { Route as ApiPropertyHierarchiesRouteImport } from './routes/api/property-hierarchies'
+import { Route as ApiPropertiesRouteImport } from './routes/api/properties'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
+import { Route as ApiFactsRouteImport } from './routes/api/facts'
+import { Route as ApiCasesRouteImport } from './routes/api/cases'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -33,14 +38,39 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   path: '/demo/tanstack-query',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoDrizzleRoute = DemoDrizzleRouteImport.update({
-  id: '/demo/drizzle',
-  path: '/demo/drizzle',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DemoBetterAuthRoute = DemoBetterAuthRouteImport.update({
   id: '/demo/better-auth',
   path: '/demo/better-auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPropertyHierarchyRoute = ApiPropertyHierarchyRouteImport.update({
+  id: '/api/property-hierarchy',
+  path: '/api/property-hierarchy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPropertyHierarchiesRoute = ApiPropertyHierarchiesRouteImport.update({
+  id: '/api/property-hierarchies',
+  path: '/api/property-hierarchies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPropertiesRoute = ApiPropertiesRouteImport.update({
+  id: '/api/properties',
+  path: '/api/properties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFactsRoute = ApiFactsRouteImport.update({
+  id: '/api/facts',
+  path: '/api/facts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCasesRoute = ApiCasesRouteImport.update({
+  id: '/api/cases',
+  path: '/api/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
@@ -62,8 +92,13 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/api/cases': typeof ApiCasesRoute
+  '/api/facts': typeof ApiFactsRoute
+  '/api/mcp': typeof ApiMcpRoute
+  '/api/properties': typeof ApiPropertiesRoute
+  '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
+  '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -72,8 +107,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/api/cases': typeof ApiCasesRoute
+  '/api/facts': typeof ApiFactsRoute
+  '/api/mcp': typeof ApiMcpRoute
+  '/api/properties': typeof ApiPropertiesRoute
+  '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
+  '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -83,8 +123,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/api/cases': typeof ApiCasesRoute
+  '/api/facts': typeof ApiFactsRoute
+  '/api/mcp': typeof ApiMcpRoute
+  '/api/properties': typeof ApiPropertiesRoute
+  '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
+  '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -95,8 +140,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/api/cases'
+    | '/api/facts'
+    | '/api/mcp'
+    | '/api/properties'
+    | '/api/property-hierarchies'
+    | '/api/property-hierarchy'
     | '/demo/better-auth'
-    | '/demo/drizzle'
     | '/demo/tanstack-query'
     | '/api/auth/$'
     | '/demo/form/address'
@@ -105,8 +155,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/api/cases'
+    | '/api/facts'
+    | '/api/mcp'
+    | '/api/properties'
+    | '/api/property-hierarchies'
+    | '/api/property-hierarchy'
     | '/demo/better-auth'
-    | '/demo/drizzle'
     | '/demo/tanstack-query'
     | '/api/auth/$'
     | '/demo/form/address'
@@ -115,8 +170,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/api/cases'
+    | '/api/facts'
+    | '/api/mcp'
+    | '/api/properties'
+    | '/api/property-hierarchies'
+    | '/api/property-hierarchy'
     | '/demo/better-auth'
-    | '/demo/drizzle'
     | '/demo/tanstack-query'
     | '/api/auth/$'
     | '/demo/form/address'
@@ -126,8 +186,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  ApiCasesRoute: typeof ApiCasesRoute
+  ApiFactsRoute: typeof ApiFactsRoute
+  ApiMcpRoute: typeof ApiMcpRoute
+  ApiPropertiesRoute: typeof ApiPropertiesRoute
+  ApiPropertyHierarchiesRoute: typeof ApiPropertyHierarchiesRoute
+  ApiPropertyHierarchyRoute: typeof ApiPropertyHierarchyRoute
   DemoBetterAuthRoute: typeof DemoBetterAuthRoute
-  DemoDrizzleRoute: typeof DemoDrizzleRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
@@ -157,18 +222,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/drizzle': {
-      id: '/demo/drizzle'
-      path: '/demo/drizzle'
-      fullPath: '/demo/drizzle'
-      preLoaderRoute: typeof DemoDrizzleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/demo/better-auth': {
       id: '/demo/better-auth'
       path: '/demo/better-auth'
       fullPath: '/demo/better-auth'
       preLoaderRoute: typeof DemoBetterAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/property-hierarchy': {
+      id: '/api/property-hierarchy'
+      path: '/api/property-hierarchy'
+      fullPath: '/api/property-hierarchy'
+      preLoaderRoute: typeof ApiPropertyHierarchyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/property-hierarchies': {
+      id: '/api/property-hierarchies'
+      path: '/api/property-hierarchies'
+      fullPath: '/api/property-hierarchies'
+      preLoaderRoute: typeof ApiPropertyHierarchiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/properties': {
+      id: '/api/properties'
+      path: '/api/properties'
+      fullPath: '/api/properties'
+      preLoaderRoute: typeof ApiPropertiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/facts': {
+      id: '/api/facts'
+      path: '/api/facts'
+      fullPath: '/api/facts'
+      preLoaderRoute: typeof ApiFactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cases': {
+      id: '/api/cases'
+      path: '/api/cases'
+      fullPath: '/api/cases'
+      preLoaderRoute: typeof ApiCasesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/form/simple': {
@@ -198,8 +298,13 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  ApiCasesRoute: ApiCasesRoute,
+  ApiFactsRoute: ApiFactsRoute,
+  ApiMcpRoute: ApiMcpRoute,
+  ApiPropertiesRoute: ApiPropertiesRoute,
+  ApiPropertyHierarchiesRoute: ApiPropertyHierarchiesRoute,
+  ApiPropertyHierarchyRoute: ApiPropertyHierarchyRoute,
   DemoBetterAuthRoute: DemoBetterAuthRoute,
-  DemoDrizzleRoute: DemoDrizzleRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
