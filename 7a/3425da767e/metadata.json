@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "7a3425da767e",
+  "strategy": "manual-commit",
+  "branch": "epic_r1",
+  "checkpoints_count": 8,
+  "files_touched": [
+    "Makefile",
+    "src/engine/__tests__/propertyHistoryRunner.test.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/pipelines/PropertyHistoryRunner.ts",
+    "src/scripts/dryRunHistory.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7a/3425da767e/0/metadata.json",
+      "transcript": "/7a/3425da767e/0/full.jsonl",
+      "content_hash": "/7a/3425da767e/0/content_hash.txt",
+      "prompt": "/7a/3425da767e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
