@@ -1,0 +1,5 @@
+okay now go ahead and implement the data structure in drizzle. Do not make any changes to the properties of facts though, just add relations. Add a relations.ts to manage relations
+
+---
+
+continue
