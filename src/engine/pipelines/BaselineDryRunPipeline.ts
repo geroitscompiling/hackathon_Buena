@@ -10,14 +10,8 @@ import { GeminiService } from "../services/GeminiService";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 import { facts, properties, sources } from "../../db/schema";
 
-interface DbLike {
-  insert: (table: typeof properties | typeof sources | typeof facts) => {
-    values: (value: Record<string, unknown>) => Promise<unknown>;
-  };
-}
-
 export interface BaselineDryRunOptions {
-  db: DbLike;
+  db: any;
   datasetRootPath?: string;
   propertyId?: string;
   propertyName?: string;
