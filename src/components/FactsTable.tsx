@@ -16,14 +16,14 @@ type FactsTableProps = {
 export function FactsTable({ facts }: FactsTableProps) {
 	if (facts.length === 0) {
 		return (
-			<div className="rounded-[1.75rem] border border-dashed border-border/70 bg-white/60 px-6 py-6 text-sm text-muted-foreground">
+			<div className="rounded-lg border border-dashed bg-card px-6 py-6 text-sm text-muted-foreground">
 				No facts found.
 			</div>
 		);
 	}
 
 	return (
-		<div className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-white/80">
+		<div className="overflow-hidden rounded-lg border bg-card">
 			<div className="overflow-x-auto">
 				<Table>
 					<TableHeader>
@@ -41,25 +41,17 @@ export function FactsTable({ facts }: FactsTableProps) {
 							<TableRow key={fact.id}>
 								<TableCell className="min-w-36 align-top">
 									<div className="space-y-1">
-										<p className="font-semibold text-[var(--sea-ink)]">
-											{fact.key}
-										</p>
-										<p className="text-xs text-[var(--sea-ink-soft)]">
-											{fact.id}
-										</p>
+										<p className="font-semibold">{fact.key}</p>
+										<p className="text-xs text-muted-foreground">{fact.id}</p>
 									</div>
 								</TableCell>
-								<TableCell className="min-w-40 align-top text-[var(--sea-ink)]">
+								<TableCell className="min-w-40 align-top">
 									{fact.value}
 								</TableCell>
 								<TableCell className="min-w-44 align-top">
 									<div className="space-y-1">
-										<p className="font-medium text-[var(--sea-ink)]">
-											{fact.property.name}
-										</p>
-										<p className="text-xs text-[var(--sea-ink-soft)]">
-											{fact.property.id}
-										</p>
+										<p className="font-medium">{fact.property.name}</p>
+										<p className="text-xs text-muted-foreground">{fact.property.id}</p>
 									</div>
 								</TableCell>
 								<TableCell className="min-w-56 align-top">
@@ -80,18 +72,14 @@ export function FactsTable({ facts }: FactsTableProps) {
 										{fact.houseIds.length === 0 &&
 										fact.apartmentIds.length === 0 &&
 										fact.caseIds.length === 0 ? (
-											<span className="text-sm text-[var(--sea-ink-soft)]">
-												Property only
-											</span>
+											<span className="text-sm text-muted-foreground">Property only</span>
 										) : null}
 									</div>
 								</TableCell>
 								<TableCell className="min-w-36 align-top">
 									<div className="space-y-1">
-										<p className="font-medium text-[var(--sea-ink)]">
-											{fact.source.fileId}
-										</p>
-										<p className="text-xs uppercase tracking-wide text-[var(--sea-ink-soft)]">
+										<p className="font-medium">{fact.source.fileId}</p>
+										<p className="text-xs uppercase tracking-wide text-muted-foreground">
 											{fact.source.fileType}
 										</p>
 									</div>

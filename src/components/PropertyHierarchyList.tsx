@@ -79,7 +79,7 @@ export function PropertyHierarchyList({
 			</div>
 
 			{properties.length === 0 ? (
-				<div className="rounded-[2rem] border border-dashed border-border/70 bg-white/60 px-6 py-6 text-sm text-muted-foreground">
+				<div className="rounded-lg border border-dashed bg-card px-6 py-6 text-sm text-muted-foreground">
 					No properties found in the database yet.
 				</div>
 			) : (
@@ -88,7 +88,7 @@ export function PropertyHierarchyList({
 						<AccordionItem
 							key={property.id}
 							value={property.id}
-							className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-white/80"
+							className="overflow-hidden rounded-lg border bg-card"
 						>
 							<div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
 								<div className="min-w-0 flex-1">
@@ -98,23 +98,23 @@ export function PropertyHierarchyList({
 											scopeType: "property",
 										}}
 										to="/facts/$scopeType/$scopeId"
-										className="block rounded-lg px-2 py-1 no-underline transition hover:bg-[rgba(79,184,178,0.08)]"
+										className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
 									>
-										<span className="block truncate text-lg font-semibold text-[var(--sea-ink)]">
+										<span className="block truncate text-lg font-semibold">
 											{property.name}
 										</span>
-										<span className="mt-1 block text-sm text-[var(--sea-ink-soft)]">
+										<span className="mt-1 block text-sm text-muted-foreground">
 											{property.id}
 										</span>
 									</Link>
 								</div>
 								<div className="flex flex-wrap items-center justify-end gap-2">
-									<Badge variant="secondary" className="rounded-full px-3 py-1">
+									<Badge variant="secondary">
 										{property.houses.length} houses
 									</Badge>
 									<AccordionTrigger
 										aria-label={`Toggle ${property.name}`}
-										className="rounded-md border border-border/70 px-3 py-2 hover:no-underline"
+										className="rounded-md border px-3 py-2 hover:no-underline"
 									/>
 									<HouseDialog
 										mode="create"
@@ -156,18 +156,16 @@ export function PropertyHierarchyList({
 								</div>
 							</div>
 
-							<AccordionContent className="border-t border-border/60 bg-[rgba(255,255,255,0.55)] px-5 py-4 sm:px-6">
+							<AccordionContent className="border-t px-5 py-4 sm:px-6">
 								{property.houses.length === 0 ? (
-									<p className="text-sm text-[var(--sea-ink-soft)]">
-										No houses assigned.
-									</p>
+									<p className="text-sm text-muted-foreground">No houses assigned.</p>
 								) : (
 									<Accordion className="space-y-2" collapsible type="single">
 										{property.houses.map((house) => (
 											<AccordionItem
 												key={house.id}
 												value={house.id}
-												className="overflow-hidden rounded-2xl border border-border/70 bg-white/70"
+												className="overflow-hidden rounded-lg border bg-muted/30"
 											>
 												<div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
 													<div className="min-w-0 flex-1">
@@ -177,23 +175,23 @@ export function PropertyHierarchyList({
 																scopeType: "house",
 															}}
 															to="/facts/$scopeType/$scopeId"
-															className="block rounded-lg px-2 py-1 no-underline transition hover:bg-[rgba(79,184,178,0.08)]"
+															className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
 														>
-															<span className="block truncate text-sm font-semibold text-[var(--sea-ink)]">
+															<span className="block truncate text-sm font-semibold">
 																{house.name}
 															</span>
-															<span className="mt-1 block text-xs text-[var(--sea-ink-soft)]">
+															<span className="mt-1 block text-xs text-muted-foreground">
 																{house.id}
 															</span>
 														</Link>
 													</div>
 													<div className="flex flex-wrap items-center justify-end gap-2">
-														<Badge variant="outline" className="rounded-full">
+														<Badge variant="outline">
 															{house.apartments.length} apartments
 														</Badge>
 														<AccordionTrigger
 															aria-label={`Toggle ${house.name}`}
-															className="rounded-md border border-border/70 px-3 py-2 hover:no-underline"
+															className="rounded-md border px-3 py-2 hover:no-underline"
 														/>
 														<ApartmentDialog
 															houseId={house.id}
@@ -249,17 +247,15 @@ export function PropertyHierarchyList({
 													</div>
 												</div>
 
-												<AccordionContent className="border-t border-border/60 px-4 py-3">
+												<AccordionContent className="border-t px-4 py-3">
 													{house.apartments.length === 0 ? (
-														<p className="text-sm text-[var(--sea-ink-soft)]">
-															No apartments assigned.
-														</p>
+														<p className="text-sm text-muted-foreground">No apartments assigned.</p>
 													) : (
 														<ul className="space-y-2">
 															{house.apartments.map((apartment) => (
 																<li
 																	key={apartment.id}
-																	className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[rgba(50,143,151,0.16)] bg-[rgba(79,184,178,0.08)] px-3 py-3"
+																	className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background px-3 py-3"
 																>
 																	<div className="min-w-0 flex-1">
 																		<Link
@@ -268,12 +264,12 @@ export function PropertyHierarchyList({
 																				scopeType: "apartment",
 																			}}
 																			to="/facts/$scopeType/$scopeId"
-																			className="block rounded-lg px-2 py-1 no-underline transition hover:bg-[rgba(79,184,178,0.08)]"
+																			className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
 																		>
-																			<span className="block truncate text-sm font-medium text-[var(--sea-ink)]">
+																			<span className="block truncate text-sm font-medium">
 																				{apartment.name}
 																			</span>
-																			<span className="mt-1 block text-xs text-[var(--sea-ink-soft)]">
+																			<span className="mt-1 block text-xs text-muted-foreground">
 																				{apartment.id}
 																			</span>
 																		</Link>
