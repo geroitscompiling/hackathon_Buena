@@ -22,14 +22,15 @@ By demo day, we must show one property whose timeline evolves by replaying `day-
 1. SQLite/Drizzle schema for hierarchy, facts, cases, users, source tracking, and relation tables.
 2. Core ERP ingestion (`JsonIngestor`, `CsvIngestor`) producing gold facts.
 3. LLM stack (`Gatekeeper`, `FactExtractor`, `GeminiService`) with `temperature: 0`, model split, retry/backoff, and throttling delay.
-4. Baseline dry-run and passing test suite.
+4. R1 complete for POC: hierarchy resolver wiring, gold-protection policy path, conflict logging, and history runner scaffolding.
+5. R2 complete for POC: case domain/types, case extraction (mock/live), deterministic case identity/upsert, fact-case linking, and auto-close evaluation.
+6. Baseline + history dry-runs are operational and test suite is green.
 
 ### Missing / incomplete
 
-1. Case extraction + upsert/linking from unstructured docs into `cases` / `fact_cases` (facts-only history today).
-2. Deterministic ERP overwrite protection policy in write path (POC slice exists; extend as needed).
-3. Hash-based caching for Gatekeeper/Extractor outputs.
-4. Full timeline event model (`ingestion_events`) for UI/MCP (optional beyond POC counters).
+1. Hash-based caching for Gatekeeper/Extractor/CaseExtractor outputs.
+2. Full timeline event model (`ingestion_events`) for UI/MCP (optional beyond POC counters).
+3. Demo polish/readout work (operator UX is intentionally de-scoped for this POC).
 
 ## 3. Data and Domain Contracts (Locked)
 
@@ -85,108 +86,23 @@ For hackathon demo reliability, we are intentionally doing lightweight hardening
     1. `make run-history` reports conflict count and where conflicts are stored.
     2. Demo can show at least one blocked conflict record end-to-end.
 
-### Epic R2: Case Extraction and Lifecycle
-*Goal: Create and evolve cases from unstructured files with ownership and traceability.*
+### Epic R2: Case Extraction and Lifecycle ✅ COMPLETED (POC Scope)
+*Outcome: Cases are now first-class in ingestion and history replay.*
 
-High-level milestones (details are ticketed below as **R2.0–R2.8**):
+Implemented and verified:
 
-- **Milestone A [TEST]**: Case extraction contract + fixtures (mock/live parity).
-- **Milestone B**: Live `CaseExtractor` (Gemini JSON, `temperature: 0`) + parser hardening.
-- **Milestone C [TEST]**: Deterministic case identity + upsert across multi-day evidence.
-- **Milestone D**: DB persistence + `fact_cases` linking + history wiring + summary counters.
-- **Milestone E [TEST]**: Full-dataset integrity guardrails (no duplicate case spam).
+1. Case domain contracts (`CaseIntent`, `CaseUpsertCommand`, validators).
+2. `CaseExtractor` interface with mock and live Gemini implementations.
+3. Deterministic case identity and idempotent upsert (`caseKey` + unique index).
+4. Case lifecycle merge/update + auto-close with closure predicates.
+5. Fact-to-case linking (`fact_cases`) with tightened heuristic.
+6. Pipeline wiring in baseline/history runs with summary counters (`casesOpened`, `casesUpdated`, `casesResolved`, `factCaseLinksCreated`).
+7. Test coverage for case domain, identity, merge behavior, extractor, lifecycle integration, and history replay integrity.
 
-#### R2 Refined Ticket Cards (POC + Full Dataset)
+Notes for future agents:
 
-**What a Case is (POC definition)**  
-A **case** is an operational workflow record stored in `cases` (title, summary, status, owner, scope to property/house/apartment, timestamps). **Facts** are evidence atoms in `facts`. Cases may reference many sources; facts link back to a single `sources` row. The demo may highlight **one** case narrative, but the engine must support **many** cases across the full `day-01`…`day-10` dataset without collisions or duplicate spam.
-
----
-
-**R2.0 — Case domain types and validation**
-- **Objective**: Lock JSON shapes and invariants before any LLM or DB wiring.
-- **Tasks**:
-  1. Add `CaseIntent` / `CaseUpsertCommand` types (id hints optional; `caseKey` required for matching).
-  2. Zod (or equivalent) validators: required fields, allowed `status` enum, scope consistency.
-- **Acceptance**: Unit tests fail on malformed extractor output; valid payloads parse.
-
----
-
-**R2.1 [TEST] — Case extraction contract (mock + live parity)**
-- **Objective**: Same interface for `HISTORY_MODE=mock` and live Gemini.
-- **Tasks**:
-  1. Define `CaseExtractor` interface: `(documentText, metadata) -> CaseIntent[]`.
-  2. Tests with **fixture strings** covering: open incident, invoice dispute, generic noise (empty intents).
-- **Acceptance**: Mock implementation passes tests; live implementation behind same interface (tests mock the HTTP layer).
-
----
-
-**R2.2 — `CaseExtractor` (live): prompt + parser at `temperature: 0`**
-- **Objective**: Extract 0..N case intents from an email/PDF text chunk.
-- **Tasks**:
-  1. Prompt returns strict JSON: `{ "cases": [ { "caseKey", "title", "summary", "status", "scopeHint", "confidence" } ] }`.
-  2. Reuse `GeminiService` (`responseMimeType: application/json`, `temperature: 0`).
-- **Acceptance**: Golden tests with stubbed `fetch` / client (no real API in CI).
-
----
-
-**R2.3 [TEST] — `CaseLifecycleService`: deterministic identity across days**
-- **Objective**: Same physical issue across multiple files/days maps to **one** `cases.id`.
-- **Tasks**:
-  1. `caseKey = normalize(scopeBucket + primarySignal + titleFingerprint)` (document exact formula in tests).
-  2. Tests: day-2 email + day-5 email with same key → **update** same row (summary/status evolution), not insert duplicate.
-  3. Tests: different keys → distinct rows.
-  4. **Auto-close rule (POC)**: When a case is `open`/`in_progress` and a newly ingested fact satisfies a **declared closure predicate** for that `caseKey` (example predicates: `resolution_confirmed`, `invoice_paid`, `repair_completed`), transition status to `resolved` (or `closed` if you prefer terminal state) and bump `updatedAt`.
-  5. Tests: ingest “closing fact” in a later day → same `cases.id` ends in terminal status without manual UI.
-- **Acceptance**: Full-dataset simulation test builds N unique keys from a directory listing fixture (or snapshot subset), asserts no duplicate `caseKey` rows.
-
----
-
-**R2.4 — Persist cases: upsert + timestamps + owner**
-- **Objective**: Write to `cases` table with idempotent upsert.
-- **Tasks**:
-  1. `upsertCaseByKey` using `caseKey` unique index (add migration if missing) or deterministic UUID v5 from `caseKey`.
-  2. Owner: default `user-1` (or first seed user) with override hook for demos.
-  3. `updatedAt` always bumps on merge; `createdAt` stable.
-- **Acceptance**: Integration test inserts then updates same case across two synthetic “days”.
-
----
-
-**R2.5 — Link facts to cases (`fact_cases`)**
-- **Objective**: When a fact is clearly evidence for a case, attach it.
-- **Tasks**:
-  1. Heuristic v1: same ingestion batch + overlapping `caseKey` signal in fact key/value → link.
-  2. Avoid duplicate `(factId, caseId)` pairs (respect PK).
-- **Acceptance**: Query `fact_cases` returns expected links in integration test.
-
----
-
-**R2.6 — Wire into history + baseline paths**
-- **Objective**: Cases appear during `dryRunHistory` (live) and optionally mock dry-run with **one** highlighted case.
-- **Tasks**:
-  1. After facts for a file are persisted, run `CaseExtractor` → `CaseLifecycleService` → DB.
-  2. **Mock dry-run**: config cap `MAX_CASES_PER_RUN=1` (or hardcode demo case key) so output stays readable; **live/history**: no cap (full dataset).
-  3. Extend per-day summary JSON: `casesOpened`, `casesUpdated`, `casesResolved` (counters).
-  4. Ensure **auto-close evaluation runs after facts are persisted** for the day/file batch so closure facts never get “skipped” because case processing happened too early.
-- **Acceptance**: `make run-history-mock` shows ≥1 case movement for demo; live run processes all `.eml`/`.pdf` without artificial case limit.
-
----
-
-**R2.7 [TEST] — End-to-end “full dataset” case integrity**
-- **Objective**: Prove scale behavior for POC, not just happy path.
-- **Tasks**:
-  1. Integration test: replay **two** synthetic day folders with 5+ files, assert case cardinality bounds (e.g. no duplicate `caseKey`, bounded orphan cases).
-  2. Optional: snapshot `cases` count upper bound vs files ingested (document ratio in test name).
-- **Acceptance**: Test documents assumptions; fails if duplicate case rows appear for same `caseKey`.
-
----
-
-**R2.8 — Case conflict / merge policy (minimal)**
-- **Objective**: If two intents collide on same `caseKey` with incompatible titles, merge deterministically (prefer higher confidence, append summary bullet).
-- **Tasks**:
-  1. Unit tests for merge rules.
-  2. If merge introduces a “closure signal” (per R2.3 predicates), apply the same auto-close transition rules deterministically.
-- **Acceptance**: No silent data loss; merged result always traceable in `summary` text.
+- Do not re-implement R2 tickets unless bugs are found.
+- Treat current R2 as baseline behavior and only extend incrementally.
 
 ### Epic R3: LLM Reliability and Cost Control Hardening
 *Goal: Avoid duplicate calls and improve demo reliability under quota pressure.*
@@ -196,7 +112,7 @@ A **case** is an operational workflow record stored in `cases` (title, summary, 
 - **R3.3 [TEST]**: Add tests for cache invalidation when file content changes.
 - **R3.4**: Extend diagnose script output to include cache hit/miss and recommended model pairing for demo runs.
 
-### Epic R4: Day-01 to Day-10 History Replay
+### Epic R4: Day-01 to Day-10 History ReplayOkay,
 *Goal: Build the timeline engine required for the demo story.*
 
 - **R4.1 [TEST]**: Add failing integration test for chronological replay from `HistoryPopulationData/day-01` to `day-10`.
@@ -205,22 +121,34 @@ A **case** is an operational workflow record stored in `cases` (title, summary, 
 - **R4.4**: Implement `ingestion_events`/history persistence model (day, file, action, entity type/id, before/after fingerprints).
 - **R4.5**: Produce per-day summary artifacts for demo (`created_facts`, `updated_facts`, `opened_cases`, `resolved_cases`, conflicts).
 
-### Epic R5: Demo Surface and Verification
-*Goal: Ensure the app can visibly prove hierarchy + cases + history to judges.*
+### Epic R5: Demo Surface and Verification (POC De-Scoped)
+*Goal: Keep demo readable without building full operator UI.*
 
-- **R5.1 [TEST]**: Add UI/API tests for timeline rendering and day-by-day case evolution.
-- **R5.2**: Implement timeline/history view wired to persisted ingestion events.
-- **R5.3**: Add one-click demo script (`make run-demo-history`) that resets DB, replays days, and prints headline metrics.
-- **R5.4**: Final hardening checklist run (tests, lint/check, dry-run baseline, dry-run history, diagnose).
+POC decision:
+
+1. Skip full Epic 3/Operator UI-equivalent work for now.
+2. Use script outputs + MCP/query readouts as demo interface.
+3. Keep optional lightweight read-only view as stretch goal only.
 
 ## 5. Ticket Execution Order (Do This Next)
 
-1. **Week Slice A (foundation fix)**: R1.1 -> R1.5
-2. **Week Slice B (cases)**: R2.0 -> R2.8
-3. **Week Slice C (history core)**: R4.1 -> R4.5
-4. **Week Slice D (reliability + demo polish)**: R3.1 -> R3.4, then R5.1 -> R5.4
+1. **Completed**: Epic R1 (including R1.6–R1.8 POC safety additions)
+2. **Completed**: Epic R2 (POC scope)
+3. **Active focus**: Epic R4 history hardening (`ingestion_events`, rerun idempotency, richer day summaries)
+4. **Next**: Epic R3 reliability cache if time remains
+5. **Deferred**: Epic R5 full UI/polish beyond script/MCP demo outputs
 
-If time is constrained, do not skip R1/R2/R4; they are the minimum for the promised demo narrative.
+If time is constrained, keep focus on R4 + minimal R3. R1 and R2 are already delivered for this POC.
+
+## 8. Handover Status (For Other Agents)
+
+Current branch status expectations:
+
+1. R1 and R2 code paths are already implemented and test-backed.
+2. Do not restart schema/domain work for cases; extend existing services (`CaseExtractor`, `CaseLifecycleService`, pipeline wiring).
+3. Use `make run-initial-*` and `make run-history-*` flows for verification.
+4. Preserve gold-data protection and `temperature: 0` constraints.
+5. Prioritize incremental fixes and R4 timeline improvements over new architecture changes.
 
 ## 6. Demo Go-To Flow (Updated Pitch)
 
