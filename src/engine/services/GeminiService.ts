@@ -1,4 +1,4 @@
-import { getServerEnv } from "#/env";
+import { getGeminiServiceRuntimeEnv } from "#/env";
 
 interface GeminiGeneratePart {
   text?: string;
@@ -31,7 +31,7 @@ export class GeminiService {
   private readonly debugEnabled: boolean;
 
   constructor(options: GeminiServiceOptions) {
-    const runtimeEnv = getServerEnv();
+    const runtimeEnv = getGeminiServiceRuntimeEnv();
     this.maxRetries = options.maxRetries ?? runtimeEnv.GEMINI_MAX_RETRIES;
     this.minRequestDelayMs =
       options.minRequestDelayMs ?? runtimeEnv.GEMINI_MIN_REQUEST_DELAY_MS;

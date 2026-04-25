@@ -6,6 +6,42 @@ describe("GeminiService", () => {
     vi.restoreAllMocks();
   });
 
+  it("constructs with explicit options when process.env omits gatekeeper/extractor models", () => {
+    const runtimeKeys = [
+      "GEMINI_API_KEY",
+      "GEMINI_MAX_RETRIES",
+      "GEMINI_MIN_REQUEST_DELAY_MS",
+      "GEMINI_DEBUG",
+    ] as const;
+    const modelKeys = ["GEMINI_MODEL_GATEKEEPER", "GEMINI_MODEL_EXTRACTOR"] as const;
+    const saved: Record<string, string | undefined> = {};
+    for (const k of [...runtimeKeys, ...modelKeys]) {
+      saved[k] = process.env[k];
+      delete process.env[k];
+    }
+    try {
+      expect(
+        () =>
+          new GeminiService({
+            apiKey: "unit-test-key",
+            model: "gemini-test-model",
+            maxRetries: 2,
+            minRequestDelayMs: 1000,
+            debugEnabled: false,
+          })
+      ).not.toThrow();
+    } finally {
+      for (const k of [...runtimeKeys, ...modelKeys]) {
+        const v = saved[k];
+        if (v === undefined) {
+          delete process.env[k];
+        } else {
+          process.env[k] = v;
+        }
+      }
+    }
+  });
+
   it("throws when api key is missing", () => {
     expect(() => new GeminiService({ apiKey: "", model: "gemini-test-model" })).toThrow(
       "GEMINI_API_KEY is required"
