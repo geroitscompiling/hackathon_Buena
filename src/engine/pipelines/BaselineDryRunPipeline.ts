@@ -11,17 +11,14 @@ import { GeminiService } from "../services/GeminiService";
 import { HierarchyResolver } from "../services/HierarchyResolver";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 import { factApartments, factHouses, facts, properties, sources } from "../../db/schema";
-import { getServerEnv } from "#/env";
+import type { db as appDb } from "../../db";
 
-interface BaselineDryRunDb {
-  insert: (...args: unknown[]) => {
-    values: (...args: unknown[]) => Promise<unknown> | unknown;
-  };
-}
+type BaselineDryRunDb = typeof appDb;
 
 export interface BaselineDryRunOptions {
   db: BaselineDryRunDb;
   datasetRootPath?: string;
+  includeCoreIngestions?: boolean;
   propertyId?: string;
   propertyName?: string;
   noisyInputFiles?: string[];
@@ -30,6 +27,31 @@ export interface BaselineDryRunOptions {
   strictAiErrors?: boolean;
   hierarchyResolver?: Pick<HierarchyResolver, "resolve">;
   factPersistencePolicy?: Pick<FactPersistencePolicy, "evaluate">;
+  preloadedExistingFacts?: Array<{
+    id: string;
+    scope: {
+      scopeType: "property" | "house" | "apartment";
+      propertyId: string;
+      houseId?: string;
+      apartmentId?: string;
+    };
+    category: string;
+    key: string;
+    value: string;
+    sourceId: string;
+    isGoldStandard: boolean;
+  }>;
+  onConflict?: (entry: {
+    timestamp: string;
+    sourceId: string;
+    scopeType: "property" | "house" | "apartment";
+    propertyId: string;
+    houseId?: string;
+    apartmentId?: string;
+    category: string;
+    key: string;
+    reason: "existing_gold_fact_same_semantic_identity";
+  }) => Promise<void> | void;
 }
 
 export interface BaselineDryRunSummary {
@@ -49,9 +71,91 @@ const defaultNoisyInputFiles = [
   "rechnungen/2025-12/20251203_DL-015_INV-00184.pdf",
 ];
 
+function isUniqueConstraintError(error: unknown): boolean {
+  return error instanceof Error && /unique|constraint|primary key/i.test(error.message);
+}
+
+function deriveDocumentMetadataFromFact(
+  fact: BuildingFact,
+): {
+  houseId?: string;
+  apartmentId?: string;
+  unitLabel?: string;
+} {
+  const raw = `${fact.key} ${String(fact.value)}`;
+  const apartmentMatch = raw.match(/\b([A-Z]{3}-\d{3}-H\d+-A\d+)\b/);
+  if (apartmentMatch?.[1]) {
+    const apartmentId = apartmentMatch[1];
+    const houseId = apartmentId.split("-A")[0];
+    return { houseId, apartmentId };
+  }
+
+  const houseMatch = raw.match(/\b([A-Z]{3}-\d{3}-H\d+)\b/);
+  if (houseMatch?.[1]) {
+    return { houseId: houseMatch[1] };
+  }
+
+  const unitLabelMatch = raw.match(/\b(Unit\s+\d+)\b/i);
+  if (unitLabelMatch?.[1]) {
+    return { unitLabel: unitLabelMatch[1] };
+  }
+
+  return {};
+}
+
+async function buildDefaultHierarchyResolver(
+  db: BaselineDryRunDb,
+  propertyId: string,
+): Promise<HierarchyResolver> {
+  const propertiesQuery = db.query?.properties;
+  if (!propertiesQuery?.findFirst) {
+    return new HierarchyResolver({ propertyId, houses: [] });
+  }
+
+  try {
+    const property = (await propertiesQuery.findFirst({
+      where: (propertiesTable, operators) =>
+        operators.eq(propertiesTable.id, propertyId),
+      with: {
+        houses: {
+          with: {
+            apartments: true,
+          },
+        },
+      },
+    })) as
+      | {
+          id: string;
+          houses: Array<{
+            id: string;
+            apartments: Array<{ id: string; name: string }>;
+          }>;
+        }
+      | undefined;
+
+    if (!property) {
+      return new HierarchyResolver({ propertyId, houses: [] });
+    }
+
+    return new HierarchyResolver({
+      propertyId: property.id,
+      houses: property.houses.map((house) => ({
+        id: house.id,
+        apartments: house.apartments.map((apartment) => ({
+          id: apartment.id,
+          name: apartment.name,
+        })),
+      })),
+    });
+  } catch {
+    return new HierarchyResolver({ propertyId, houses: [] });
+  }
+}
+
 export async function runBaselineDryRun({
   db,
   datasetRootPath = "testfiles",
+  includeCoreIngestions = true,
   propertyId = "LIE-001",
   propertyName = "WEG Immanuelkirchstraße 26",
   noisyInputFiles = defaultNoisyInputFiles,
@@ -60,27 +164,45 @@ export async function runBaselineDryRun({
   strictAiErrors = false,
   hierarchyResolver,
   factPersistencePolicy,
+  preloadedExistingFacts = [],
+  onConflict,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
-  await db.insert(properties).values({
-    id: propertyId,
-    name: propertyName,
-  });
-
-  const runtimeEnv = getServerEnv();
-  const buildGatekeeperLlmClient = () =>
-    new GeminiService({ model: runtimeEnv.GEMINI_MODEL_GATEKEEPER });
-  const buildExtractorLlmClient = () =>
-    new GeminiService({ model: runtimeEnv.GEMINI_MODEL_EXTRACTOR });
-  const resolvedGatekeeper =
-    gatekeeper ?? new Gatekeeper(buildGatekeeperLlmClient(), { strictErrors: strictAiErrors });
-  const resolvedExtractor =
-    extractor ?? new FactExtractor(buildExtractorLlmClient(), { strictErrors: strictAiErrors });
-  const resolvedHierarchyResolver =
-    hierarchyResolver ??
-    new HierarchyResolver({
-      propertyId,
-      houses: [],
+  try {
+    await db.insert(properties).values({
+      id: propertyId,
+      name: propertyName,
     });
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) {
+      throw error;
+    }
+  }
+
+  let resolvedGatekeeper: RelevanceGatekeeper | undefined = gatekeeper;
+  let resolvedExtractor: BuildingFactExtractor | undefined = extractor;
+
+  if (!gatekeeper || !extractor) {
+    const { getServerEnv } = await import("#/env");
+    const runtimeEnv = getServerEnv();
+    if (!gatekeeper) {
+      const llmClient = new GeminiService({ model: runtimeEnv.GEMINI_MODEL_GATEKEEPER });
+      resolvedGatekeeper = new Gatekeeper(llmClient, {
+        strictErrors: strictAiErrors,
+      });
+    }
+    if (!extractor) {
+      const llmClient = new GeminiService({ model: runtimeEnv.GEMINI_MODEL_EXTRACTOR });
+      resolvedExtractor = new FactExtractor(llmClient, {
+        strictErrors: strictAiErrors,
+      });
+    }
+  }
+
+  if (!resolvedGatekeeper || !resolvedExtractor) {
+    throw new Error("BaselineDryRunPipeline failed to initialize AI services");
+  }
+  const resolvedHierarchyResolver =
+    hierarchyResolver ?? (await buildDefaultHierarchyResolver(db, propertyId));
   const resolvedFactPersistencePolicy =
     factPersistencePolicy ?? new FactPersistencePolicy();
 
@@ -116,14 +238,19 @@ export async function runBaselineDryRun({
     value: string;
     sourceId: string;
     isGoldStandard: boolean;
-  }> = [];
+  }> = [...preloadedExistingFacts];
   const sourceIds = new Set<string>();
   let noisySourcesWithFacts = 0;
   let factsInserted = 0;
   let factsBlockedAsConflicts = 0;
   let factsUpdatedIdempotent = 0;
 
-  for (const ingestion of [...coreIngestions, ...noisyIngestions]) {
+  const ingestions = [
+    ...(includeCoreIngestions ? coreIngestions : []),
+    ...noisyIngestions,
+  ];
+
+  for (const ingestion of ingestions) {
     const filePath = path.resolve(datasetRootPath, ingestion.relativePath);
     await fs.access(filePath);
     const fileId = path.basename(filePath);
@@ -137,16 +264,23 @@ export async function runBaselineDryRun({
 
     const sourceId = `source-${ingestion.relativePath.replaceAll("/", "-")}`;
     sourceIds.add(sourceId);
-    await db.insert(sources).values({
-      id: sourceId,
-      fileId: factsForFile[0].source.fileId,
-      fileType: factsForFile[0].source.fileType,
-      ingestionDate: factsForFile[0].source.ingestionDate,
-    });
+    try {
+      await db.insert(sources).values({
+        id: sourceId,
+        fileId: factsForFile[0].source.fileId,
+        fileType: factsForFile[0].source.fileType,
+        ingestionDate: factsForFile[0].source.ingestionDate,
+      });
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) {
+        throw error;
+      }
+    }
 
     for (const fact of factsForFile) {
       const resolvedScope = await resolvedHierarchyResolver.resolve({
         propertyId: fact.propertyId,
+        documentMetadata: deriveDocumentMetadataFromFact(fact),
         extractedFact: {
           key: fact.key,
           value: fact.value,
@@ -167,6 +301,17 @@ export async function runBaselineDryRun({
 
       if (policyDecision.outcome === "blocked_as_conflict") {
         factsBlockedAsConflicts += 1;
+        await onConflict?.({
+          timestamp: new Date().toISOString(),
+          sourceId,
+          scopeType: resolvedScope.scopeType,
+          propertyId: resolvedScope.propertyId,
+          houseId: resolvedScope.houseId,
+          apartmentId: resolvedScope.apartmentId,
+          category: fact.category,
+          key: fact.key,
+          reason: policyDecision.reason,
+        });
         continue;
       }
 

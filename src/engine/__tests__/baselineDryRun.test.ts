@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
+import * as relations from "../../db/relations";
+import * as schema from "../../db/schema";
 import {
   factApartments,
   factHouses,
@@ -10,7 +12,6 @@ import {
   sources,
 } from "../../db/schema";
 import { runBaselineDryRun } from "../pipelines/BaselineDryRunPipeline";
-import type { HierarchyResolver } from "../services/HierarchyResolver";
 import type { BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 
 describe("Baseline dry-run pipeline", () => {
@@ -19,7 +20,12 @@ describe("Baseline dry-run pipeline", () => {
 
   beforeEach(async () => {
     sqlite = new Database(":memory:");
-    db = drizzle(sqlite);
+    db = drizzle(sqlite, {
+      schema: {
+        ...schema,
+        ...relations,
+      },
+    });
 
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS "properties" (
@@ -56,6 +62,22 @@ describe("Baseline dry-run pipeline", () => {
         "apartmentId" text NOT NULL,
         PRIMARY KEY ("factId", "apartmentId")
       );
+      CREATE TABLE IF NOT EXISTS "houses" (
+        "id" text PRIMARY KEY NOT NULL,
+        "propertyId" text NOT NULL,
+        "name" text NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS "apartments" (
+        "id" text PRIMARY KEY NOT NULL,
+        "houseId" text NOT NULL,
+        "name" text NOT NULL
+      );
+    `);
+
+    sqlite.exec(`
+      INSERT INTO properties ("id", "name") VALUES ('LIE-001', 'WEG Immanuelkirchstraße 26');
+      INSERT INTO houses ("id", "propertyId", "name") VALUES ('LIE-001-H1', 'LIE-001', 'Front House');
+      INSERT INTO apartments ("id", "houseId", "name") VALUES ('LIE-001-H1-A1', 'LIE-001-H1', 'Unit 1');
     `);
   });
 
@@ -140,7 +162,7 @@ describe("Baseline dry-run pipeline", () => {
             {
               category: "maintenance",
               key: "email_signal_detected",
-              value: true,
+              value: "LIE-001-H1-A1",
               confidenceScore: 0.91,
             },
             {
@@ -155,24 +177,6 @@ describe("Baseline dry-run pipeline", () => {
         return [];
       },
     };
-    const hierarchyResolver: Pick<HierarchyResolver, "resolve"> = {
-      resolve: async ({ extractedFact }) => {
-        if (extractedFact.key === "email_signal_detected") {
-          return {
-            scopeType: "apartment",
-            propertyId: "LIE-001",
-            houseId: "LIE-001-H1",
-            apartmentId: "LIE-001-H1-A1",
-          };
-        }
-
-        return {
-          scopeType: "property",
-          propertyId: "LIE-001",
-        };
-      },
-    };
-
     const summary = await runBaselineDryRun({
       db,
       propertyId: "LIE-001",
@@ -181,7 +185,6 @@ describe("Baseline dry-run pipeline", () => {
       noisyInputFiles: ["emails/2026-01/20260101_074000_EMAIL-06545.eml"],
       gatekeeper,
       extractor,
-      hierarchyResolver,
     });
 
     expect(summary.factsBlockedAsConflicts).toBe(1);
@@ -197,5 +200,99 @@ describe("Baseline dry-run pipeline", () => {
     const scopedApartmentLinks = await db.select().from(factApartments);
     expect(scopedFactLinks).toHaveLength(1);
     expect(scopedApartmentLinks).toHaveLength(1);
+  });
+
+  it("uses preloaded existing gold facts when evaluating replay writes", async () => {
+    const gatekeeper: RelevanceGatekeeper = {
+      isRelevant: async () => true,
+    };
+    const extractor: BuildingFactExtractor = {
+      extract: async () => [
+        {
+          category: "maintenance",
+          key: "email_signal_detected",
+          value: true,
+          confidenceScore: 0.91,
+        },
+      ],
+    };
+    let sawPreloadedFacts = false;
+    const summary = await runBaselineDryRun({
+      db,
+      propertyId: "LIE-001",
+      datasetRootPath: "testfiles",
+      noisyInputFiles: ["emails/2026-01/20260101_074000_EMAIL-06545.eml"],
+      gatekeeper,
+      extractor,
+      preloadedExistingFacts: [
+        {
+          id: "existing-gold-1",
+          scope: { scopeType: "property", propertyId: "LIE-001" },
+          category: "core_erp",
+          key: "baujahr",
+          value: "1990",
+          sourceId: "stammdaten.json",
+          isGoldStandard: true,
+        },
+      ],
+      factPersistencePolicy: {
+        evaluate: async ({ existingFacts }) => {
+          sawPreloadedFacts = existingFacts.some((fact) => fact.id === "existing-gold-1");
+          return { outcome: "inserted" };
+        },
+      },
+    });
+
+    expect(summary.factsInserted).toBeGreaterThan(0);
+    expect(sawPreloadedFacts).toBe(true);
+  });
+
+  it("emits conflict callback entries for blocked writes", async () => {
+    const gatekeeper: RelevanceGatekeeper = {
+      isRelevant: async () => true,
+    };
+    const extractor: BuildingFactExtractor = {
+      extract: async () => [
+        {
+          category: "core_erp",
+          key: "baujahr",
+          value: "1998",
+          confidenceScore: 0.8,
+        },
+      ],
+    };
+    const conflictEntries: Array<{
+      reason: string;
+      key: string;
+    }> = [];
+
+    const summary = await runBaselineDryRun({
+      db,
+      propertyId: "LIE-001",
+      datasetRootPath: "testfiles",
+      noisyInputFiles: ["emails/2026-01/20260101_074000_EMAIL-06545.eml"],
+      gatekeeper,
+      extractor,
+      preloadedExistingFacts: [
+        {
+          id: "gold-1",
+          scope: { scopeType: "property", propertyId: "LIE-001" },
+          category: "core_erp",
+          key: "baujahr",
+          value: "1990",
+          sourceId: "stammdaten.json",
+          isGoldStandard: true,
+        },
+      ],
+      onConflict: async (entry) => {
+        conflictEntries.push({ reason: entry.reason, key: entry.key });
+      },
+    });
+
+    expect(summary.factsBlockedAsConflicts).toBeGreaterThan(0);
+    expect(conflictEntries).toContainEqual({
+      reason: "existing_gold_fact_same_semantic_identity",
+      key: "baujahr",
+    });
   });
 });
