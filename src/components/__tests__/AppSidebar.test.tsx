@@ -47,5 +47,6 @@ describe("AppSidebar", () => {
 		expect(screen.getByText("Navigation")).toBeTruthy();
 		expect(screen.getByRole("link", { name: "Properties" })).toBeTruthy();
 		expect(screen.getByRole("link", { name: "Cases" })).toBeTruthy();
+		expect(screen.getByRole("link", { name: "Facts" })).toBeTruthy();
 	});
 });

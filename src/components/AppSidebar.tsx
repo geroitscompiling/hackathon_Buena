@@ -1,4 +1,4 @@
-import { Building2, BriefcaseBusiness } from "lucide-react";
+import { Building2, BriefcaseBusiness, FileText } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import {
@@ -40,6 +40,14 @@ export function AppSidebar() {
 									<Link to="/cases">
 										<BriefcaseBusiness />
 										<span>Cases</span>
+									</Link>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<SidebarMenuButton asChild tooltip="Facts">
+									<Link to="/facts">
+										<FileText />
+										<span>Facts</span>
 									</Link>
 								</SidebarMenuButton>
 							</SidebarMenuItem>
