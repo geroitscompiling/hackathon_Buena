@@ -43,7 +43,7 @@ describe("mcp http transport", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("handles initialize requests over streamable HTTP", async () => {

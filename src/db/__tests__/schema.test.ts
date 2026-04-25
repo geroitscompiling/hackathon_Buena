@@ -26,7 +26,7 @@ describe("Database Schema", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("should not expose the removed todos table", () => {

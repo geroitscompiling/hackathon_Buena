@@ -24,7 +24,7 @@ describe("Integration: ERP Ingestors Pipeline", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("JSON Pipeline: reads stammdaten.json and persists facts as Gold Standard", async () => {

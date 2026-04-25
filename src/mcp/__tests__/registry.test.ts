@@ -78,7 +78,7 @@ describe("mcp tools", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("lists the curated MCP tools including semantic search", () => {

@@ -1,46 +1,18 @@
-import { randomUUID } from "node:crypto";
-
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite/vector";
+import { drizzle } from "drizzle-orm/pglite";
 
 import * as relations from "#/db/relations";
 import * as schema from "#/db/schema";
 
-const DEFAULT_DATABASE_URL =
-	"postgres://postgres:postgres@localhost:5433/buena";
-
 export async function createPostgresTestDb() {
-	const candidate = process.env.DATABASE_URL?.trim();
-	let baseUrl = DEFAULT_DATABASE_URL;
-	if (candidate) {
-		try {
-			const parsed = new URL(candidate);
-			if (
-				parsed.protocol === "postgres:" ||
-				parsed.protocol === "postgresql:"
-			) {
-				baseUrl = candidate;
-			}
-		} catch {
-			baseUrl = DEFAULT_DATABASE_URL;
-		}
-	}
-	const adminUrl = new URL(baseUrl);
-	adminUrl.pathname = "/postgres";
-
-	const databaseName = `buena_test_${randomUUID().replaceAll("-", "")}`;
-	const adminClient = postgres(adminUrl.toString(), {
-		prepare: false,
-		max: 1,
+	const rawClient = new PGlite({
+		extensions: { vector },
 	});
-	await adminClient.unsafe(`CREATE DATABASE "${databaseName}"`);
-
-	const testUrl = new URL(baseUrl);
-	testUrl.pathname = `/${databaseName}`;
-
-	const queryClient = postgres(testUrl.toString(), {
-		prepare: false,
-		max: 1,
+	const queryClient = Object.assign(rawClient, {
+		end: async () => {
+			await rawClient.close();
+		},
 	});
 	await bootstrapAppSchema(queryClient);
 
@@ -52,24 +24,16 @@ export async function createPostgresTestDb() {
 	});
 
 	async function close() {
-		await queryClient.end();
-		await adminClient.unsafe(`
-			SELECT pg_terminate_backend(pid)
-			FROM pg_stat_activity
-			WHERE datname = '${databaseName}'
-			  AND pid <> pg_backend_pid()
-		`);
-		await adminClient.unsafe(`DROP DATABASE IF EXISTS "${databaseName}"`);
-		await adminClient.end();
+		await rawClient.close();
 	}
 
 	return { db, queryClient, close };
 }
 
 export async function bootstrapAppSchema(
-	client: postgres.Sql<Record<string, unknown>>,
+	client: { exec: (sql: string) => Promise<unknown> },
 ) {
-	await client.unsafe(`
+	await client.exec(`
 		CREATE EXTENSION IF NOT EXISTS vector;
 
 		CREATE TABLE IF NOT EXISTS "properties" (
@@ -134,10 +98,6 @@ export async function bootstrapAppSchema(
 
 		CREATE UNIQUE INDEX IF NOT EXISTS "cases_property_case_key"
 			ON "cases" ("propertyId", "caseKey");
-		CREATE INDEX IF NOT EXISTS "facts_embedding_hnsw"
-			ON "facts" USING hnsw ("embedding" vector_cosine_ops);
-		CREATE INDEX IF NOT EXISTS "cases_embedding_hnsw"
-			ON "cases" USING hnsw ("embedding" vector_cosine_ops);
 
 		CREATE TABLE IF NOT EXISTS "fact_houses" (
 			"factId" text NOT NULL REFERENCES "facts"("id"),

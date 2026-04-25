@@ -12,7 +12,7 @@ describe("seedDatabase", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("populates a complete hierarchy dataset and stays idempotent", async () => {

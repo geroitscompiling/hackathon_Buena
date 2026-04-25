@@ -28,6 +28,14 @@ export type SemanticSearchResult = {
 	payload: unknown;
 };
 
+function toVectorLiteral(values: number[]): string {
+	return `[${values.join(",")}]`;
+}
+
+function toVectorSql(values: number[]) {
+	return sql`${toVectorLiteral(values)}::vector`;
+}
+
 function compactParts(parts: Array<string | null | undefined | false>): string {
 	return parts.filter((part): part is string => Boolean(part?.trim())).join(" | ");
 }
@@ -119,7 +127,7 @@ export class SemanticIndexService {
 
 		await this.database
 			.update(schema.facts)
-			.set({ embedding })
+			.set({ embedding: toVectorSql(embedding) as never })
 			.where(eq(schema.facts.id, factId));
 	}
 
@@ -153,7 +161,7 @@ export class SemanticIndexService {
 
 		await this.database
 			.update(schema.cases)
-			.set({ embedding })
+			.set({ embedding: toVectorSql(embedding) as never })
 			.where(eq(schema.cases.id, caseId));
 	}
 
@@ -194,10 +202,11 @@ export async function semanticSearch(
 	const queryEmbedding = await embeddingClient.embedQuery(
 		formatSemanticSearchQuery(query),
 	);
+	const queryVector = toVectorSql(queryEmbedding);
 	const results: SemanticSearchResult[] = [];
 
 	if (entityType === "all" || entityType === "fact") {
-		const score = sql<number>`1 - (${cosineDistance(schema.facts.embedding, queryEmbedding)})`;
+		const score = sql<number>`1 - (${cosineDistance(schema.facts.embedding, queryVector)})`;
 		const factFilters = [
 			propertyId ? eq(schema.facts.propertyId, propertyId) : undefined,
 			isNotNull(schema.facts.embedding),
@@ -277,7 +286,7 @@ export async function semanticSearch(
 	}
 
 	if (entityType === "all" || entityType === "case") {
-		const score = sql<number>`1 - (${cosineDistance(schema.cases.embedding, queryEmbedding)})`;
+		const score = sql<number>`1 - (${cosineDistance(schema.cases.embedding, queryVector)})`;
 		const caseFilters = [
 			propertyId ? eq(schema.cases.propertyId, propertyId) : undefined,
 			houseId ? eq(schema.cases.houseId, houseId) : undefined,

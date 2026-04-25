@@ -12,7 +12,7 @@ import {
 } from "../semanticIndex";
 
 function vectorOf(first: number, second = 0): number[] {
-	return [first, second, ...Array.from({ length: 766 }, () => 0)];
+	return [first, second, ...Array.from({ length: 1534 }, () => 0)];
 }
 
 describe("semanticIndex", () => {
@@ -78,7 +78,7 @@ describe("semanticIndex", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("formats search inputs for asymmetric retrieval", () => {

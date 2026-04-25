@@ -91,7 +91,7 @@ describe("db queries", () => {
 	});
 
 	afterAll(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("lists and resolves hierarchical property queries", async () => {

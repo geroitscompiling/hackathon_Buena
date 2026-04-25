@@ -56,6 +56,7 @@
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "latest",
     "@biomejs/biome": "2.4.5",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",

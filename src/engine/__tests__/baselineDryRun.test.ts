@@ -45,7 +45,7 @@ describe("Baseline dry-run pipeline", () => {
 	});
 
 	afterEach(async () => {
-		await testDb.close();
+		await testDb?.close();
 	});
 
 	it("persists baseline ERP and filtered noisy facts with gold semantics", async () => {
