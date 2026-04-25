@@ -36,7 +36,7 @@ vi.mock("#/components/ui/sidebar", () => ({
 	SidebarHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 	SidebarMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 	SidebarMenuButton: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) =>
-		asChild ? <>{children}</> : <button type="button">{children}</button>,
+		asChild ? children : <button type="button">{children}</button>,
 	SidebarMenuItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
