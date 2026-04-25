@@ -1,0 +1,33 @@
+Okay, let's start with Epic R1 now
+
+---
+
+Wait, With that I meant: Create Tickets for R1.1 - R1.5
+
+---
+
+Okay, Please Review the implemented changes for R1
+
+---
+
+Again, this is a POC, do we need to do that? Idea was to have an initial run (see makefile) and then create the "history run" populating with data from testfiles? If you think we should harden it fair enough, give me the ticket then :D
+
+---
+
+Yes please
+
+---
+
+Changes have been added and 1^-6. 1.8 solved. Please review the changes and implementation
+
+---
+
+Yes please
+
+---
+
+For the code present, we get this error:
+```
+Cannot find module '../pipelines/PropertyHistoryRunner' or its corresponding type declarations.
+```
+Fix it, verify, and then give a concise explanation. @src/engine/__tests__/propertyHistoryRunner.test.ts:8-11
