@@ -1,0 +1,39 @@
+Okay, we did an oupsi. Wie did not use env.ts for variable validation but rather used the env call directly in files with failover (that we don't need when env.ts is set which I just did now) can you please refactor?
+
+As mentioned, I just updated env.ts (might want to doublecheck) thereis also an example env file for you to check
+
+---
+
+Wait now we have this twice in env.ts:
+@env.ts (3-29) 
+What is with DRY?
+
+---
+
+IDE indicates that there is an issue with: diagnoseGemini.ts
+
+---
+
+tests and linter green?
+
+---
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:942-1008
+
+---
+
+not there yet:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:943-1025
+
+---
+
+Ah wait, it failed for good. I had DEBUG=1. in the file.
+
+---
+
+Okay, looks good. The MCP Tests are failing but this is due to WIP
+
+---
+
+One more thing, since we realized the test was failing for good, should re optimize the env.ts when it comes to the devug flag? This seems a bit overengeineered:
+@env.ts (4-17)

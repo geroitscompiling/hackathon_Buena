@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "cea32b1a3b70",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 9,
+  "files_touched": [
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/services/GeminiService.ts",
+    "src/engine/services/__tests__/GeminiService.test.ts",
+    "src/env.ts",
+    "src/scripts/diagnoseGemini.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ce/a32b1a3b70/0/metadata.json",
+      "transcript": "/ce/a32b1a3b70/0/full.jsonl",
+      "content_hash": "/ce/a32b1a3b70/0/content_hash.txt",
+      "prompt": "/ce/a32b1a3b70/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
