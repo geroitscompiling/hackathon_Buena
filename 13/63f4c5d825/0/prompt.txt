@@ -1,0 +1,31 @@
+Okay, we have an issue:
+'@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:1005-1025 
+
+However looking in the dasboard it rather seems an "too maly parallel" requests issues since I can't see any max tokens reached?
+Please suggest how to optimize.
+
+---
+
+Okay, create a ticket for that, however let's switch to: Gemini 3.1 Flash Lite
+and Gemini 3 Flash (you can update the example env I update the real one).
+Out of your suggestions I want to:
+Confirm active quota dimension in Google AI Studio/Cloud quotas for the exact project+key.
+Use two models:
+Gatekeeper: gemini-3.1-flash-lite (cheap/fast filter)
+FactExtractor: gemini-3-flash (quality extraction)
+Add retry for 429/503 with exponential backoff + jitter, honoring Retry-After header.
+Add small request spacing (e.g. 300-700ms) between LLM calls in baseline runs.
+Cache relevance/extraction by file hash so reruns don’t call Gemini again for unchanged files.
+Ticket please :D
+
+---
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:988-1025
+
+---
+
+we just did switch and get the same message. Might it be Google is in general "exhausted" any chance we can kinda "pull" that information from the API
+
+---
+
+do that (make diagnose)

@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "1363f4c5d825",
+  "session_id": "808b6455-8f31-44ff-816a-8b2571a70be7",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-25T16:15:26.019258Z",
+  "branch": "epic_2_runner",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "335e7c7f66ee",
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 14
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-25T16:15:26.015318Z",
+    "agent_lines": 8,
+    "agent_removed": 0,
+    "human_added": 5,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 13,
+    "total_lines_changed": 14,
+    "agent_percentage": 57.14285714285714,
+    "metric_version": 2
+  }
+}
