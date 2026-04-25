@@ -8,6 +8,22 @@ To run this application:
 pnpm install
 ```
 
+### Makefile Shortcuts
+
+For POC-friendly recovery and repeatable flows:
+
+```bash
+make install
+make run-initial
+```
+
+Key targets:
+- `make db-reset` removes local SQLite files (`local.db`, `local.db-shm`, `local.db-wal`)
+- `make db-setup` runs schema push + seed on a clean DB
+- `make run-initial` executes this ticket's baseline dry-run flow end-to-end
+- `make run-history` currently calls the history placeholder and is reserved for the next epic
+- `make diagnose` checks Gemini model reachability and quota-style throttle signals (`429`, `Retry-After`)
+
 ## Database Setup
 
 Initialize the SQLite database and seed initial test data:
@@ -16,6 +32,28 @@ Initialize the SQLite database and seed initial test data:
 pnpm run db:push
 pnpm run db:seed
 ```
+
+## Initial Setup from Test Data
+
+Run the baseline ingestion dry-run against local test data:
+
+```bash
+make run-initial
+```
+
+Environment variables for AI extraction:
+- `GEMINI_API_KEY` (required)
+- `GEMINI_MODEL_GATEKEEPER` (optional, defaults to `GEMINI_MODEL` if set)
+- `GEMINI_MODEL_EXTRACTOR` (optional, defaults to `GEMINI_MODEL` if set)
+- `GEMINI_MAX_RETRIES` (optional, default `5`; retries on 429/503)
+- `GEMINI_MIN_REQUEST_DELAY_MS` (optional, default `1000`; minimum delay between Gemini calls per service instance)
+- `GEMINI_DEBUG` (optional, set `1` to print retry/attempt diagnostics)
+
+This baseline flow ingests:
+- core ERP files from `testfiles/stammdaten` as gold facts
+- selected noisy files from `testfiles/emails` and `testfiles/rechnungen` via Gatekeeper + FactExtractor
+
+`testfiles/HistoryPopulationData/day-01` to `day-10` are intentionally separate and used for the history replay/population epic, not baseline ingestion.
 
 ## Running the App
 
@@ -40,6 +78,11 @@ This project uses [Vitest](https://vitest.dev/) for testing.
 Run all tests:
 ```bash
 pnpm test
+```
+
+Run the baseline dry-run integration test only:
+```bash
+pnpm test src/engine/__tests__/baselineDryRun.test.ts
 ```
 
 Run specific test suites:

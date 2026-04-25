@@ -9,6 +9,10 @@ interface ExtractorResponse {
   facts?: unknown[];
 }
 
+interface FactExtractorOptions {
+  strictErrors?: boolean;
+}
+
 const allowedCategories: BuildingFactCategory[] = [
   "core_erp",
   "financial",
@@ -17,7 +21,10 @@ const allowedCategories: BuildingFactCategory[] = [
 ];
 
 export class FactExtractor implements BuildingFactExtractor {
-  constructor(private readonly llmClient: LlmJsonClient) {}
+  constructor(
+    private readonly llmClient: LlmJsonClient,
+    private readonly options: FactExtractorOptions = {}
+  ) {}
 
   async extract(documentText: string): Promise<ExtractedFact[]> {
     const prompt = `
@@ -47,7 +54,14 @@ Document:
       return response.facts
         .map((rawFact) => this.normalizeFact(rawFact))
         .filter((fact): fact is ExtractedFact => fact !== null);
-    } catch {
+    } catch (error) {
+      if (this.options.strictErrors) {
+        throw new Error(
+          `FactExtractor failed to extract facts: ${
+            error instanceof Error ? error.message : "unknown error"
+          }`
+        );
+      }
       return [];
     }
   }

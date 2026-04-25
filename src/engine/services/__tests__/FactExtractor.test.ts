@@ -71,4 +71,15 @@ describe("FactExtractor", () => {
 
     await expect(extractor.extract("Invalid")).resolves.toEqual([]);
   });
+
+  it("throws in strict mode when llm call fails", async () => {
+    const llm: LlmJsonClient = {
+      generateJson: vi.fn().mockRejectedValue(new Error("rate limited")),
+    };
+    const extractor = new FactExtractor(llm, { strictErrors: true });
+
+    await expect(extractor.extract("Any input")).rejects.toThrow(
+      "FactExtractor failed to extract facts"
+    );
+  });
 });

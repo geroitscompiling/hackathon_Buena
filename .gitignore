@@ -11,4 +11,7 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+local.db
+local.db-shm
+local.db-wal
 dev.db

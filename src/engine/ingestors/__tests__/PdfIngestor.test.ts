@@ -13,7 +13,7 @@ describe("PdfIngestor", () => {
     const ingestor = new PdfIngestor(gatekeeper, extractor);
 
     const facts = await ingestor.ingest(
-      new URL("../../../../testfiles/incremental/day-01/rechnungen_index.csv", import.meta.url).pathname,
+      new URL("../../../../testfiles/HistoryPopulationData/day-01/rechnungen_index.csv", import.meta.url).pathname,
       "20260101_DL-001_INV-00195.pdf"
     );
 
@@ -38,7 +38,7 @@ describe("PdfIngestor", () => {
     const ingestor = new PdfIngestor(gatekeeper, extractor);
 
     const facts = await ingestor.ingest(
-      new URL("../../../../testfiles/incremental/day-01/rechnungen_index.csv", import.meta.url).pathname,
+      new URL("../../../../testfiles/HistoryPopulationData/day-01/rechnungen_index.csv", import.meta.url).pathname,
       "20260101_DL-001_INV-00195.pdf"
     );
 

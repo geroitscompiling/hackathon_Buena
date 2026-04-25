@@ -29,4 +29,15 @@ describe("Gatekeeper", () => {
 
     await expect(gatekeeper.isRelevant("Broken output")).resolves.toBe(false);
   });
+
+  it("throws in strict mode when llm call fails", async () => {
+    const llm: LlmJsonClient = {
+      generateJson: vi.fn().mockRejectedValue(new Error("network timeout")),
+    };
+    const gatekeeper = new Gatekeeper(llm, { strictErrors: true });
+
+    await expect(gatekeeper.isRelevant("Any text")).rejects.toThrow(
+      "Gatekeeper failed to evaluate document relevance"
+    );
+  });
 });

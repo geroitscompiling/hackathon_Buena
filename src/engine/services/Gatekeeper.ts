@@ -1,7 +1,14 @@
 import type { GatekeeperResult, LlmJsonClient, RelevanceGatekeeper } from "../types";
 
+interface GatekeeperOptions {
+  strictErrors?: boolean;
+}
+
 export class Gatekeeper implements RelevanceGatekeeper {
-  constructor(private readonly llmClient: LlmJsonClient) {}
+  constructor(
+    private readonly llmClient: LlmJsonClient,
+    private readonly options: GatekeeperOptions = {}
+  ) {}
 
   async isRelevant(documentText: string): Promise<boolean> {
     const prompt = `
@@ -20,7 +27,14 @@ Document:
     try {
       const response = await this.llmClient.generateJson<GatekeeperResult>(prompt);
       return response.isRelevant === true;
-    } catch {
+    } catch (error) {
+      if (this.options.strictErrors) {
+        throw new Error(
+          `Gatekeeper failed to evaluate document relevance: ${
+            error instanceof Error ? error.message : "unknown error"
+          }`
+        );
+      }
       return false;
     }
   }

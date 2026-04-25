@@ -151,7 +151,7 @@ describe('Integration: ERP Ingestors Pipeline', () => {
     const ingestor = new EmlIngestor(mockGatekeeper, mockExtractor);
     const filePath = path.resolve(
       __dirname,
-      '../../../testfiles/incremental/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml'
+      '../../../testfiles/HistoryPopulationData/day-01/emails/2026-01/20260101_083800_EMAIL-06547.eml'
     );
     const fileId = '20260101_083800_EMAIL-06547.eml';
 

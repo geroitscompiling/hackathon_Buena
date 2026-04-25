@@ -45,4 +45,12 @@ The primary developer strictly enforces high-quality software engineering:
    - Keep files small and modular.
    - Document complex logic with JSDoc comments.
 
+## 🛠️ Local Ops Defaults
+
+- Prefer Makefile flows for local recovery and demos:
+  - `make install`
+  - `make run-initial` (baseline dry-run ticket flow)
+  - `make run-history` (history epic placeholder until implemented)
+- If local SQLite state is broken, run `make db-reset` before rerunning setup flows.
+
 *Note: Always cross-reference the `IMPLEMENTATION_PLAN.md` for specific Epic and Ticket details.*
