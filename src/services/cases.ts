@@ -14,11 +14,12 @@ export const listCasesSchema = z.object({
 });
 
 export type ListCasesArgs = z.infer<typeof listCasesSchema>;
+export type CaseListItem = Awaited<ReturnType<typeof db.query.cases.findMany>>[number];
 
 export async function listCases(
 	database: AppDatabase = db,
 	args: ListCasesArgs,
-) {
+): Promise<CaseListItem[]> {
 	const { apartmentId, houseId, limit, ownerUserId, propertyId, status } =
 		listCasesSchema.parse(args);
 	const filters = [

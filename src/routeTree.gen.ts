@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CasesRouteImport } from './routes/cases'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -19,10 +20,16 @@ import { Route as ApiPropertiesRouteImport } from './routes/api/properties'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiFactsRouteImport } from './routes/api/facts'
 import { Route as ApiCasesRouteImport } from './routes/api/cases'
+import { Route as FactsScopeTypeScopeIdRouteImport } from './routes/facts.$scopeType.$scopeId'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const CasesRoute = CasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -73,6 +80,11 @@ const ApiCasesRoute = ApiCasesRouteImport.update({
   path: '/api/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FactsScopeTypeScopeIdRoute = FactsScopeTypeScopeIdRouteImport.update({
+  id: '/facts/$scopeType/$scopeId',
+  path: '/facts/$scopeType/$scopeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
   id: '/demo/form/simple',
   path: '/demo/form/simple',
@@ -92,6 +104,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cases': typeof CasesRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -103,10 +116,12 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cases': typeof CasesRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -118,11 +133,13 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/cases': typeof CasesRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
@@ -134,12 +151,14 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/cases'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
@@ -151,10 +170,12 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/facts/$scopeType/$scopeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/cases'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
@@ -166,10 +187,12 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/facts/$scopeType/$scopeId'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/cases'
     | '/api/cases'
     | '/api/facts'
     | '/api/mcp'
@@ -181,11 +204,13 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/facts/$scopeType/$scopeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CasesRoute: typeof CasesRoute
   ApiCasesRoute: typeof ApiCasesRoute
   ApiFactsRoute: typeof ApiFactsRoute
   ApiMcpRoute: typeof ApiMcpRoute
@@ -197,10 +222,18 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  FactsScopeTypeScopeIdRoute: typeof FactsScopeTypeScopeIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/cases': {
+      id: '/cases'
+      path: '/cases'
+      fullPath: '/cases'
+      preLoaderRoute: typeof CasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -271,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/facts/$scopeType/$scopeId': {
+      id: '/facts/$scopeType/$scopeId'
+      path: '/facts/$scopeType/$scopeId'
+      fullPath: '/facts/$scopeType/$scopeId'
+      preLoaderRoute: typeof FactsScopeTypeScopeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/form/simple': {
       id: '/demo/form/simple'
       path: '/demo/form/simple'
@@ -298,6 +338,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CasesRoute: CasesRoute,
   ApiCasesRoute: ApiCasesRoute,
   ApiFactsRoute: ApiFactsRoute,
   ApiMcpRoute: ApiMcpRoute,
@@ -309,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
+  FactsScopeTypeScopeIdRoute: FactsScopeTypeScopeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

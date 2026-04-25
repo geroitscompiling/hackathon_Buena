@@ -1,14 +1,14 @@
 import type * as React from "react";
+import { Link } from "@tanstack/react-router";
 
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "#/components/ui/accordion";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "#/components/ui/card";
 import {
 	Dialog,
 	DialogClose,
@@ -34,23 +34,11 @@ import type {
 import type {
 	CreatePropertyArgs,
 	DeletePropertyArgs,
+	PropertyHierarchy,
 	UpdatePropertyArgs,
 } from "#/services/properties";
 
-export type PropertyHierarchyListItem = {
-	id: string;
-	name: string;
-	houses: Array<{
-		id: string;
-		name: string;
-		propertyId: string;
-		apartments: Array<{
-			id: string;
-			houseId: string;
-			name: string;
-		}>;
-	}>;
-};
+export type PropertyHierarchyListItem = PropertyHierarchy;
 
 type PropertyHierarchyListProps = {
 	properties: PropertyHierarchyListItem[];
@@ -91,212 +79,251 @@ export function PropertyHierarchyList({
 			</div>
 
 			{properties.length === 0 ? (
-				<Card className="rounded-[2rem] border-dashed">
-					<CardContent className="py-6 text-sm text-muted-foreground">
-						No properties found in the database yet.
-					</CardContent>
-				</Card>
-			) : (
-				<div className="grid gap-5 lg:grid-cols-2">
-					{properties.map((property) => (
-						<Card key={property.id} className="rounded-[2rem] border-border/70">
-							<CardHeader className="gap-3">
-								<CardDescription className="island-kicker">
-									Property
-								</CardDescription>
-								<div className="flex flex-wrap items-start justify-between gap-4">
-									<div>
-										<CardTitle className="text-2xl text-[var(--sea-ink)]">
-											{property.name}
-										</CardTitle>
-										<CardDescription className="mt-2 text-[var(--sea-ink-soft)]">
-											{property.id}
-										</CardDescription>
-									</div>
-									<div className="flex flex-wrap items-center justify-end gap-2">
-										<Badge
-											variant="secondary"
-											className="rounded-full px-3 py-1"
-										>
-											{property.houses.length} houses
-										</Badge>
-										<HouseDialog
-											mode="create"
-											onAfterMutation={onAfterMutation}
-											onSubmit={onCreateHouse}
-											propertyId={property.id}
-											propertyName={property.name}
-											trigger={
-												<Button size="sm" type="button" variant="outline">
-													Add House
-												</Button>
-											}
-										/>
-										<PropertyDialog
-											defaultName={property.name}
-											id={property.id}
-											mode="edit"
-											onAfterMutation={onAfterMutation}
-											onSubmit={onUpdateProperty}
-											trigger={
-												<Button size="sm" type="button" variant="outline">
-													Edit
-												</Button>
-											}
-										/>
-										<DeleteDialog
-											description="This removes the property, all nested houses and apartments, and related facts and cases."
-											id={property.id}
-											name={property.name}
-											onAfterMutation={onAfterMutation}
-											onDelete={onDeleteProperty}
-											title="Delete Property"
-											trigger={
-												<Button size="sm" type="button" variant="destructive">
-													Delete
-												</Button>
-											}
-										/>
-									</div>
-								</div>
-							</CardHeader>
-
-							<CardContent className="space-y-4">
-								{property.houses.map((house) => (
-									<Card
-										key={house.id}
-										className="gap-4 rounded-2xl border-border/70 bg-white/55 py-4 shadow-none"
-									>
-										<CardContent className="space-y-3 px-4">
-											<div className="flex flex-wrap items-center justify-between gap-4">
-												<div>
-													<p className="text-sm font-semibold text-[var(--sea-ink)]">
-														{house.name}
-													</p>
-													<p className="text-xs text-[var(--sea-ink-soft)]">
-														{house.id}
-													</p>
-												</div>
-												<div className="flex flex-wrap items-center justify-end gap-2">
-													<Badge variant="outline" className="rounded-full">
-														{house.apartments.length} apartments
-													</Badge>
-													<ApartmentDialog
-														houseId={house.id}
-														houseName={house.name}
-														mode="create"
-														onAfterMutation={onAfterMutation}
-														onSubmit={onCreateApartment}
-														trigger={
-															<Button size="sm" type="button" variant="outline">
-																Add Apartment
-															</Button>
-														}
-													/>
-													<HouseDialog
-														defaultName={house.name}
-														id={house.id}
-														mode="edit"
-														onAfterMutation={onAfterMutation}
-														onSubmit={onUpdateHouse}
-														propertyId={property.id}
-														propertyName={property.name}
-														trigger={
-															<Button size="sm" type="button" variant="outline">
-																Edit
-															</Button>
-														}
-													/>
-													<DeleteDialog
-														description="This removes the house, all nested apartments, and related cases and hierarchy links."
-														id={house.id}
-														name={house.name}
-														onAfterMutation={onAfterMutation}
-														onDelete={onDeleteHouse}
-														title="Delete House"
-														trigger={
-															<Button
-																size="sm"
-																type="button"
-																variant="destructive"
-															>
-																Delete
-															</Button>
-														}
-													/>
-												</div>
-											</div>
-
-											{house.apartments.length === 0 ? (
-												<p className="text-sm text-[var(--sea-ink-soft)]">
-													No apartments assigned.
-												</p>
-											) : (
-												<ul className="grid gap-2 sm:grid-cols-2">
-													{house.apartments.map((apartment) => (
-														<li key={apartment.id}>
-															<Card className="gap-3 rounded-xl border-[rgba(50,143,151,0.16)] bg-[rgba(79,184,178,0.1)] py-3 shadow-none">
-																<CardContent className="space-y-3 px-3">
-																	<div className="flex flex-wrap items-start justify-between gap-3">
-																		<div>
-																			<p className="text-sm font-medium text-[var(--sea-ink)]">
-																				{apartment.name}
-																			</p>
-																			<p className="mt-1 text-xs text-[var(--sea-ink-soft)]">
-																				{apartment.id}
-																			</p>
-																		</div>
-																		<div className="flex flex-wrap justify-end gap-2">
-																			<ApartmentDialog
-																				defaultName={apartment.name}
-																				houseId={house.id}
-																				houseName={house.name}
-																				id={apartment.id}
-																				mode="edit"
-																				onAfterMutation={onAfterMutation}
-																				onSubmit={onUpdateApartment}
-																				trigger={
-																					<Button
-																						size="sm"
-																						type="button"
-																						variant="outline"
-																					>
-																						Edit
-																					</Button>
-																				}
-																			/>
-																			<DeleteDialog
-																				description="This removes the apartment and related cases and apartment links."
-																				id={apartment.id}
-																				name={apartment.name}
-																				onAfterMutation={onAfterMutation}
-																				onDelete={onDeleteApartment}
-																				title="Delete Apartment"
-																				trigger={
-																					<Button
-																						size="sm"
-																						type="button"
-																						variant="destructive"
-																					>
-																						Delete
-																					</Button>
-																				}
-																			/>
-																		</div>
-																	</div>
-																</CardContent>
-															</Card>
-														</li>
-													))}
-												</ul>
-											)}
-										</CardContent>
-									</Card>
-								))}
-							</CardContent>
-						</Card>
-					))}
+				<div className="rounded-lg border border-dashed bg-card px-6 py-6 text-sm text-muted-foreground">
+					No properties found in the database yet.
 				</div>
+			) : (
+				<Accordion className="space-y-3" collapsible type="single">
+					{properties.map((property) => (
+						<AccordionItem
+							key={property.id}
+							value={property.id}
+							className="overflow-hidden rounded-lg border bg-card"
+						>
+							<div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+								<div className="min-w-0 flex-1">
+									<Link
+										params={{
+											scopeId: property.id,
+											scopeType: "property",
+										}}
+										to="/facts/$scopeType/$scopeId"
+										className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
+									>
+										<span className="block truncate text-lg font-semibold">
+											{property.name}
+										</span>
+										<span className="mt-1 block text-sm text-muted-foreground">
+											{property.id}
+										</span>
+									</Link>
+								</div>
+								<div className="flex flex-wrap items-center justify-end gap-2">
+									<Badge variant="secondary">
+										{property.houses.length} houses
+									</Badge>
+									<AccordionTrigger
+										aria-label={`Toggle ${property.name}`}
+										className="rounded-md border px-3 py-2 hover:no-underline"
+									/>
+									<HouseDialog
+										mode="create"
+										onAfterMutation={onAfterMutation}
+										onSubmit={onCreateHouse}
+										propertyId={property.id}
+										propertyName={property.name}
+										trigger={
+											<Button size="sm" type="button" variant="outline">
+												Add House
+											</Button>
+										}
+									/>
+									<PropertyDialog
+										defaultName={property.name}
+										id={property.id}
+										mode="edit"
+										onAfterMutation={onAfterMutation}
+										onSubmit={onUpdateProperty}
+										trigger={
+											<Button size="sm" type="button" variant="outline">
+												Edit
+											</Button>
+										}
+									/>
+									<DeleteDialog
+										description="This removes the property, all nested houses and apartments, and related facts and cases."
+										id={property.id}
+										name={property.name}
+										onAfterMutation={onAfterMutation}
+										onDelete={onDeleteProperty}
+										title="Delete Property"
+										trigger={
+											<Button size="sm" type="button" variant="destructive">
+												Delete
+											</Button>
+										}
+									/>
+								</div>
+							</div>
+
+							<AccordionContent className="border-t px-5 py-4 sm:px-6">
+								{property.houses.length === 0 ? (
+									<p className="text-sm text-muted-foreground">No houses assigned.</p>
+								) : (
+									<Accordion className="space-y-2" collapsible type="single">
+										{property.houses.map((house) => (
+											<AccordionItem
+												key={house.id}
+												value={house.id}
+												className="overflow-hidden rounded-lg border bg-muted/30"
+											>
+												<div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+													<div className="min-w-0 flex-1">
+														<Link
+															params={{
+																scopeId: house.id,
+																scopeType: "house",
+															}}
+															to="/facts/$scopeType/$scopeId"
+															className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
+														>
+															<span className="block truncate text-sm font-semibold">
+																{house.name}
+															</span>
+															<span className="mt-1 block text-xs text-muted-foreground">
+																{house.id}
+															</span>
+														</Link>
+													</div>
+													<div className="flex flex-wrap items-center justify-end gap-2">
+														<Badge variant="outline">
+															{house.apartments.length} apartments
+														</Badge>
+														<AccordionTrigger
+															aria-label={`Toggle ${house.name}`}
+															className="rounded-md border px-3 py-2 hover:no-underline"
+														/>
+														<ApartmentDialog
+															houseId={house.id}
+															houseName={house.name}
+															mode="create"
+															onAfterMutation={onAfterMutation}
+															onSubmit={onCreateApartment}
+															trigger={
+																<Button
+																	size="sm"
+																	type="button"
+																	variant="outline"
+																>
+																	Add Apartment
+																</Button>
+															}
+														/>
+														<HouseDialog
+															defaultName={house.name}
+															id={house.id}
+															mode="edit"
+															onAfterMutation={onAfterMutation}
+															onSubmit={onUpdateHouse}
+															propertyId={property.id}
+															propertyName={property.name}
+															trigger={
+																<Button
+																	size="sm"
+																	type="button"
+																	variant="outline"
+																>
+																	Edit
+																</Button>
+															}
+														/>
+														<DeleteDialog
+															description="This removes the house, all nested apartments, and related cases and hierarchy links."
+															id={house.id}
+															name={house.name}
+															onAfterMutation={onAfterMutation}
+															onDelete={onDeleteHouse}
+															title="Delete House"
+															trigger={
+																<Button
+																	size="sm"
+																	type="button"
+																	variant="destructive"
+																>
+																	Delete
+																</Button>
+															}
+														/>
+													</div>
+												</div>
+
+												<AccordionContent className="border-t px-4 py-3">
+													{house.apartments.length === 0 ? (
+														<p className="text-sm text-muted-foreground">No apartments assigned.</p>
+													) : (
+														<ul className="space-y-2">
+															{house.apartments.map((apartment) => (
+																<li
+																	key={apartment.id}
+																	className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background px-3 py-3"
+																>
+																	<div className="min-w-0 flex-1">
+																		<Link
+																			params={{
+																				scopeId: apartment.id,
+																				scopeType: "apartment",
+																			}}
+																			to="/facts/$scopeType/$scopeId"
+																			className="block rounded-md px-2 py-1 no-underline transition hover:bg-accent hover:text-accent-foreground"
+																		>
+																			<span className="block truncate text-sm font-medium">
+																				{apartment.name}
+																			</span>
+																			<span className="mt-1 block text-xs text-muted-foreground">
+																				{apartment.id}
+																			</span>
+																		</Link>
+																	</div>
+																	<div className="flex flex-wrap justify-end gap-2">
+																		<ApartmentDialog
+																			defaultName={apartment.name}
+																			houseId={house.id}
+																			houseName={house.name}
+																			id={apartment.id}
+																			mode="edit"
+																			onAfterMutation={onAfterMutation}
+																			onSubmit={onUpdateApartment}
+																			trigger={
+																				<Button
+																					size="sm"
+																					type="button"
+																					variant="outline"
+																				>
+																					Edit
+																				</Button>
+																			}
+																		/>
+																		<DeleteDialog
+																			description="This removes the apartment and related cases and apartment links."
+																			id={apartment.id}
+																			name={apartment.name}
+																			onAfterMutation={onAfterMutation}
+																			onDelete={onDeleteApartment}
+																			title="Delete Apartment"
+																			trigger={
+																				<Button
+																					size="sm"
+																					type="button"
+																					variant="destructive"
+																				>
+																					Delete
+																				</Button>
+																			}
+																		/>
+																	</div>
+																</li>
+															))}
+														</ul>
+													)}
+												</AccordionContent>
+											</AccordionItem>
+										))}
+									</Accordion>
+								)}
+							</AccordionContent>
+						</AccordionItem>
+					))}
+				</Accordion>
 			)}
 		</div>
 	);
@@ -522,26 +549,13 @@ function EntityDialog({
 								defaultValue={defaultId}
 								id={`${entityLabel.toLowerCase()}-id`}
 								name="id"
+								placeholder={`e.g. ${entityLabel === "Property" ? "LIE-003" : entityLabel === "House" ? "LIE-003-H1" : "LIE-003-H1-A1"}`}
+								required
 							/>
 						</div>
 					) : (
-						<div className="space-y-2">
-							<Label>ID</Label>
-							<div className="rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
-								{defaultId}
-							</div>
-							<input name="id" type="hidden" value={defaultId} />
-						</div>
+						<input name="id" type="hidden" value={defaultId} />
 					)}
-
-					{parentLabel ? (
-						<div className="space-y-2">
-							<Label>Parent</Label>
-							<div className="rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">
-								{parentLabel}
-							</div>
-						</div>
-					) : null}
 
 					<div className="space-y-2">
 						<Label htmlFor={`${entityLabel.toLowerCase()}-name`}>
@@ -551,8 +565,14 @@ function EntityDialog({
 							defaultValue={defaultName}
 							id={`${entityLabel.toLowerCase()}-name`}
 							name="name"
+							placeholder={`${entityLabel} name`}
+							required
 						/>
 					</div>
+
+					{parentLabel ? (
+						<p className="text-sm text-muted-foreground">Parent: {parentLabel}</p>
+					) : null}
 
 					<DialogFooter>
 						<DialogClose asChild>
@@ -561,9 +581,7 @@ function EntityDialog({
 							</Button>
 						</DialogClose>
 						<Button type="submit">
-							{mode === "create"
-								? `Create ${entityLabel}`
-								: `Save ${entityLabel}`}
+							{mode === "create" ? `Create ${entityLabel}` : `Save ${entityLabel}`}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -572,17 +590,17 @@ function EntityDialog({
 	);
 }
 
-type DeleteDialogProps = {
+type DeleteDialogProps<TArgs extends { id: string }> = {
 	title: string;
 	description: string;
 	id: string;
 	name: string;
-	onDelete?: ((args: { id: string }) => Promise<unknown>) | undefined;
+	onDelete?: (args: TArgs) => Promise<unknown>;
 	onAfterMutation?: () => Promise<void> | void;
 	trigger: React.ReactNode;
 };
 
-function DeleteDialog({
+function DeleteDialog<TArgs extends { id: string }>({
 	description,
 	id,
 	name,
@@ -590,7 +608,7 @@ function DeleteDialog({
 	onDelete,
 	title,
 	trigger,
-}: DeleteDialogProps) {
+}: DeleteDialogProps<TArgs>) {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -599,37 +617,40 @@ function DeleteDialog({
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4">
-					<div className="rounded-md border border-input bg-muted/40 px-3 py-3 text-sm">
-						<p className="font-medium">{name}</p>
-						<p className="text-muted-foreground">{id}</p>
-					</div>
-					<DialogFooter>
-						<DialogClose asChild>
-							<Button type="button" variant="outline">
-								Cancel
-							</Button>
-						</DialogClose>
-						<Button
-							type="button"
-							variant="destructive"
-							onClick={async (event) => {
-								await onDelete?.({ id });
-								await onAfterMutation?.();
-								findDialogCloseButton(event.currentTarget)?.click();
-							}}
-						>
-							Delete
-						</Button>
-					</DialogFooter>
+				<div className="rounded-xl border border-border/70 bg-muted/40 px-4 py-3 text-sm text-[var(--sea-ink)]">
+					{name} <span className="text-[var(--sea-ink-soft)]">({id})</span>
 				</div>
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button type="button" variant="outline">
+							Cancel
+						</Button>
+					</DialogClose>
+					<Button
+						type="button"
+						variant="destructive"
+						onClick={async (event) => {
+							if (!onDelete) {
+								return;
+							}
+
+							await onDelete({ id } as TArgs);
+							await onAfterMutation?.();
+							findDialogCloseButton(event.currentTarget.closest("[role=dialog]"))?.click();
+						}}
+					>
+						Delete
+					</Button>
+				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);
 }
 
-function findDialogCloseButton(element: Element) {
-	return element
-		.closest("[data-slot='dialog-content']")
-		?.querySelector<HTMLButtonElement>("[data-slot='dialog-close']");
+function findDialogCloseButton(element: Element | null) {
+	return (
+		element?.closest("[role=dialog]")?.querySelector<HTMLElement>(
+			"[data-slot='dialog-close']",
+		) ?? null
+	);
 }
