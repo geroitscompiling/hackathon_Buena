@@ -1,45 +1,49 @@
-import { getGeminiServiceRuntimeEnv } from "#/env";
+import { getPioneerServiceRuntimeEnv } from "#/env";
 
-interface GeminiGeneratePart {
-	text?: string;
-}
-
-interface GeminiGenerateResponse {
-	candidates?: Array<{
-		content?: {
-			parts?: GeminiGeneratePart[];
+interface PioneerChatResponse {
+	choices?: Array<{
+		message?: {
+			content?: string | null;
 		};
 	}>;
 }
 
+const DEFAULT_PIONEER_BASE_URL = "https://api.pioneer.ai/v1";
 const RETRYABLE_STATUS_CODES = new Set([429, 503]);
 
-interface GeminiServiceOptions {
+interface PioneerServiceOptions {
 	apiKey?: string;
+	baseUrl?: string;
 	model: string;
 	maxRetries?: number;
 	minRequestDelayMs?: number;
 	debugEnabled?: boolean;
 }
 
-export class GeminiService {
+export class PioneerService {
 	private lastRequestAt = 0;
 	private readonly apiKey: string;
+	private readonly baseUrl: string;
 	private readonly model: string;
 	private readonly maxRetries: number;
 	private readonly minRequestDelayMs: number;
 	private readonly debugEnabled: boolean;
 
-	constructor(options: GeminiServiceOptions) {
-		const runtimeEnv = getGeminiServiceRuntimeEnv();
+	constructor(options: PioneerServiceOptions) {
+		const runtimeEnv = getPioneerServiceRuntimeEnv();
+		this.apiKey = options.apiKey ?? runtimeEnv.PIONEER_API_KEY ?? "";
+		this.baseUrl = normalizeBaseUrl(
+			options.baseUrl ??
+				runtimeEnv.PIONEER_BASE_URL ??
+				DEFAULT_PIONEER_BASE_URL,
+		);
+		this.model = options.model;
 		this.maxRetries = options.maxRetries ?? runtimeEnv.GEMINI_MAX_RETRIES;
 		this.minRequestDelayMs =
 			options.minRequestDelayMs ?? runtimeEnv.GEMINI_MIN_REQUEST_DELAY_MS;
 		this.debugEnabled = options.debugEnabled ?? runtimeEnv.GEMINI_DEBUG === "1";
-		this.apiKey = options.apiKey ?? runtimeEnv.GEMINI_API_KEY ?? "";
-		this.model = options.model;
 		if (!this.apiKey) {
-			throw new Error("GEMINI_API_KEY is required");
+			throw new Error("PIONEER_API_KEY is required");
 		}
 	}
 
@@ -53,31 +57,28 @@ export class GeminiService {
 			await this.enforceMinimumDelay();
 			if (this.debugEnabled) {
 				console.log(
-					`[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} sending request`,
+					`[PioneerService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} sending request`,
 				);
 			}
-			response = await fetch(
-				`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						contents: [{ role: "user", parts: [{ text: prompt }] }],
-						generationConfig: {
-							temperature: 0,
-							responseMimeType: "application/json",
-						},
-					}),
+			response = await fetch(`${this.baseUrl}/chat/completions`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-API-Key": this.apiKey,
 				},
-			);
+				body: JSON.stringify({
+					model: this.model,
+					messages: [{ role: "user", content: prompt }],
+					temperature: 0,
+					response_format: { type: "json_object" },
+				}),
+			});
 			this.lastRequestAt = Date.now();
 
 			if (response.ok) {
 				if (this.debugEnabled) {
 					console.log(
-						`[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} success`,
+						`[PioneerService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} success`,
 					);
 				}
 				break;
@@ -85,7 +86,7 @@ export class GeminiService {
 
 			const errorDetails = await response.text();
 			const detailSuffix = errorDetails ? `: ${errorDetails}` : "";
-			const errorMessage = `Gemini request failed for model ${this.model} (attempt ${attemptNumber}/${totalAttempts}) with status ${response.status}${detailSuffix}`;
+			const errorMessage = `Pioneer request failed for model ${this.model} (attempt ${attemptNumber}/${totalAttempts}) with status ${response.status}${detailSuffix}`;
 			const shouldRetry =
 				RETRYABLE_STATUS_CODES.has(response.status) &&
 				attempt < this.maxRetries;
@@ -96,7 +97,7 @@ export class GeminiService {
 			const retryAfterMs = this.getRetryDelayMs(response, attempt);
 			if (this.debugEnabled) {
 				console.warn(
-					`[GeminiService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} status=${response.status} retrying_in_ms=${retryAfterMs}`,
+					`[PioneerService] model=${this.model} attempt=${attemptNumber}/${totalAttempts} status=${response.status} retrying_in_ms=${retryAfterMs}`,
 				);
 			}
 			await this.sleep(retryAfterMs);
@@ -104,17 +105,13 @@ export class GeminiService {
 		}
 
 		if (!response?.ok) {
-			throw new Error("Gemini request failed without a response");
+			throw new Error("Pioneer request failed without a response");
 		}
 
-		const payload = (await response.json()) as GeminiGenerateResponse;
-		const jsonText = payload.candidates?.[0]?.content?.parts
-			?.map((part) => part.text ?? "")
-			.join("")
-			.trim();
-
+		const payload = (await response.json()) as PioneerChatResponse;
+		const jsonText = payload.choices?.[0]?.message?.content?.trim();
 		if (!jsonText) {
-			throw new Error("Gemini returned an empty response");
+			throw new Error("Pioneer returned an empty response");
 		}
 
 		return JSON.parse(jsonText) as T;
@@ -152,4 +149,8 @@ export class GeminiService {
 			setTimeout(resolve, ms);
 		});
 	}
+}
+
+function normalizeBaseUrl(baseUrl: string): string {
+	return baseUrl.replace(/\/+$/, "");
 }

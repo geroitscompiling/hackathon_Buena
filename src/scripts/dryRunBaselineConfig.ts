@@ -2,9 +2,9 @@ import {
 	type CaseDocumentExtractor,
 	GeminiCaseExtractor,
 } from "../engine/services/CaseExtractor";
-import { GeminiService } from "../engine/services/GeminiService";
 import type {
 	BuildingFactExtractor,
+	LlmJsonClient,
 	RelevanceGatekeeper,
 } from "../engine/types";
 
@@ -56,8 +56,10 @@ function createMockCaseExtractor(): CaseDocumentExtractor {
 	};
 }
 
-export function createLiveCaseExtractor(model: string): CaseDocumentExtractor {
-	return new GeminiCaseExtractor(new GeminiService({ model }), {
+export function createLiveCaseExtractor(
+	llmClient: LlmJsonClient,
+): CaseDocumentExtractor {
+	return new GeminiCaseExtractor(llmClient, {
 		strictErrors: true,
 	});
 }

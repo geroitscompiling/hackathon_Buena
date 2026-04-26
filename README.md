@@ -82,10 +82,16 @@ CI runs on push/PR via `.github/workflows/tests.yml`.
 
 Common variables (see `.env.example`):
 
-- `GEMINI_API_KEY` — required for live runs
-- `GEMINI_MODEL_GATEKEEPER`, `GEMINI_MODEL_EXTRACTOR`, `GEMINI_MODEL_EMBEDDING` — optional overrides
-- `GEMINI_MAX_RETRIES`, `GEMINI_MIN_REQUEST_DELAY_MS` — rate limit / backoff
+- `AI_INFERENCE_PROVIDER` — `gemini` or `pioneer`; defaults to `gemini`
+- `GEMINI_API_KEY` — required for live Gemini generation and embeddings
+- `GEMINI_MODEL_GATEKEEPER`, `GEMINI_MODEL_EXTRACTOR`, `GEMINI_MODEL_EMBEDDING` — Gemini model overrides
+- `PIONEER_API_KEY` — required when `AI_INFERENCE_PROVIDER=pioneer`
+- `PIONEER_MODEL_GATEKEEPER`, `PIONEER_MODEL_EXTRACTOR` — optional Pioneer model overrides; default to `Qwen/Qwen3-32B`
+- `PIONEER_BASE_URL` — optional; defaults to `https://api.pioneer.ai/v1`
+- `GEMINI_MAX_RETRIES`, `GEMINI_MIN_REQUEST_DELAY_MS` — rate limit / backoff for AI calls
 - `GEMINI_DEBUG=1` — extra retry diagnostics
+
+Pioneer AI by Fastino Labs is used through its OpenAI-compatible chat completions endpoint with `X-API-Key` authentication. It can capture inference data for adaptive finetuning on the Pioneer platform, so production extraction traces can become training signal for improved checkpoints. The baseline gatekeeper, fact extractor, and case extractor all run at `temperature: 0`.
 
 ## Extending baseline file roots
 
@@ -97,4 +103,4 @@ Product goals, architecture guardrails, and coding standards (TDD for non-UI log
 
 ## Stack (short)
 
-TypeScript, TanStack Router/Start, Drizzle ORM, Tailwind + shadcn/ui, Vitest, Biome, Dockerized Postgres + pgvector, Google Gemini.
+TypeScript, TanStack Router/Start, Drizzle ORM, Tailwind + shadcn/ui, Vitest, Biome, Dockerized Postgres + pgvector, Google Gemini, Pioneer AI.
