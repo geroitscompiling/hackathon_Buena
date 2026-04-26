@@ -19,7 +19,9 @@ make run-initial
 
 Key targets:
 - `make db-reset` recreates the local Postgres volume for a clean database state
-- `make db-setup` runs schema push on a clean DB
+- `make db-setup` runs schema push + seed on a clean DB
+- `make db-backup` writes a Postgres custom-format snapshot under `.db-backups/` (after a heavy import, use this to avoid re-running full LLM baseline)
+- `make db-restore RESTORE_FILE=.db-backups/buena-....dump` restores a snapshot (typical: `db-reset`, `db-start`, then restore; see `make help`)
 - `make run-initial` executes baseline dry-run in live mode (stage step 1)
 - `make run-history-live` replays history in live mode with MCP-enabled flow (stage step 2)
 - `make run-stage-live` runs the stage sequence (`run-initial` then `run-history-live`)
@@ -38,6 +40,11 @@ pnpm run db:push
 
 ## Initial Setup from Test Data
 
+Two orchestration modes (do not confuse them):
+
+- **(A) Setup + full initial data state**: Baseline loads core ERP under `testfiles/stammdaten` and **all** unstructured files under `testfiles/emails` and `testfiles/rechnungen` (Gatekeeper + extractors). This is **not** the day replay corpus.
+- **(B) History replay**: `testfiles/HistoryPopulationData/day-01` … `day-10` are replayed separately (e.g. `make run-history` / `dry-run:history`) and must not be skipped when you intend to populate incremental history after baseline.
+
 Run the baseline ingestion dry-run against local test data:
 
 ```bash
@@ -53,8 +60,10 @@ Environment variables for AI extraction:
 - `GEMINI_DEBUG` (optional, set `1` to print retry/attempt diagnostics)
 
 This baseline flow ingests:
-- core ERP files from `testfiles/stammdaten` as gold facts
-- selected noisy files from `testfiles/emails` and `testfiles/rechnungen` via Gatekeeper + FactExtractor
+- core ERP files from `testfiles/stammdaten` as gold facts (with on-demand `houses` / `apartments` rows from ERP unit identifiers when needed)
+- every `.eml` under `testfiles/emails` and `.pdf` under `testfiles/rechnungen` via Gatekeeper + FactExtractor (excluding anything under `HistoryPopulationData`)
+
+To add another top-level fixture tree (e.g. `testfiles/scans`), extend `BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS` in [`src/engine/baseline/collectBaselineUnstructuredPaths.ts`](src/engine/baseline/collectBaselineUnstructuredPaths.ts).
 
 `testfiles/HistoryPopulationData/day-01` to `day-10` are intentionally separate and used for the history replay/population epic, not baseline ingestion.
 

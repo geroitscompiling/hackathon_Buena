@@ -44,7 +44,7 @@ export type FactListItem = {
 
 export async function listFacts(
 	database: AppDatabase = db,
-	args: ListFactsArgs,
+	args: unknown,
 ): Promise<FactListItem[]> {
 	const { category, key, limit, propertyId, sourceId } =
 		listFactsSchema.parse(args);

@@ -18,7 +18,7 @@ export type CaseListItem = Awaited<ReturnType<typeof db.query.cases.findMany>>[n
 
 export async function listCases(
 	database: AppDatabase = db,
-	args: ListCasesArgs,
+	args: unknown,
 ): Promise<CaseListItem[]> {
 	const { apartmentId, houseId, limit, ownerUserId, propertyId, status } =
 		listCasesSchema.parse(args);

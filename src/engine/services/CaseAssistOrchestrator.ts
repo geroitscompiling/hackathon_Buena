@@ -1,9 +1,9 @@
-import type { db as appDb } from "#/db";
+import type { AppDrizzleDatabase } from "#/db/drizzleTypes.ts";
 import { createMcpTools } from "#/mcp/server";
 import type { EmbeddingClient } from "#/services/semanticIndex";
 import { factValueImpliesClosure, type CaseLifecycleService, type GuardedClosureResult } from "./CaseLifecycleService";
 
-type CaseAssistDb = typeof appDb;
+type CaseAssistDb = AppDrizzleDatabase;
 
 type CaseContextBundle = {
 	case: {
@@ -44,7 +44,7 @@ export class CaseAssistOrchestrator {
 		confidenceThreshold: number;
 		nowIso: string;
 	}): Promise<CaseAssistRunResult> {
-		const tools = createMcpTools(this.db as never, {
+		const tools = createMcpTools(this.db, {
 			embeddingClient: this.options.embeddingClient,
 		});
 		const bundleTool = tools.find((tool) => tool.name === "get_case_context_bundle");

@@ -195,7 +195,7 @@ export class SemanticIndexService {
 export async function semanticSearch(
 	embeddingClient: EmbeddingClient,
 	database: AppDatabase = db,
-	args: SemanticSearchArgs,
+	args: unknown,
 ): Promise<SemanticSearchResult[]> {
 	const { apartmentId, entityType, houseId, limit, propertyId, query } =
 		semanticSearchSchema.parse(args);

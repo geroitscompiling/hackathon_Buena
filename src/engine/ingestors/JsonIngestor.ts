@@ -46,7 +46,18 @@ export class JsonIngestor implements Ingestor {
     if (data.eigentuemer) {
       for (const owner of data.eigentuemer) {
         const ownerName = [owner.anrede, owner.vorname, owner.nachname].filter(Boolean).join(" ");
-        facts.push(createFact("governance", `owner_${owner.id}`, ownerName));
+        const rawUnits = (owner as { einheit_ids?: string[] }).einheit_ids;
+        const units = Array.isArray(rawUnits) ? rawUnits.filter(Boolean) : [];
+        if (units.length === 0) {
+          facts.push(createFact("governance", `owner_${owner.id}`, ownerName));
+        } else {
+          for (const einheitId of units) {
+            facts.push({
+              ...createFact("governance", `owner_${owner.id}_${einheitId}`, ownerName),
+              erpScope: { einheitId },
+            });
+          }
+        }
       }
     }
 
