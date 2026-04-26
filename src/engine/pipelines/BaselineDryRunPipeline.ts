@@ -110,16 +110,20 @@ export interface BaselineDryRunSummary {
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
+  let current: unknown = error;
+  for (let depth = 0; depth < 6 && current; depth += 1) {
+    if (!current || typeof current !== "object") {
+      return false;
+    }
+    const maybe = current as { message?: unknown; code?: unknown; cause?: unknown };
+    const message = typeof maybe.message === "string" ? maybe.message : "";
+    const code = typeof maybe.code === "string" ? maybe.code : "";
+    if (code === "23505" || /unique|constraint|primary key/i.test(message)) {
+      return true;
+    }
+    current = maybe.cause;
   }
-
-  const maybeError = error as { message?: unknown; code?: unknown };
-  const message =
-    typeof maybeError.message === "string" ? maybeError.message : "";
-  const code = typeof maybeError.code === "string" ? maybeError.code : "";
-
-  return code === "23505" || /unique|constraint|primary key/i.test(message);
+  return false;
 }
 
 function deriveDocumentMetadataFromFact(

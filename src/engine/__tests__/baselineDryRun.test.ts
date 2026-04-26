@@ -150,8 +150,21 @@ describe("Baseline dry-run pipeline", () => {
 		expect(summary.factsBlockedAsConflicts).toBe(1);
 		const baujahrFacts = await db.select().from(facts).where(eq(facts.key, "baujahr"));
 		expect(baujahrFacts).toHaveLength(1);
-		expect(await db.select().from(factHouses)).toHaveLength(1);
-		expect(await db.select().from(factApartments)).toHaveLength(1);
+		const aiFacts = await db
+			.select()
+			.from(facts)
+			.where(eq(facts.key, "email_signal_detected"));
+		expect(aiFacts).toHaveLength(1);
+		const houseLinks = await db
+			.select()
+			.from(factHouses)
+			.where(eq(factHouses.factId, aiFacts[0].id));
+		const aptLinks = await db
+			.select()
+			.from(factApartments)
+			.where(eq(factApartments.factId, aiFacts[0].id));
+		expect(houseLinks).toHaveLength(1);
+		expect(aptLinks).toHaveLength(1);
 	});
 
 	it("uses preloaded existing gold facts when evaluating replay writes", async () => {
