@@ -1,0 +1,12 @@
+Ola Ola, the IDe complains  for this file in line 61 on:
+@baselineDryRun.test.ts (61-70) 
+Type 'Promise<{ category: "maintenance"; key: string; value: boolean; confidenceScore: number; }[]>' is not assignable to type 'Promise<ExtractedFact[]>'.
+  Type '{ category: "maintenance"; key: string; value: boolean; confidenceScore: number; }[]' is not assignable to type 'ExtractedFact[]'.
+    Type '{ category: "maintenance"; key: string; value: boolean; confidenceScore: number; }' is not assignable to type 'ExtractedFact'.
+      Types of property 'value' are incompatible.
+        Type 'boolean' is not assignable to type 'string'.ts(2322)
+types.ts(59, 3): The expected type comes from the return type
+
+---
+
+Oky, thanks.
