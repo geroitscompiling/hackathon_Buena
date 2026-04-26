@@ -1,0 +1,2 @@
+tests are failing:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:995-1007
