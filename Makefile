@@ -29,14 +29,14 @@ install:
 	pnpm install
 
 db-start:
-	docker compose up -d postgres
+	docker compose up -d --wait postgres
 
 db-stop:
 	docker compose down
 
 db-reset:
 	docker compose down -v
-	docker compose up -d postgres
+	docker compose up -d --wait postgres
 
 db-setup: db-start
 	docker compose exec -T postgres psql -U postgres -d buena -c "CREATE EXTENSION IF NOT EXISTS vector;"
