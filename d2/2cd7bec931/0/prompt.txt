@@ -1,0 +1,62 @@
+## Context
+You are on the Buena Context-Loom hackathon repo. Read `AGENTS.md`, `README.md`, and **`IMPLEMENTATION_PLAN.md`** (Epic **N0** is P0).
+External dev feedback (two fixes, both required):
+1. **Full initial / baseline import**: The first run currently behaves like “gold only” (CSV/JSON). It must ingest the **full** intended setup corpus—including unstructured files that go through **Gatekeeper** (e.g. invoices / older PDFs such as 2024 material under test data), not only ERP JSON/CSV. Distinguish clearly: **(A)** setup + full initial data state vs **(B)** `day-01`…`day-10` history replay—baseline must not skip batches judges expect in DB before replay.
+2. **Hierarchy before facts**: When owner/ERP import creates facts, **house/apartment may not exist yet** in `houses` / `apartments`. Implement **on-demand, idempotent** creation/linking from stable identifiers or normalized labels so facts get the **correct** `houseId` / `apartmentId` (or equivalent). Add tests where import order is “owner fact before unit row exists.”
+**Bonus (same epic):** After a successful heavy full import, add **documented and/or scripted DB backup/restore** (e.g. `pg_dump` + restore) so the team does not repeat the full LLM import every time (`IMPLEMENTATION_PLAN.md` N0.2).
+## Rules
+- TDD: write failing tests first (`vitest`), then implement.
+- Keep gold-fact protection, `temperature: 0` for generation, existing pipeline patterns.
+- Minimal, focused diffs; match project style.
+## Done when
+- N0.1: Tests prove baseline/initial path processes all intended setup files (including applicable PDF/EML through existing ingestors).
+- N0.3: Tests prove facts scope correctly when hierarchy rows are missing at insert time; reruns idempotent.
+- N0.2: Backup/restore path documented or automated and verified once.
+- `pnpm test` (and lint if touched) green.
+Start with **`IMPLEMENTATION_PLAN.md` Epic N0** tickets in order **N0.1 → N0.3**, then N0.2/N0.4 as appropriate.
+
+---
+
+Verdict
+The changes match the external feedback: baseline can pull in all default unstructured files under emails/ and rechnungen/ (excluding HistoryPopulationData), owner/unit facts get house + apartment rows + factApartments via ERP stammdaten context, and backup/restore is wired in the Makefile/README. Tests cover the two risky areas (full noisy list + CSV-before-hierarchy + idempotent rerun). Targeted vitest runs passed (with the usual Vitest “hanging process” warning).
+
+What works well
+Corpus discovery — collectBaselineUnstructuredRelativePaths is small, explicit, and avoids replay data. Default noisyInputFiles: undefined now means “everything under those trees,” which is the right default for “initial run = full stamm.”
+Hierarchy on demand — Preloading loadErpStammdatenContextFromFile before the ingestion loop avoids ordering bugs (CSV can run before JSON ingest and still enrich). enrichBuildingFactWithErpHaus + ensureErpApartmentHierarchyForFact + HierarchyResolver.materializeHouseApartment keeps DB and resolver aligned.
+Types — BuildingFactErpScope documents the ERP link cleanly; CSV + JSON both attach einheitId where needed.
+Ops — make db-backup / db-restore + .gitignore on .db-backups fits the “don’t redo LLM baseline” story.
+Minor follow-ups (non-blocking)
+noisySourcesEvaluated is set to noisyIngestions.length (scheduled files), not “files that actually produced gatekeeper/extractor work.” Fine for today; rename or increment in-loop if you want stricter semantics.
+Core vs noisy detection in the loop still hardcodes stammdaten/stammdaten.json and stammdaten/eigentuemer.csv for isCoreIngestion / noisy counters. Unusual coreIngestionRelativePaths could skew those counters without affecting persistence.
+Folders are fixed to emails and rechnungen; new top-level buckets would need a code or config extension (worth one line in README).
+Overall: good implementation, aligned with the plan, tests back the important behaviors.
+
+---
+
+Lets do those follow-ups now
+
+---
+
+Wait, IDE complains:
+baselineDryRun.test - 
+@baselineDryRun.test.ts (150-151) 
+
+Type 'PgliteDatabase<{ propertiesRelations: Relations<"properties", { houses: Many<"houses">; facts: Many<"facts">; cases: Many<"cases">; }>; housesRelations: Relations<"houses", { ...; }>; ... 19 more ...; caseActionTraces: PgTableWithColumns<...>; }> & { ...; }' is not assignable to type 'PostgresJsDatabase<{ propertiesRelations: Relations<"properties", { houses: Many<"houses">; facts: Many<"facts">; cases: Many<"cases">; }>; housesRelations: Relations<"houses", { ...; }>; ... 19 more ...; caseActionTraces: PgTableWithColumns<...>; }> & { ...; }'.
+
+collectBaselineUnstructuredPaths.test
+Cannot find module '../collectBaselineUnstructuredPaths' or its corresponding type declarations.ts(2307)
+
+BaselineDryRunPipeline
+Argument of type 'Pick<HierarchyResolver, "resolve">' is not assignable to parameter of type 'HierarchyResolver'.
+  Type 'Pick<HierarchyResolver, "resolve">' is missing the following properties from type 'HierarchyResolver': hierarchy, materializeHouseApartment, findHouseById, findApartmentById, and 2 more.ts(2345)
+
+---
+
+So? Ya stuck?
+
+---
+
+nice, all mentioned solved, however we have on in server.ts (mcp folder)
+execute: (args) => listPropertyHierarchies(database, args),
+It complaiony on the args param:
+Argument of type 'unknown' is not assignable to parameter of type '{ limit: number; search?: string | undefined; }'.ts(2345)
