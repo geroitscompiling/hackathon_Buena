@@ -1,0 +1,52 @@
+Jeah, I was that. All good. Let's finish Epic 4:
+E4.6 End-to-end MCP workflow test
+
+Add an integration test that validates this chain:
+ingest/update facts + cases,
+semantic retrieval via MCP tools,
+case context bundle assembly,
+guarded close recommendation path (without bypassing E4.5 checks).
+Assert both success and guarded-rejection scenarios.
+E4.7 Demo script
+
+Add a deterministic demo command that:
+prepares DB,
+runs history replay,
+executes 2-3 canonical semantic/MCP queries,
+prints one case assist output with evidence trace.
+Keep output concise and judge-friendly.
+Implementation notes
+Prefer extending existing services/routes/tests over introducing parallel architecture.
+Reuse existing semantic index + search infra; do not replace it.
+Keep closure decision logic centralized in lifecycle/guardrail service, not scattered in route handlers.
+Add migration(s) only if required for trace persistence; keep schema minimal.
+Verification required before handback
+Run and report:
+
+targeted Epic 4 tests you add,
+full pnpm test,
+pnpm lint.
+Deliverable format on handback
+What was implemented (mapped to E4.2/E4.1/E4.5/E4.6/E4.7),
+What remains,
+Any risks/tradeoffs,
+Exact commands used to verify.
+
+---
+
+No sorry, wording: runEpic4DEmo is not telling humans shit. EXPLAIN what it does. Please reword
+
+---
+
+Yes, but let's make clear on HOW we present and what JObs we have since you mention it resets the DB?
+Right now I make an initial setup (reads testfiles from source), then I make a history run (see makefile) that basically if fired in LIVE simulates those 10 days by digesting the data and interacts with agents. Then I should have everthing done? 
+
+Why now run-demo-judge-history-mcp-assist? Especially since it is wiping the database as you mentioned?
+
+---
+
+Okay, this needs to be more understandable. I thought the "Judge" is the systems katekeeper or so. We can leave the command (but please rename the runEpic4Demo.ts so it fits) but add a comment to the makewhile WHY the command is here and WHEN to fire it.
+
+---
+
+Well, you shpudl as well rename the correlating test.
