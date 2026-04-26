@@ -1,0 +1,10 @@
+Okay, same story other Epic. Can you create the tickets for EPIC 4. Can you check if Implementation Plan was updatesd (we pulled from main just now).
+
+There was some feedback from another dev I am not sure if we can already work that in:
+(it's in German) please heck and tell me what you thinkg:
+Hab jetzt semantic search per api und mcp implementiert. Ist auch schon im frontend auf einer extra search page integriert.
+
+Habe alles auf postgres umstellen müssen um den vector für jeden fact/case zu speichern. Solltest aber easy alles starten können wenn du ⁠ make setup-database ⁠ laufen lässt, fährt dir dann auch ein pg datenbank in docker hoch.
+
+Aus meiner sicht müssten wir das folgendermaßen aufsetzen:
+Neuer case kommt rein -> Wir starten einen agent mit ai-sdk bei dem wir das ai-sdk mit unserem mcp server verknüpfen. Der agent kann über den mcp dann selbständig nach relevanten cases/facts suchen und diese dann zurückgeben (und ggf. noch summarizen und case als closed oder so markieren).
