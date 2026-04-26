@@ -16,8 +16,10 @@ import { Route as CasesRouteImport } from './routes/cases'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FactsIndexRouteImport } from './routes/facts.index'
+import { Route as CasesIndexRouteImport } from './routes/cases.index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoBetterAuthRouteImport } from './routes/demo/better-auth'
+import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as ApiPropertyHierarchyRouteImport } from './routes/api/property-hierarchy'
 import { Route as ApiPropertyHierarchiesRouteImport } from './routes/api/property-hierarchies'
@@ -28,7 +30,9 @@ import { Route as ApiCasesRouteImport } from './routes/api/cases'
 import { Route as FactsScopeTypeScopeIdRouteImport } from './routes/facts.$scopeType.$scopeId'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
+import { Route as ApiCasesCaseIdRouteImport } from './routes/api/cases.$caseId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiCasesCaseIdAgentStreamRouteImport } from './routes/api/cases.$caseId.agent-stream'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -65,6 +69,11 @@ const FactsIndexRoute = FactsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => FactsRoute,
 } as any)
+const CasesIndexRoute = CasesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CasesRoute,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -74,6 +83,11 @@ const DemoBetterAuthRoute = DemoBetterAuthRouteImport.update({
   id: '/demo/better-auth',
   path: '/demo/better-auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => CasesRoute,
 } as any)
 const ApiSearchRoute = ApiSearchRouteImport.update({
   id: '/api/search',
@@ -125,77 +139,99 @@ const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
   path: '/demo/form/address',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCasesCaseIdRoute = ApiCasesCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => ApiCasesRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCasesCaseIdAgentStreamRoute =
+  ApiCasesCaseIdAgentStreamRouteImport.update({
+    id: '/agent-stream',
+    path: '/agent-stream',
+    getParentRoute: () => ApiCasesCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/cases': typeof CasesRoute
+  '/cases': typeof CasesRouteWithChildren
   '/demo-snapshot': typeof DemoSnapshotRoute
   '/facts': typeof FactsRouteWithChildren
   '/search': typeof SearchRoute
-  '/api/cases': typeof ApiCasesRoute
+  '/api/cases': typeof ApiCasesRouteWithChildren
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/properties': typeof ApiPropertiesRoute
   '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
   '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
   '/api/search': typeof ApiSearchRoute
+  '/cases/$caseId': typeof CasesCaseIdRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/cases/': typeof CasesIndexRoute
   '/facts/': typeof FactsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cases/$caseId': typeof ApiCasesCaseIdRouteWithChildren
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
+  '/api/cases/$caseId/agent-stream': typeof ApiCasesCaseIdAgentStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/cases': typeof CasesRoute
   '/demo-snapshot': typeof DemoSnapshotRoute
   '/search': typeof SearchRoute
-  '/api/cases': typeof ApiCasesRoute
+  '/api/cases': typeof ApiCasesRouteWithChildren
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/properties': typeof ApiPropertiesRoute
   '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
   '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
   '/api/search': typeof ApiSearchRoute
+  '/cases/$caseId': typeof CasesCaseIdRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/cases': typeof CasesIndexRoute
   '/facts': typeof FactsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cases/$caseId': typeof ApiCasesCaseIdRouteWithChildren
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
+  '/api/cases/$caseId/agent-stream': typeof ApiCasesCaseIdAgentStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/cases': typeof CasesRoute
+  '/cases': typeof CasesRouteWithChildren
   '/demo-snapshot': typeof DemoSnapshotRoute
   '/facts': typeof FactsRouteWithChildren
   '/search': typeof SearchRoute
-  '/api/cases': typeof ApiCasesRoute
+  '/api/cases': typeof ApiCasesRouteWithChildren
   '/api/facts': typeof ApiFactsRoute
   '/api/mcp': typeof ApiMcpRoute
   '/api/properties': typeof ApiPropertiesRoute
   '/api/property-hierarchies': typeof ApiPropertyHierarchiesRoute
   '/api/property-hierarchy': typeof ApiPropertyHierarchyRoute
   '/api/search': typeof ApiSearchRoute
+  '/cases/$caseId': typeof CasesCaseIdRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/cases/': typeof CasesIndexRoute
   '/facts/': typeof FactsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cases/$caseId': typeof ApiCasesCaseIdRouteWithChildren
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/facts/$scopeType/$scopeId': typeof FactsScopeTypeScopeIdRoute
+  '/api/cases/$caseId/agent-stream': typeof ApiCasesCaseIdAgentStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,18 +249,21 @@ export interface FileRouteTypes {
     | '/api/property-hierarchies'
     | '/api/property-hierarchy'
     | '/api/search'
+    | '/cases/$caseId'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
+    | '/cases/'
     | '/facts/'
     | '/api/auth/$'
+    | '/api/cases/$caseId'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/facts/$scopeType/$scopeId'
+    | '/api/cases/$caseId/agent-stream'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/cases'
     | '/demo-snapshot'
     | '/search'
     | '/api/cases'
@@ -234,13 +273,17 @@ export interface FileRouteTypes {
     | '/api/property-hierarchies'
     | '/api/property-hierarchy'
     | '/api/search'
+    | '/cases/$caseId'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
+    | '/cases'
     | '/facts'
     | '/api/auth/$'
+    | '/api/cases/$caseId'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/facts/$scopeType/$scopeId'
+    | '/api/cases/$caseId/agent-stream'
   id:
     | '__root__'
     | '/'
@@ -256,23 +299,27 @@ export interface FileRouteTypes {
     | '/api/property-hierarchies'
     | '/api/property-hierarchy'
     | '/api/search'
+    | '/cases/$caseId'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
+    | '/cases/'
     | '/facts/'
     | '/api/auth/$'
+    | '/api/cases/$caseId'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/facts/$scopeType/$scopeId'
+    | '/api/cases/$caseId/agent-stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  CasesRoute: typeof CasesRoute
+  CasesRoute: typeof CasesRouteWithChildren
   DemoSnapshotRoute: typeof DemoSnapshotRoute
   FactsRoute: typeof FactsRouteWithChildren
   SearchRoute: typeof SearchRoute
-  ApiCasesRoute: typeof ApiCasesRoute
+  ApiCasesRoute: typeof ApiCasesRouteWithChildren
   ApiFactsRoute: typeof ApiFactsRoute
   ApiMcpRoute: typeof ApiMcpRoute
   ApiPropertiesRoute: typeof ApiPropertiesRoute
@@ -337,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FactsIndexRouteImport
       parentRoute: typeof FactsRoute
     }
+    '/cases/': {
+      id: '/cases/'
+      path: '/'
+      fullPath: '/cases/'
+      preLoaderRoute: typeof CasesIndexRouteImport
+      parentRoute: typeof CasesRoute
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -350,6 +404,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/demo/better-auth'
       preLoaderRoute: typeof DemoBetterAuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/cases/$caseId': {
+      id: '/cases/$caseId'
+      path: '/$caseId'
+      fullPath: '/cases/$caseId'
+      preLoaderRoute: typeof CasesCaseIdRouteImport
+      parentRoute: typeof CasesRoute
     }
     '/api/search': {
       id: '/api/search'
@@ -421,6 +482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormAddressRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cases/$caseId': {
+      id: '/api/cases/$caseId'
+      path: '/$caseId'
+      fullPath: '/api/cases/$caseId'
+      preLoaderRoute: typeof ApiCasesCaseIdRouteImport
+      parentRoute: typeof ApiCasesRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -428,8 +496,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cases/$caseId/agent-stream': {
+      id: '/api/cases/$caseId/agent-stream'
+      path: '/agent-stream'
+      fullPath: '/api/cases/$caseId/agent-stream'
+      preLoaderRoute: typeof ApiCasesCaseIdAgentStreamRouteImport
+      parentRoute: typeof ApiCasesCaseIdRoute
+    }
   }
 }
+
+interface CasesRouteChildren {
+  CasesCaseIdRoute: typeof CasesCaseIdRoute
+  CasesIndexRoute: typeof CasesIndexRoute
+}
+
+const CasesRouteChildren: CasesRouteChildren = {
+  CasesCaseIdRoute: CasesCaseIdRoute,
+  CasesIndexRoute: CasesIndexRoute,
+}
+
+const CasesRouteWithChildren = CasesRoute._addFileChildren(CasesRouteChildren)
 
 interface FactsRouteChildren {
   FactsIndexRoute: typeof FactsIndexRoute
@@ -443,14 +530,38 @@ const FactsRouteChildren: FactsRouteChildren = {
 
 const FactsRouteWithChildren = FactsRoute._addFileChildren(FactsRouteChildren)
 
+interface ApiCasesCaseIdRouteChildren {
+  ApiCasesCaseIdAgentStreamRoute: typeof ApiCasesCaseIdAgentStreamRoute
+}
+
+const ApiCasesCaseIdRouteChildren: ApiCasesCaseIdRouteChildren = {
+  ApiCasesCaseIdAgentStreamRoute: ApiCasesCaseIdAgentStreamRoute,
+}
+
+const ApiCasesCaseIdRouteWithChildren = ApiCasesCaseIdRoute._addFileChildren(
+  ApiCasesCaseIdRouteChildren,
+)
+
+interface ApiCasesRouteChildren {
+  ApiCasesCaseIdRoute: typeof ApiCasesCaseIdRouteWithChildren
+}
+
+const ApiCasesRouteChildren: ApiCasesRouteChildren = {
+  ApiCasesCaseIdRoute: ApiCasesCaseIdRouteWithChildren,
+}
+
+const ApiCasesRouteWithChildren = ApiCasesRoute._addFileChildren(
+  ApiCasesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  CasesRoute: CasesRoute,
+  CasesRoute: CasesRouteWithChildren,
   DemoSnapshotRoute: DemoSnapshotRoute,
   FactsRoute: FactsRouteWithChildren,
   SearchRoute: SearchRoute,
-  ApiCasesRoute: ApiCasesRoute,
+  ApiCasesRoute: ApiCasesRouteWithChildren,
   ApiFactsRoute: ApiFactsRoute,
   ApiMcpRoute: ApiMcpRoute,
   ApiPropertiesRoute: ApiPropertiesRoute,

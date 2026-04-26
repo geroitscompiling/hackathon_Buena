@@ -30,8 +30,8 @@ Return valid JSON only using this shape:
 {
   "cases": [
     {
-      "title": "short human title",
-      "summary": "1-3 sentences",
+      "title": "clear human case title",
+      "summary": "2-4 sentences describing what happened, current state, and next required action",
       "status": "open" | "in_progress" | "investigating" | "blocked" | "on_hold" | "resolved",
       "scopeHint": "property" | "house" | "apartment",
       "primarySignal": "stable token such as invoice id, ticket id, or normalized subject stem",
@@ -43,6 +43,15 @@ Return valid JSON only using this shape:
 
 Rules:
 - If there is no actionable workflow, return {"cases":[]}.
+- The title must be specific and immediately understandable without opening the source document.
+- Avoid vague titles such as "Follow-up", "Issue", "Open incident", or "Window repair batch".
+- Prefer titles like "Tenant reports repeated elevator outage in house 3" or "Outstanding payment for window repair invoice INV-2048".
+- The title should identify the concrete subject of the case, what kind of problem or workflow it is, and the strongest available anchor such as the unit, vendor, invoice, repair, or complaint topic.
+- The summary must clearly describe what happened, what has already been done, and what still needs to happen for the case to move forward or close.
+- Preserve concrete details such as the affected unit, vendor, invoice id, amount, date, requester, and promised follow-up whenever the source provides them.
+- Do not compress a multi-step workflow into a generic one-liner.
+- If the source contains a requested action or next step, include that explicitly in the summary.
+- Write user-facing prose, not machine shorthand.
 - primarySignal must be stable across related emails about the same issue.
 - closurePredicate only when the text clearly implies how the case could auto-close.
 

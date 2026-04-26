@@ -3,6 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import * as schemaModule from "../schema";
 import {
+	agentRunMessages,
+	agentRuns,
+	agentRunToolCalls,
 	apartments,
 	cases,
 	factApartments,
@@ -159,5 +162,112 @@ describe("Database Schema", () => {
 		expect(retrievedFact?.houseLinks[0].house.id).toBe("LIE-002-H1");
 		expect(retrievedFact?.apartmentLinks[0].apartment.id).toBe("LIE-002-H1-A1");
 		expect(retrievedFact?.caseLinks[0].case.owner.name).toBe("Case Owner");
+	});
+
+	it("should persist agent runs with transcript messages and tool calls", async () => {
+		await db.insert(properties).values({
+			id: "LIE-003",
+			name: "Agent Property",
+		});
+		await db.insert(houses).values({
+			id: "LIE-003-H1",
+			propertyId: "LIE-003",
+			name: "House 1",
+		});
+		await db.insert(apartments).values({
+			id: "LIE-003-H1-A1",
+			houseId: "LIE-003-H1",
+			name: "Apartment 1",
+		});
+		await db.insert(users).values({
+			id: "user-2",
+			name: "Agent Owner",
+			email: "agent.owner@example.com",
+		});
+		await db.insert(cases).values({
+			id: "case-telemetry-1",
+			propertyId: "LIE-003",
+			houseId: "LIE-003-H1",
+			apartmentId: "LIE-003-H1-A1",
+			ownerUserId: "user-2",
+			caseKey: "a:LIE-003-H1-A1|window|window-repair-follow-up",
+			closurePredicate: "invoice_paid",
+			title: "Window repair follow-up",
+			summary: "Waiting for invoice confirmation",
+			status: "open",
+			createdAt: "2026-04-26T10:00:00.000Z",
+			updatedAt: "2026-04-26T10:00:00.000Z",
+		});
+
+		await db.insert(agentRuns).values({
+			id: "run-1",
+			caseId: "case-telemetry-1",
+			model: "google/gemini-2.5-flash",
+			status: "completed",
+			finalRecommendationJson: JSON.stringify({
+				proposedAction: "close_case",
+				confidence: 0.91,
+				summary: "Invoice evidence supports closure.",
+				evidenceFactIds: ["fact-telemetry-1"],
+			}),
+			startedAt: "2026-04-26T11:00:00.000Z",
+			finishedAt: "2026-04-26T11:00:05.000Z",
+			createdAt: "2026-04-26T11:00:00.000Z",
+		});
+		await db.insert(agentRunMessages).values([
+			{
+				id: "msg-1",
+				agentRunId: "run-1",
+				stepIndex: 0,
+				role: "user",
+				content: "Inspect this case and decide whether it should close.",
+				createdAt: "2026-04-26T11:00:00.000Z",
+			},
+			{
+				id: "msg-2",
+				agentRunId: "run-1",
+				stepIndex: 1,
+				role: "assistant",
+				content: "I will inspect the case context and related evidence.",
+				createdAt: "2026-04-26T11:00:01.000Z",
+			},
+		]);
+		await db.insert(agentRunToolCalls).values({
+			id: "tool-1",
+			agentRunId: "run-1",
+			stepIndex: 1,
+			toolName: "get_case_context_bundle",
+			argumentsJson: JSON.stringify({
+				caseId: "case-telemetry-1",
+				relatedCasesLimit: 5,
+				relatedFactsLimit: 5,
+			}),
+			resultJson: JSON.stringify({
+				case: { id: "case-telemetry-1" },
+				relatedFacts: [{ id: "fact-telemetry-1" }],
+			}),
+			status: "completed",
+			startedAt: "2026-04-26T11:00:02.000Z",
+			finishedAt: "2026-04-26T11:00:03.000Z",
+			createdAt: "2026-04-26T11:00:02.000Z",
+		});
+
+		const retrievedCase = await db.query.cases.findFirst({
+			where: eq(cases.id, "case-telemetry-1"),
+			with: {
+				agentRuns: {
+					with: {
+						messages: true,
+						toolCalls: true,
+					},
+				},
+			},
+		});
+
+		expect(retrievedCase?.agentRuns).toHaveLength(1);
+		expect(retrievedCase?.agentRuns[0].messages).toHaveLength(2);
+		expect(retrievedCase?.agentRuns[0].toolCalls[0]?.toolName).toBe(
+			"get_case_context_bundle",
+		);
 	});
 });

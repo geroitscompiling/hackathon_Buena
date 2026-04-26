@@ -150,6 +150,57 @@ describe("Baseline dry-run pipeline", () => {
 		expect(goldRow?.validFrom).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 	});
 
+	it("limits noisy baseline ingestion count without skipping core ERP files", async () => {
+		const summary = await runBaselineDryRun({
+			db,
+			propertyId: "LIE-001",
+			propertyName: "WEG Immanuelkirchstraße 26",
+			datasetRootPath: "testfiles",
+			noisyInputFiles: [
+				"emails/2026-01/20260101_074000_EMAIL-06545.eml",
+				"rechnungen/2025-12/20251203_DL-015_INV-00184.pdf",
+			],
+			maxNoisyFiles: 1,
+			gatekeeper: { isRelevant: async () => true },
+			extractor: {
+				extract: async (documentText) =>
+					documentText.includes("Subject:")
+						? [
+								{
+									category: "maintenance",
+									key: "repair",
+									value: "Am 24.10. wurde eine Heizungsreparatur fuer LIE-001-H1-A1 angefragt.",
+									confidenceScore: 0.91,
+								},
+						  ]
+						: [
+								{
+									category: "financial",
+									key: "payment",
+									value: "Die Rechnung 20251203_DL-015_INV-00184 ist weiterhin offen.",
+									confidenceScore: 0.88,
+								},
+						  ],
+			},
+			embeddingClient: {
+				embedDocument: async () => Array.from({ length: 1536 }, () => 0),
+				embedQuery: async () => Array.from({ length: 1536 }, () => 0),
+			},
+		});
+
+		expect(summary.sourcesPersisted).toBe(3);
+		expect(summary.noisySourcesEvaluated).toBe(1);
+		expect(summary.noisySourcesWithFacts).toBe(1);
+		expect(summary.nonGoldFactsPersisted).toBe(1);
+
+		const persistedSources = await db.select().from(sources);
+		expect(persistedSources).toHaveLength(3);
+
+		const aiFacts = await db.select().from(facts).where(eq(facts.isGoldStandard, false));
+		expect(aiFacts).toHaveLength(1);
+		expect(aiFacts[0]?.key).toBe("repair");
+	});
+
 	it("writes scoped links and blocks AI overwrite of matching gold semantic identity", async () => {
 		const summary = await runBaselineDryRun({
 			db,

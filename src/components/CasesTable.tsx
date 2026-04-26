@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import { StatusBadge } from "#/components/StatusBadge";
 import { Badge } from "#/components/ui/badge";
 import {
@@ -15,6 +17,18 @@ type CasesTableProps = {
 	cases: CaseListItem[];
 };
 
+function CaseTitleLink({ caseItem }: { caseItem: CaseListItem }) {
+	return (
+		<Link
+			to="/cases/$caseId"
+			params={{ caseId: caseItem.id }}
+			className="break-words font-semibold leading-snug underline-offset-4 hover:underline"
+		>
+			{caseItem.title}
+		</Link>
+	);
+}
+
 export function CasesTable({ cases }: CasesTableProps) {
 	if (cases.length === 0) {
 		return (
@@ -30,7 +44,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 				{cases.map((caseItem) => (
 					<div key={caseItem.id} className="space-y-4 p-4">
 						<div className="space-y-2">
-							<p className="break-words font-semibold leading-snug">{caseItem.title}</p>
+							<CaseTitleLink caseItem={caseItem} />
 							<p className="break-all text-xs text-muted-foreground">{caseItem.id}</p>
 							<StatusBadge
 								status={caseItem.status}
@@ -114,7 +128,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 						<TableRow key={caseItem.id}>
 							<TableCell className="min-w-0 align-top whitespace-normal">
 								<div className="space-y-1 break-words">
-									<p className="font-semibold leading-snug">{caseItem.title}</p>
+									<CaseTitleLink caseItem={caseItem} />
 									<p className="break-all text-xs text-muted-foreground">
 										{caseItem.id}
 									</p>

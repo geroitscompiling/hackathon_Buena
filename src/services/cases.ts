@@ -40,7 +40,12 @@ export const countCasesSchema = listCasesSchema.omit({ limit: true });
 
 export type ListCasesArgs = z.infer<typeof listCasesSchema>;
 export type CountCasesArgs = z.infer<typeof countCasesSchema>;
-export type CaseListItem = Awaited<ReturnType<typeof db.query.cases.findMany>>[number];
+export type CaseListItem = typeof schema.cases.$inferSelect & {
+	apartment: typeof schema.apartments.$inferSelect | null;
+	house: typeof schema.houses.$inferSelect | null;
+	owner: typeof schema.users.$inferSelect;
+	property: typeof schema.properties.$inferSelect;
+};
 
 export async function listCases(
 	database: AppDatabase = db,
@@ -57,7 +62,7 @@ export async function listCases(
 		q ? caseContentMatches(q) : undefined,
 	].filter(Boolean);
 
-	return database.query.cases.findMany({
+	return (await database.query.cases.findMany({
 		where: filters.length > 0 ? and(...filters) : undefined,
 		limit,
 		orderBy: [desc(schema.cases.updatedAt)],
@@ -67,7 +72,7 @@ export async function listCases(
 			owner: true,
 			property: true,
 		},
-	});
+	})) as CaseListItem[];
 }
 
 export async function countCases(

@@ -23,6 +23,7 @@ Key targets:
 - `make db-backup` writes a Postgres custom-format snapshot under `.db-backups/` (after a heavy import, use this to avoid re-running full LLM baseline)
 - `make db-restore RESTORE_FILE=.db-backups/buena-....dump` restores a snapshot (typical: `db-reset`, `db-start`, then restore; see `make help`)
 - `make run-initial` executes baseline dry-run in live mode (stage step 1)
+- `make run-initial-live FILE_LIMIT=1` limits the baseline run to the first noisy input file while still ingesting core ERP files
 - `make run-history-live` replays history in live mode with MCP-enabled flow (stage step 2)
 - `make run-stage-live` runs the stage sequence (`run-initial` then `run-history-live`)
 - `make run-history` replays history in deterministic mock mode; add `DAY=day-03` to limit the run to a single day

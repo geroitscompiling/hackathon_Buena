@@ -91,6 +91,19 @@ describe("mcp tools", () => {
 			"get_related_cases",
 			"get_related_facts",
 			"get_case_context_bundle",
+			"search_case_history",
+			"search_related_facts",
+			"search_related_cases",
+			"get_case_closure_evidence",
+			"list_testfiles_directory",
+			"find_testfiles_files",
+			"grep_testfiles",
+			"read_testfiles_file",
+			"link_fact_to_case",
+			"update_case_summary",
+			"update_case_title",
+			"update_case_status",
+			"request_case_closure",
 		]);
 	});
 
