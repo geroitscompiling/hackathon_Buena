@@ -381,6 +381,20 @@ describe("Baseline dry-run pipeline", () => {
 						: [],
 			},
 			caseExtractor,
+			caseAssistOrchestrator: {
+				run: async (input) => ({
+					bundle: {
+						case: { id: input.caseId },
+						relatedCases: [],
+						relatedFacts: [],
+					},
+					recommendation: {
+						proposedAction: "keep_open",
+						confidence: 0.5,
+						why: "test stub",
+					},
+				}),
+			},
 			embeddingClient: {
 				embedDocument: async () => Array.from({ length: 1536 }, () => 0),
 				embedQuery: async () => Array.from({ length: 1536 }, () => 0),
