@@ -6,19 +6,69 @@ const optionalDebugFlag = z.preprocess(
 	z.enum(["0", "1"]).optional(),
 );
 
+const aiInferenceProviderSchema = z.preprocess(
+	(value) => (typeof value === "string" ? value.trim().toLowerCase() : value),
+	z.enum(["gemini", "pioneer"]).default("gemini"),
+);
+
 const serverEnvShape = {
 	SERVER_URL: z.string().url().optional(),
 	DATABASE_URL: z.string().min(1),
-	GEMINI_API_KEY: z.string().min(1),
-	GEMINI_MODEL_GATEKEEPER: z.string().min(1),
-	GEMINI_MODEL_EXTRACTOR: z.string().min(1),
-	GEMINI_MODEL_EMBEDDING: z.string().min(1),
-	GEMINI_MAX_RETRIES: z.coerce.number().int().min(1).max(10),
-	GEMINI_MIN_REQUEST_DELAY_MS: z.coerce.number().int().min(0).max(10000),
+	AI_INFERENCE_PROVIDER: aiInferenceProviderSchema,
+	GEMINI_API_KEY: z.string().min(1).optional(),
+	GEMINI_MODEL_GATEKEEPER: z.string().min(1).optional(),
+	GEMINI_MODEL_EXTRACTOR: z.string().min(1).optional(),
+	GEMINI_MODEL_EMBEDDING: z.string().min(1).optional(),
+	GEMINI_MAX_RETRIES: z.preprocess(
+		(value) => (value === undefined || value === "" ? 5 : value),
+		z.coerce.number().int().min(1).max(10),
+	),
+	GEMINI_MIN_REQUEST_DELAY_MS: z.preprocess(
+		(value) => (value === undefined || value === "" ? 1000 : value),
+		z.coerce.number().int().min(0).max(10000),
+	),
 	GEMINI_DEBUG: optionalDebugFlag,
+	PIONEER_API_KEY: z.string().min(1).optional(),
+	PIONEER_MODEL_GATEKEEPER: z.string().min(1).default("Qwen/Qwen3-32B"),
+	PIONEER_MODEL_EXTRACTOR: z.string().min(1).default("Qwen/Qwen3-32B"),
+	PIONEER_BASE_URL: z.string().url().default("https://api.pioneer.ai/v1"),
 } as const;
 
-const serverEnvSchema = z.object(serverEnvShape);
+const serverEnvSchema = z.object(serverEnvShape).superRefine((env, ctx) => {
+	if (env.AI_INFERENCE_PROVIDER === "gemini") {
+		if (!env.GEMINI_API_KEY) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["GEMINI_API_KEY"],
+				message: "GEMINI_API_KEY is required when AI_INFERENCE_PROVIDER=gemini",
+			});
+		}
+		if (!env.GEMINI_MODEL_GATEKEEPER) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["GEMINI_MODEL_GATEKEEPER"],
+				message:
+					"GEMINI_MODEL_GATEKEEPER is required when AI_INFERENCE_PROVIDER=gemini",
+			});
+		}
+		if (!env.GEMINI_MODEL_EXTRACTOR) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["GEMINI_MODEL_EXTRACTOR"],
+				message:
+					"GEMINI_MODEL_EXTRACTOR is required when AI_INFERENCE_PROVIDER=gemini",
+			});
+		}
+	}
+
+	if (env.AI_INFERENCE_PROVIDER === "pioneer" && !env.PIONEER_API_KEY) {
+		ctx.addIssue({
+			code: "custom",
+			path: ["PIONEER_API_KEY"],
+			message: "PIONEER_API_KEY is required when AI_INFERENCE_PROVIDER=pioneer",
+		});
+	}
+});
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
@@ -55,6 +105,51 @@ export function getGeminiServiceRuntimeEnv(): GeminiServiceRuntimeEnv {
 	return geminiServiceRuntimeSchema.parse({
 		GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 		GEMINI_MODEL_EMBEDDING: process.env.GEMINI_MODEL_EMBEDDING,
+		GEMINI_MAX_RETRIES: process.env.GEMINI_MAX_RETRIES,
+		GEMINI_MIN_REQUEST_DELAY_MS: process.env.GEMINI_MIN_REQUEST_DELAY_MS,
+		GEMINI_DEBUG: process.env.GEMINI_DEBUG,
+	});
+}
+
+const pioneerServiceRuntimeSchema = z.object({
+	PIONEER_API_KEY: z.preprocess(
+		(value) => (typeof value === "string" ? value.trim() || undefined : value),
+		z.string().min(1).optional(),
+	),
+	PIONEER_BASE_URL: z.preprocess(
+		(value) =>
+			value === undefined || value === "" ? "https://api.pioneer.ai/v1" : value,
+		z.string().url(),
+	),
+	PIONEER_MODEL_GATEKEEPER: z.preprocess(
+		(value) => (value === undefined || value === "" ? "Qwen/Qwen3-32B" : value),
+		z.string().min(1),
+	),
+	PIONEER_MODEL_EXTRACTOR: z.preprocess(
+		(value) => (value === undefined || value === "" ? "Qwen/Qwen3-32B" : value),
+		z.string().min(1),
+	),
+	GEMINI_MAX_RETRIES: z.preprocess(
+		(value) => (value === undefined || value === "" ? 5 : value),
+		z.coerce.number().int().min(1).max(10),
+	),
+	GEMINI_MIN_REQUEST_DELAY_MS: z.preprocess(
+		(value) => (value === undefined || value === "" ? 1000 : value),
+		z.coerce.number().int().min(0).max(10000),
+	),
+	GEMINI_DEBUG: optionalDebugFlag,
+});
+
+export type PioneerServiceRuntimeEnv = z.infer<
+	typeof pioneerServiceRuntimeSchema
+>;
+
+export function getPioneerServiceRuntimeEnv(): PioneerServiceRuntimeEnv {
+	return pioneerServiceRuntimeSchema.parse({
+		PIONEER_API_KEY: process.env.PIONEER_API_KEY,
+		PIONEER_BASE_URL: process.env.PIONEER_BASE_URL,
+		PIONEER_MODEL_GATEKEEPER: process.env.PIONEER_MODEL_GATEKEEPER,
+		PIONEER_MODEL_EXTRACTOR: process.env.PIONEER_MODEL_EXTRACTOR,
 		GEMINI_MAX_RETRIES: process.env.GEMINI_MAX_RETRIES,
 		GEMINI_MIN_REQUEST_DELAY_MS: process.env.GEMINI_MIN_REQUEST_DELAY_MS,
 		GEMINI_DEBUG: process.env.GEMINI_DEBUG,

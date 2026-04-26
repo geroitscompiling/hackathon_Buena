@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { db } from "../db";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
+import { createConfiguredLlmJsonClient } from "../engine/services/LlmJsonClientFactory";
 import { getServerEnv } from "../env";
 import {
 	createLiveCaseExtractor,
@@ -12,7 +13,9 @@ dotenv.config({ path: [".env.local", ".env"] });
 async function main() {
 	const config = resolveDryRunBaselineConfig(process.env, {
 		createLiveCaseExtractor: () =>
-			createLiveCaseExtractor(getServerEnv().GEMINI_MODEL_EXTRACTOR),
+			createLiveCaseExtractor(
+				createConfiguredLlmJsonClient("extractor", getServerEnv()),
+			),
 	});
 
 	const summary = await runBaselineDryRun({

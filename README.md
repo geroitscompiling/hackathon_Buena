@@ -53,12 +53,22 @@ make run-initial
 ```
 
 Environment variables for AI extraction:
-- `GEMINI_API_KEY` (required)
-- `GEMINI_MODEL_GATEKEEPER` (optional, defaults to `GEMINI_MODEL` if set)
-- `GEMINI_MODEL_EXTRACTOR` (optional, defaults to `GEMINI_MODEL` if set)
+- `AI_INFERENCE_PROVIDER` (optional, `gemini` or `pioneer`; defaults to `gemini`)
+- `GEMINI_API_KEY` (required when `AI_INFERENCE_PROVIDER=gemini`)
+- `GEMINI_MODEL_GATEKEEPER` (required when `AI_INFERENCE_PROVIDER=gemini`)
+- `GEMINI_MODEL_EXTRACTOR` (required when `AI_INFERENCE_PROVIDER=gemini`)
+- `PIONEER_API_KEY` (required when `AI_INFERENCE_PROVIDER=pioneer`)
+- `PIONEER_MODEL_GATEKEEPER` (optional, defaults to `Qwen/Qwen3-32B`)
+- `PIONEER_MODEL_EXTRACTOR` (optional, defaults to `Qwen/Qwen3-32B`)
+- `PIONEER_BASE_URL` (optional, defaults to `https://api.pioneer.ai/v1`)
 - `GEMINI_MAX_RETRIES` (optional, default `5`; retries on 429/503)
-- `GEMINI_MIN_REQUEST_DELAY_MS` (optional, default `1000`; minimum delay between Gemini calls per service instance)
+- `GEMINI_MIN_REQUEST_DELAY_MS` (optional, default `1000`; minimum delay between AI calls per service instance)
 - `GEMINI_DEBUG` (optional, set `1` to print retry/attempt diagnostics)
+
+Pioneer AI by Fastino Labs is used through its OpenAI-compatible chat completions
+endpoint with `X-API-Key` authentication. The baseline gatekeeper, fact extractor,
+and case extractor all run at `temperature: 0`; set `AI_INFERENCE_PROVIDER=pioneer`
+to use `Qwen/Qwen3-32B` for inference.
 
 This baseline flow ingests:
 - core ERP files from `testfiles/stammdaten` as gold facts (with on-demand `houses` / `apartments` rows from ERP unit identifiers when needed)
