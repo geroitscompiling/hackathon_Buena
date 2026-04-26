@@ -5,9 +5,11 @@ import { useState } from "react";
 import { FactFormDialog } from "#/components/FactFormDialog";
 import { FactsTable } from "#/components/FactsTable";
 import { Button } from "#/components/ui/button";
+import { db } from "#/services/database";
+import type { FactListItem } from "#/services/facts";
 import {
-	FACTS_OVERVIEW_LOAD_LIMIT,
 	countFacts,
+	FACTS_OVERVIEW_LOAD_LIMIT,
 	listFacts,
 } from "#/services/facts";
 import {
@@ -16,9 +18,7 @@ import {
 	updateHumanFact,
 	updateHumanFactSchema,
 } from "#/services/humanFacts";
-import { db } from "#/services/database";
 import { listProperties } from "#/services/properties";
-import type { FactListItem } from "#/services/facts";
 
 const getFactsOverview = createServerFn({
 	method: "GET",

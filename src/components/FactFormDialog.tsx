@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { Button } from "#/components/ui/button";
 import {
@@ -69,7 +69,8 @@ export function FactFormDialog({
 		if (mode === "edit" && editingFact) {
 			setPropertyId(editingFact.propertyId);
 			setCategory(
-				(CATEGORY_OPTIONS.find((c) => c.value === editingFact.category)?.value ??
+				(CATEGORY_OPTIONS.find((c) => c.value === editingFact.category)
+					?.value ??
 					"maintenance") as (typeof CATEGORY_OPTIONS)[number]["value"],
 			);
 			setKey(editingFact.key);
@@ -81,8 +82,7 @@ export function FactFormDialog({
 		setKey("");
 		setValue("");
 		setValidFrom("");
-		const nextPropertyId =
-			scopeDefaults?.propertyId ?? properties[0]?.id ?? "";
+		const nextPropertyId = scopeDefaults?.propertyId ?? properties[0]?.id ?? "";
 		setPropertyId(nextPropertyId);
 	}, [open, mode, editingFact, scopeDefaults, properties]);
 
@@ -108,15 +108,13 @@ export function FactFormDialog({
 			setPending(true);
 			try {
 				await onCreate({
-					apartmentIds:
-						scopeDefaults?.presetApartmentIds.length ?
-							scopeDefaults.presetApartmentIds
-						:	undefined,
+					apartmentIds: scopeDefaults?.presetApartmentIds.length
+						? scopeDefaults.presetApartmentIds
+						: undefined,
 					category,
-					houseIds:
-						scopeDefaults?.presetHouseIds.length ?
-							scopeDefaults.presetHouseIds
-						:	undefined,
+					houseIds: scopeDefaults?.presetHouseIds.length
+						? scopeDefaults.presetHouseIds
+						: undefined,
 					key: key.trim(),
 					propertyId: effectivePropertyId,
 					validFrom: vf || undefined,
@@ -219,12 +217,12 @@ export function FactFormDialog({
 								<span className="font-medium text-foreground">
 									{effectivePropertyId}
 								</span>
-								{scopeDefaults.presetHouseIds.length ?
-									`, houses: ${scopeDefaults.presetHouseIds.join(", ")}`
-								:	null}
-								{scopeDefaults.presetApartmentIds.length ?
-									`, units: ${scopeDefaults.presetApartmentIds.join(", ")}`
-								:	null}
+								{scopeDefaults.presetHouseIds.length
+									? `, houses: ${scopeDefaults.presetHouseIds.join(", ")}`
+									: null}
+								{scopeDefaults.presetApartmentIds.length
+									? `, units: ${scopeDefaults.presetApartmentIds.join(", ")}`
+									: null}
 							</p>
 						) : null}
 

@@ -1,10 +1,10 @@
-import { eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import * as schema from "#/db/schema";
-import { getGeminiServiceRuntimeEnv } from "#/env";
 import { GeminiEmbeddingService } from "#/engine/services/GeminiEmbeddingService";
+import { getGeminiServiceRuntimeEnv } from "#/env";
 import type { AppDatabase } from "#/services/database";
 import { SemanticIndexService } from "#/services/semanticIndex";
 

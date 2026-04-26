@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-import { listFacts } from "#/services/facts";
 import { db } from "#/services/database";
+import { listFacts } from "#/services/facts";
 import {
 	createHumanFact,
 	createHumanFactSchema,
