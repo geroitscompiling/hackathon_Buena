@@ -1,6 +1,6 @@
 # Buena Context-Loom: Agent System Context
 
-**Welcome, AI Agent!** If you are reading this, you are assisting with the Buena Context-Loom Hackathon project. This document defines our goals, architectural rules, and strict coding standards. You MUST adhere to these rules at all times. **Before starting, you MUST also read the [README.md](file:///Users/gerograms/workspace/hackathon/README.md) for technical setup and environment details.**
+**Welcome, AI Agent!** If you are reading this, you are assisting with the Buena Context-Loom Hackathon project. This document defines our goals, architectural rules, and strict coding standards. You MUST adhere to these rules at all times. **Before starting, you MUST also read [README.md](./README.md) for technical setup and POC run instructions.**
 
 ## 🎯 The Mission
 We are building a highly polished, AI-native Property Management App. 
@@ -50,8 +50,8 @@ The primary developer strictly enforces high-quality software engineering:
 
 - Prefer Makefile flows for local recovery and demos:
   - `make install`
-  - `make run-initial` (baseline dry-run ticket flow)
-  - `make run-history` (history epic placeholder until implemented)
+  - `make run-initial` (baseline dry-run with live AI; resets DB)
+  - `make run-history` / `make run-history-live` (replay `day-01`…`day-10` from `testfiles/HistoryPopulationData`)
 - If local Postgres state is broken, run `make db-reset` before rerunning setup flows.
 
-*Note: Always cross-reference the `IMPLEMENTATION_PLAN.md` for specific Epic and Ticket details.*
+For human-facing setup and POC commands, see [README.md](./README.md).
