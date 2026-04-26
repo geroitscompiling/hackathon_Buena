@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "ddb69946f616",
+  "strategy": "manual-commit",
+  "branch": "caseOverview",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "src/components/SearchResults.tsx",
+    "src/lib/__tests__/formatIntegerGrouped.test.ts",
+    "src/lib/utils.ts",
+    "src/routes/api/search.ts",
+    "src/routes/search.tsx",
+    "src/services/semanticSearchShared.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/dd/b69946f616/0/metadata.json",
+      "transcript": "/dd/b69946f616/0/full.jsonl",
+      "content_hash": "/dd/b69946f616/0/content_hash.txt",
+      "prompt": "/dd/b69946f616/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

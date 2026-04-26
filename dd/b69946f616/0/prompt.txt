@@ -1,0 +1,137 @@
+Okay, I have hundreds of facts, cases enough to scroll through, but in the end: The seaech is not working:
+it simply shows nothing:
+
+---
+
+And I ran:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/18.txt:1013-1026
+
+---
+
+[Error] Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <SafeFragment fallback={null}>
+      <SafeFragment getResetKey={function getResetKey} errorComponent={function ErrorComponent} ...>
+        <SafeFragment fallback={function fallback}>
+          <MatchInnerImpl matchId="/search/se...">
+            <Lazy>
+              <SearchPage>
+                <main className="px-4 py-6 ..." data-tsd-source="/src/route...">
+                  <section>
+                  <Card className="mb-6 py-0" data-tsd-source="/src/route...">
+                    <div data-slot="card" className="flex flex-..." data-tsd-source="/src/route...">
+                      <CardContent className="py-6" data-tsd-source="/src/route...">
+                        <div data-slot="card-content" className="px-6 py-6" data-tsd-source="/src/route...">
+                          <form className="grid gap-4..." onSubmit={function onSubmit} data-tsd-source="/src/route...">
+                            <div>
+                            <div>
+                            <div>
+                            <div>
+                            <div>
+                            <div>
+                            <div className="flex flex-..." data-tsd-source="/src/route...">
+                              <div className="w-full min..." data-tsd-source="/src/route...">
+                                <label>
+                                <Input id="search-limit" name="limit" value="10" onChange={function onChange} ...>
+                                  <input
+                                    type={undefined}
+                                    data-slot="input"
+                                    className="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 p..."
+                                    id="search-limit"
+                                    name="limit"
+                                    value="10"
+                                    onChange={function onChange}
+                                    inputMode="numeric"
++                                   placeholder="max 10.000"
+-                                   placeholder="max 10,000"
+                                    aria-describedby="search-limit-hint"
+                                    data-tsd-source="/src/routes/search.tsx:304:9"
+                                  >
+                                <p id="search-lim..." className="mt-1 text-..." data-tsd-source="/src/route...">
++                                 10.000
+-                                 10,000
+                                  ...
+                              ...
+                  ...
+
+	reportError (react-dom_client.js:2968)
+	defaultOnRecoverableError (react-dom_client.js:5277)
+	runWithFiberInDEV (react-dom_client.js:851:132)
+	flushSpawnedWork (react-dom_client.js:8741)
+	commitRoot (react-dom_client.js:8585)
+	commitRootWhenReady (react-dom_client.js:8079)
+	performWorkOnRoot (react-dom_client.js:8051)
+	performWorkOnRootViaSchedulerTask (react-dom_client.js:9059)
+	performWorkUntilDeadline (react-dom_client.js:36)
+
+---
+
+I reloiaded, error ersists:
+A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <SafeFragment fallback={null}>
+      <SafeFragment getResetKey={function getResetKey} errorComponent={function ErrorComponent} ...>
+        <SafeFragment fallback={function fallback}>
+          <MatchInnerImpl matchId="/search/se...">
+            <Lazy>
+              <SearchPage>
+                <main className="px-4 py-6 ..." data-tsd-source="/src/route...">
+                  <section>
+                  <Card className="mb-6 py-0" data-tsd-source="/src/route...">
+                    <div data-slot="card" className="flex flex-..." data-tsd-source="/src/route...">
+                      <CardContent className="py-6" data-tsd-source="/src/route...">
+                        <div data-slot="card-content" className="px-6 py-6" data-tsd-source="/src/route...">
+                          <form className="grid gap-4..." onSubmit={function onSubmit} data-tsd-source="/src/route...">
+                            <div>
+                            <div>
+                            <div>
+                            <div>
+                            <div>
+                            <div>
+                            <div className="flex flex-..." data-tsd-source="/src/route...">
+                              <div className="w-full min..." data-tsd-source="/src/route...">
+                                <label>
+                                <Input id="search-limit" name="limit" value="10" onChange={function onChange} ...>
+                                  <input
+                                    type={undefined}
+                                    data-slot="input"
+                                    className="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 p..."
+                                    id="search-limit"
+                                    name="limit"
+                                    value="10"
+                                    onChange={function onChange}
+                                    inputMode="numeric"
++                                   placeholder="max 10.000"
+-                                   placeholder="max 10,000"
+                                    aria-describedby="search-limit-hint"
+                                    data-tsd-source="/src/routes/search.tsx:304:9"
+                                  >
+                                ...
+                              ...
+                  ...
+
+---
+
+IT WORKS FINALLY
