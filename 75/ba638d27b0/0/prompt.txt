@@ -1,0 +1,10 @@
+Okay, fair enough page loads. I get a loooot of facts. But: Where can I add my human fact? Where can I edit a fact?
+http://localhost:3000/facts
+
+---
+
+In adddition fix the table so it fits the screen, let the text in value break
+
+---
+
+can I have a similiar Search for Facts like we have for Cases?
