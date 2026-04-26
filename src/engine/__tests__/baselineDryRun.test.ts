@@ -63,7 +63,7 @@ describe("Baseline dry-run pipeline", () => {
 					{
 						category: "maintenance",
 						key: "unused_for_this_run",
-						value: true,
+						value: "true",
 						confidenceScore: 0.9,
 					},
 				],
