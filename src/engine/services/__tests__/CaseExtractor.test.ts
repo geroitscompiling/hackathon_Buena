@@ -51,6 +51,9 @@ describe("GeminiCaseExtractor (R2.2)", () => {
 			'"summary": "2-4 sentences describing what happened, current state, and next required action"',
 		);
 		expect(prompt).toContain(
+			"Write title and summary in English. If the document is not in English, translate while preserving proper names, identifiers, amounts, dates, and unit labels from the source.",
+		);
+		expect(prompt).toContain(
 			"The title must be specific and immediately understandable without opening the source document.",
 		);
 		expect(prompt).toContain(

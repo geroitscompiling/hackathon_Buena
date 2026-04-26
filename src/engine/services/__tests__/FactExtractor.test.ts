@@ -104,7 +104,10 @@ describe("FactExtractor", () => {
       '"key": "topic_tag_like_repair_ownership_payment"'
     );
     expect(vi.mocked(llm.generateJson).mock.calls[0][0]).toContain(
-      '"value": "A concrete fact sentence in the source language"'
+      '"value": "A concrete fact sentence in English"'
+    );
+    expect(vi.mocked(llm.generateJson).mock.calls[0][0]).toContain(
+      "Write every fact value in English"
     );
     expect(vi.mocked(llm.generateJson).mock.calls[0][0]).toContain(
       "Always use absolute dates"

@@ -43,6 +43,7 @@ Return valid JSON only using this shape:
 
 Rules:
 - If there is no actionable workflow, return {"cases":[]}.
+- Write title and summary in English. If the document is not in English, translate while preserving proper names, identifiers, amounts, dates, and unit labels from the source.
 - The title must be specific and immediately understandable without opening the source document.
 - Avoid vague titles such as "Follow-up", "Issue", "Open incident", or "Window repair batch".
 - Prefer titles like "Tenant reports repeated elevator outage in house 3" or "Outstanding payment for window repair invoice INV-2048".

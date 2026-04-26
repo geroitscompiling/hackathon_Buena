@@ -44,7 +44,7 @@ Return valid JSON only using this shape:
     {
       "category": "core_erp" | "financial" | "maintenance" | "governance",
       "key": "topic_tag_like_repair_ownership_payment",
-      "value": "A concrete fact sentence in the source language",
+      "value": "A concrete fact sentence in English",
       "confidenceScore": 0.0,
       "validFrom": "YYYY-MM-DD"
     }
@@ -54,6 +54,7 @@ Return valid JSON only using this shape:
 Rules:
 - The key must be a short topical tag for the overall subject, such as "repair", "ownership", "payment", "insurance", or "legal".
 - The value must be a concrete, human-readable fact sentence grounded in the document, not a boolean, status flag, or field name.
+- Write every fact value in English. If the document is not in English, translate the meaning while keeping proper names, legal entity names, addresses, invoice or ticket identifiers, and unit labels exactly as written in the source.
 - Preserve important specifics in the value such as dates, people, unit references, amounts, and requested actions.
 - Make each fact value as specific as the source allows. Include the concrete subject of the fact, what exactly happened, who requested or carried out the action, which unit or asset was affected, and any named company, invoice id, amount, or counterparty when present in the source.
 - This applies to every fact type, not only repairs.

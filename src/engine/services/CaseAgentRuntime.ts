@@ -21,6 +21,7 @@ import {
 	createAgentRun,
 	type AgentRecommendation,
 } from "#/services/agentRuns";
+import { TERMINAL_CASE_STATUS } from "../case/caseDomain";
 import type { GuardedClosureResult, CaseLifecycleService } from "./CaseLifecycleService";
 
 type McpListToolsResult = {
@@ -120,6 +121,7 @@ const SYSTEM_PROMPT = [
 	"If the case concerns rent, invoices, payments, warnings, arrears, or proof of payment, use the read-only testfiles tools to inspect raw source files such as bank statements or letters when other evidence is insufficient.",
 	"Return a conservative recommendation.",
 	"Do not invent evidence. If evidence is weak or absent after investigation, keep the case open.",
+	"Write all assistant outputs in English, including the final recommendation summary and any narrative before the final JSON.",
 ].join(" ");
 
 const DEFAULT_MAX_AGENT_STEPS = 50;
@@ -473,6 +475,7 @@ function buildNativeAgentPrompt(input: {
 		"If closure is justified, prefer request_case_closure so the guarded lifecycle boundary records the decision.",
 		"Return the final structured recommendation only when the investigation is complete.",
 		'Final response must be one JSON object with proposedAction exactly "close_case" or "keep_open", confidence, summary, and evidenceFactIds. Do not wrap it in markdown.',
+		"The summary field must be English even when evidence or source files are in another language.",
 		`Baseline context:\n${summarizeForPrompt(input.baselineContext)}`,
 		input.observations.length > 0
 			? `Additional forced observations already gathered:\n${summarizeForPrompt(input.observations)}`
@@ -574,8 +577,21 @@ export class CaseAgentRuntime {
 			].join("\n\n");
 			await persistMessage("user", userPrompt);
 
-			await client.connect();
-			const availableTools = await client.listTools();
+			let recommendation: AgentRecommendation;
+			let debugBundle: unknown;
+
+			if (baselineContext.case.status === TERMINAL_CASE_STATUS) {
+				recommendation = {
+					proposedAction: "close_case",
+					confidence: 1,
+					summary: "Case is already resolved.",
+					evidenceFactIds: [],
+				};
+				debugBundle = { skippedBecauseTerminal: true };
+				await persistMessage("assistant", recommendation.summary);
+			} else {
+				await client.connect();
+				const availableTools = await client.listTools();
 			const availableToolNames = new Set(
 				availableTools.tools.map((tool) => tool.name),
 			);
@@ -630,8 +646,6 @@ export class CaseAgentRuntime {
 				return parsedPayload;
 			};
 
-			let recommendation: AgentRecommendation;
-			let debugBundle: unknown;
 			if (this.options.generateRecommendation) {
 				const outcome = await this.options.generateRecommendation({
 					caseId: input.caseId,
@@ -745,6 +759,7 @@ export class CaseAgentRuntime {
 
 				recommendation = completionDecision.recommendation;
 				debugBundle = observations;
+			}
 			}
 
 			let guardrailResult: GuardedClosureResult | undefined;
