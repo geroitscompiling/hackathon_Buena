@@ -1,0 +1,10 @@
+Okay, that's nice however we get the first feedback from external devs that need to be worked into the plan and be prioritised: Feedbaqck is in German:
+1. IMPORT RELATED:
+⁠⁠Der baseline import liest ja bis jetzt noch nicht den ganzen datenstamm ein, das müssen wir auch mal machen (Und dann vielleicht ein backup von der db machen, das wir das nicht nochmal wiederholen müssen)
+Dev Note: What he means is the initial run. There are two scenarios: Setup iniitla and initial data state and run over 10 days (see Test data folder structure). It seems like the initial run only consumes golden Records via CSV and JSON but ignores Stuff for the Gatekeeper such as Invoices from 2024. 
+
+1. Structure Related:
+Wenn der die owner und so importiert, wird der fact noch nicht der richtigen wohnung/haus zugewiesen weil die wohnung/haus nicht in der datenbank existiert
+Dev Note: Probably that Assignment/ relation needs to be created on demand.
+
+Please update the implementation plan now. After that prepare a Handover promot for the coding agent to fix those two topics.
