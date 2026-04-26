@@ -66,9 +66,14 @@ describe("CasesTable", () => {
 			/>,
 		);
 
-		const link = screen.getByRole("link", {
+		// Mobile (`md:hidden`) and desktop (`hidden md:table`) blocks both mount in jsdom
+		// because Tailwind responsive display utilities are not applied there.
+		const links = screen.getAllByRole("link", {
 			name: "Window invoice follow-up",
 		});
-		expect(link.getAttribute("href")).toBe("/cases/case-1");
+		expect(links.length).toBeGreaterThanOrEqual(1);
+		for (const link of links) {
+			expect(link).toHaveAttribute("href", "/cases/case-1");
+		}
 	});
 });
