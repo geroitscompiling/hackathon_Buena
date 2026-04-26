@@ -1,0 +1,58 @@
+[Error] Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <SafeFragment fallback={null}>
+      <SafeFragment getResetKey={function getResetKey} errorComponent={function ErrorComponent} ...>
+        <SafeFragment fallback={function fallback}>
+          <MatchInnerImpl matchId={"/cases/c..."}>
+            <Lazy>
+              <CasesPage>
+                <main className="px-4 py-6 ..." data-tsd-source="/src/route...">
+                  <section>
+                  <Card>
+                  <CasesTable cases={[...]} data-tsd-source="/src/route...">
+                    <div className="overflow-h..." data-tsd-source="/src/compo...">
+                      <div className="divide-y m..." data-tsd-source="/src/compo...">
+                        <div className="space-y-4 p-4" data-tsd-source="/src/compo...">
+                          <div>
+                          <div className="grid gap-3..." data-tsd-source="/src/compo...">
+                            <div>
+                            <div>
+                            <div>
+                            <div className="space-y-2 ..." data-tsd-source="/src/compo...">
+                              <div data-tsd-source="/src/compo...">
+                                <p>
+                                <p className="leading-tight" data-tsd-source="/src/components/CasesTable.tsx:88:10">
++                                 26 Apr 2026 at 11:49
+-                                 26 Apr 2026, 11:49
+                              ...
+                        ...
+                      ...
+
+	reportError (react-dom_client.js:2968)
+	defaultOnRecoverableError (react-dom_client.js:5277)
+	runWithFiberInDEV (react-dom_client.js:851:132)
+	flushSpawnedWork (react-dom_client.js:8741)
+	commitRoot (react-dom_client.js:8585)
+	commitRootWhenReady (react-dom_client.js:8079)
+	performWorkOnRoot (react-dom_client.js:8051)
+	performWorkOnRootViaSchedulerTask (react-dom_client.js:9059)
+	performWorkUntilDeadline (react-dom_client.js:36)
+
+---
+
+Search works but there is a UI Bug, source runs into next table
+
+---
+
+Better idea: Remove Scope from Table View. It's a hash so no human knows what to do with it anaway
