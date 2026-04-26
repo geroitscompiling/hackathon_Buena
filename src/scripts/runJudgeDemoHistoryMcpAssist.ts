@@ -31,6 +31,10 @@ const embeddingClient: EmbeddingClient = {
 	embedQuery: async (text) => vectorForText(text),
 };
 
+function vectorOf(a: number, b = 0): number[] {
+	return [a, b, ...Array.from({ length: 1534 }, () => 0)];
+}
+
 async function preloadExistingGoldFacts(propertyId: string) {
 	const existingFacts = await db.query.facts.findMany({
 		where: (factsTable, { and, eq }) =>
@@ -215,6 +219,7 @@ async function runJudgeDemoHistoryMcpAssist(): Promise<void> {
 		sourceId: "demo-assist-source",
 		isGoldStandard: false,
 		confidenceScore: 0.96,
+		embedding: vectorOf(1),
 	}).onConflictDoNothing();
 	await db.insert(schema.factHouses).values({
 		factId: "demo-assist-fact",

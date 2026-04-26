@@ -32,6 +32,10 @@ function deterministicEmbeddingClient(): EmbeddingClient {
 	};
 }
 
+function vectorOf(a: number, b = 0): number[] {
+	return [a, b, ...Array.from({ length: 1534 }, () => 0)];
+}
+
 async function createDatasetRoot() {
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), "e4-mcp-workflow-"));
 	await fs.mkdir(path.join(root, "emails"), { recursive: true });
@@ -225,6 +229,7 @@ describe("judge history + MCP assist workflow (E4.6)", () => {
 				sourceId: "e4-closure-source",
 				isGoldStandard: false,
 				confidenceScore: 0.97,
+				embedding: vectorOf(1),
 			});
 			await db.insert(schema.factHouses).values({
 				factId: "e4-closure-fact",
