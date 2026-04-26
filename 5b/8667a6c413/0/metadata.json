@@ -1,0 +1,97 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "5b8667a6c413",
+  "session_id": "117f8a6b-cc85-4397-9e41-b9339a37b130",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T04:39:04.744028Z",
+  "branch": "Epic_4",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "Makefile",
+    "src/engine/__tests__/judgeHistoryMcpAssist.integration.test.ts",
+    "src/scripts/runJudgeDemoHistoryMcpAssist.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "61c109ef02c6",
+  "checkpoint_transcript_start": 39,
+  "transcript_lines_at_start": 39,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T04:39:04.737944Z",
+    "agent_lines": 268,
+    "agent_removed": 0,
+    "human_added": 277,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 546,
+    "total_lines_changed": 546,
+    "agent_percentage": 49.08424908424908,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 566,
+      "user_lines_removed": 9,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "Makefile": 5,
+        "package.json": 1,
+        "src/engine/__tests__/epic4McpWorkflow.integration.test.ts": 269,
+        "src/mcp/server.ts": 19,
+        "src/scripts/runEpic4Demo.ts": 272
+      },
+      "user_removed_per_file": {
+        "Makefile": 1,
+        "src/mcp/server.ts": 8
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 566,
+      "agent_lines_removed": 9
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 279,
+      "user_lines_removed": 1,
+      "agent_lines_added": 294,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        "Makefile": 6,
+        "package.json": 1,
+        "src/scripts/runJudgeDemoHistoryMcpAssist.ts": 272
+      },
+      "user_removed_per_file": {
+        "package.json": 1
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
