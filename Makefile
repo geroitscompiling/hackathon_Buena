@@ -74,10 +74,10 @@ run-initial-mock: db-reset db-setup
 run-history: run-history-mock
 
 run-history-live:
-	HISTORY_MODE=live HISTORY_DAY=$(DAY) pnpm run dry-run:history
+	DATABASE_URL=$(DATABASE_URL) HISTORY_MODE=live HISTORY_DAY=$(DAY) pnpm run dry-run:history
 
 run-history-mock:
-	HISTORY_MODE=mock HISTORY_DAY=$(DAY) pnpm run dry-run:history
+	DATABASE_URL=$(DATABASE_URL) HISTORY_MODE=mock HISTORY_DAY=$(DAY) pnpm run dry-run:history
 
 run-stage-live: run-initial run-history-live
 
