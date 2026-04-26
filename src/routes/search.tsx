@@ -234,19 +234,24 @@ function SearchPage() {
 								placeholder="LIE-001-H1-A1"
 							/>
 						</div>
-						<div className="flex items-end gap-3">
-							<div className="flex-1">
+						<div className="flex flex-wrap items-end gap-3 md:col-span-2 xl:col-span-7">
+							<div className="w-full min-w-[12rem] sm:w-auto sm:max-w-[14rem]">
 								<label htmlFor="search-limit" className="mb-2 block text-sm font-medium">
-									Limit (max {SEMANTIC_SEARCH_MAX_RESULTS.toLocaleString()})
+									Results limit
 								</label>
 								<Input
 									id="search-limit"
 									value={limit}
 									onChange={(event) => setLimit(event.target.value)}
 									inputMode="numeric"
+									placeholder={`max ${SEMANTIC_SEARCH_MAX_RESULTS.toLocaleString()}`}
+									aria-describedby="search-limit-hint"
 								/>
+								<p id="search-limit-hint" className="mt-1 text-xs text-muted-foreground">
+									Capped at {SEMANTIC_SEARCH_MAX_RESULTS.toLocaleString()} per search.
+								</p>
 							</div>
-							<Button type="submit" className="min-w-28">
+							<Button type="submit" className="min-w-28 shrink-0">
 								Search
 							</Button>
 						</div>
