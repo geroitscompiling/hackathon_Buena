@@ -18,6 +18,7 @@ describe("FactsTable", () => {
 						houseIds: ["LIE-001-H1"],
 						id: "fact-2",
 						isGoldStandard: false,
+						validFrom: "2026-04-01",
 						key: "boiler_status",
 						property: {
 							id: "LIE-001",
@@ -42,6 +43,7 @@ describe("FactsTable", () => {
 		expect(screen.getByText("LIE-001-H1-A2")).toBeTruthy();
 		expect(screen.getByText("case-1")).toBeTruthy();
 		expect(screen.getByText("LTR-0001.pdf")).toBeTruthy();
+		expect(screen.getByText("2026-04-01")).toBeTruthy();
 	});
 
 	it("renders an empty state when no facts are available", () => {

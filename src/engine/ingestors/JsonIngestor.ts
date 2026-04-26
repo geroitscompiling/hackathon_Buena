@@ -10,6 +10,7 @@ export class JsonIngestor implements Ingestor {
     const facts: BuildingFact[] = [];
     const propertyId = data.liegenschaft?.id || "UNKNOWN-PROP";
     const ingestionDate = new Date().toISOString();
+    const validFrom = ingestionDate.slice(0, 10);
 
     const createFact = (
       category: BuildingFact["category"],
@@ -28,6 +29,7 @@ export class JsonIngestor implements Ingestor {
       },
       isGoldStandard: true,
       confidenceScore: 1.0,
+      validFrom,
     });
 
     if (data.liegenschaft) {

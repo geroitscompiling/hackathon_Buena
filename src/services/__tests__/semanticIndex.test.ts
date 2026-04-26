@@ -172,18 +172,19 @@ describe("semanticIndex", () => {
 		expect(formatSemanticSearchQuery("roof leak")).toBe(
 			"task: search result | query: roof leak",
 		);
-		expect(
-			formatFactEmbeddingDocument({
-				propertyId: "LIE-001",
-				houseId: "LIE-001-H1",
-				apartmentId: null,
-				category: "maintenance",
-				key: "roof_leak",
-				value: "reported after rain",
-				isGoldStandard: false,
-				sourceFileId: "EMAIL-1.eml",
-			}),
-		).toContain("key=roof_leak");
+		const factDoc = formatFactEmbeddingDocument({
+			propertyId: "LIE-001",
+			houseId: "LIE-001-H1",
+			apartmentId: null,
+			category: "maintenance",
+			key: "roof_leak",
+			value: "reported after rain",
+			isGoldStandard: false,
+			sourceFileId: "EMAIL-1.eml",
+			validFrom: "2026-04-01",
+		});
+		expect(factDoc).toContain("key=roof_leak");
+		expect(factDoc).toContain("validFrom=2026-04-01");
 		expect(
 			formatCaseEmbeddingDocument({
 				propertyId: "LIE-001",

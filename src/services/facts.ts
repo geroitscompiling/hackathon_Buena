@@ -37,6 +37,7 @@ export type FactListItem = {
 	value: string;
 	isGoldStandard: boolean;
 	confidenceScore: number;
+	validFrom: string | null;
 	property: {
 		id: string;
 		name: string;
@@ -86,6 +87,7 @@ export async function listFacts(
 		id: fact.id,
 		isGoldStandard: fact.isGoldStandard,
 		key: fact.key,
+		validFrom: fact.validFrom ?? null,
 		property: {
 			id: fact.property.id,
 			name: fact.property.name,

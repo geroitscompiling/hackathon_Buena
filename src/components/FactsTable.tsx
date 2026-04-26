@@ -1,4 +1,5 @@
 import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
 import {
 	Table,
 	TableBody,
@@ -11,9 +12,10 @@ import type { FactListItem } from "#/services/facts";
 
 type FactsTableProps = {
 	facts: FactListItem[];
+	onEditFact?: (fact: FactListItem) => void;
 };
 
-export function FactsTable({ facts }: FactsTableProps) {
+export function FactsTable({ facts, onEditFact }: FactsTableProps) {
 	if (facts.length === 0) {
 		return (
 			<div className="rounded-lg border border-dashed bg-card px-6 py-6 text-sm text-muted-foreground">
@@ -33,7 +35,9 @@ export function FactsTable({ facts }: FactsTableProps) {
 							<TableHead>Property</TableHead>
 							<TableHead>Scope</TableHead>
 							<TableHead>Source</TableHead>
+							<TableHead>Valid from</TableHead>
 							<TableHead>Meta</TableHead>
+							{onEditFact ? <TableHead className="w-28">Actions</TableHead> : null}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -84,6 +88,11 @@ export function FactsTable({ facts }: FactsTableProps) {
 										</p>
 									</div>
 								</TableCell>
+								<TableCell className="min-w-28 align-top text-sm">
+									{fact.validFrom ?? (
+										<span className="text-muted-foreground">—</span>
+									)}
+								</TableCell>
 								<TableCell className="min-w-36 align-top">
 									<div className="flex flex-wrap gap-1.5">
 										<Badge variant="outline">{fact.category}</Badge>
@@ -93,6 +102,18 @@ export function FactsTable({ facts }: FactsTableProps) {
 										{fact.isGoldStandard ? <Badge>Gold</Badge> : null}
 									</div>
 								</TableCell>
+								{onEditFact ? (
+									<TableCell className="align-top">
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => onEditFact(fact)}
+										>
+											Edit
+										</Button>
+									</TableCell>
+								) : null}
 							</TableRow>
 						))}
 					</TableBody>

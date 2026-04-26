@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { listFacts } from "#/services/facts";
+import { db } from "#/services/database";
+import {
+	createHumanFact,
+	createHumanFactSchema,
+	updateHumanFact,
+	updateHumanFactSchema,
+} from "#/services/humanFacts";
 
 export const Route = createFileRoute("/api/facts")({
 	server: {
@@ -16,6 +23,18 @@ export const Route = createFileRoute("/api/facts")({
 				});
 
 				return Response.json(result);
+			},
+			POST: async ({ request }) => {
+				const body: unknown = await request.json();
+				const parsed = createHumanFactSchema.parse(body);
+				const { id } = await createHumanFact(db, parsed);
+				return Response.json({ id }, { status: 201 });
+			},
+			PATCH: async ({ request }) => {
+				const body: unknown = await request.json();
+				const parsed = updateHumanFactSchema.parse(body);
+				await updateHumanFact(db, parsed);
+				return new Response(null, { status: 204 });
 			},
 		},
 	},

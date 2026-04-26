@@ -44,6 +44,7 @@ describe("EmlIngestor", () => {
 
     expect(facts).toHaveLength(1);
     expect(facts[0].isGoldStandard).toBe(false);
+    expect(facts[0].validFrom).toBe("2026-01-01");
     expect(facts[0].source.fileType).toBe("eml");
     expect(facts[0].source.fileId).toBe("20260101_083800_EMAIL-06547.eml");
     expect(extractor.extract).toHaveBeenCalledWith(expect.any(String), {
