@@ -15,6 +15,7 @@ import { Route as DemoSnapshotRouteImport } from './routes/demo-snapshot'
 import { Route as CasesRouteImport } from './routes/cases'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FactsIndexRouteImport } from './routes/facts.index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoBetterAuthRouteImport } from './routes/demo/better-auth'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
@@ -58,6 +59,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const FactsIndexRoute = FactsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FactsRoute,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/api/search': typeof ApiSearchRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/facts/': typeof FactsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
@@ -151,7 +158,6 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
   '/demo-snapshot': typeof DemoSnapshotRoute
-  '/facts': typeof FactsRouteWithChildren
   '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
   '/api/facts': typeof ApiFactsRoute
@@ -162,6 +168,7 @@ export interface FileRoutesByTo {
   '/api/search': typeof ApiSearchRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/facts': typeof FactsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
@@ -184,6 +191,7 @@ export interface FileRoutesById {
   '/api/search': typeof ApiSearchRoute
   '/demo/better-auth': typeof DemoBetterAuthRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/facts/': typeof FactsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
@@ -207,6 +215,7 @@ export interface FileRouteTypes {
     | '/api/search'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
+    | '/facts/'
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
@@ -217,7 +226,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/cases'
     | '/demo-snapshot'
-    | '/facts'
     | '/search'
     | '/api/cases'
     | '/api/facts'
@@ -228,6 +236,7 @@ export interface FileRouteTypes {
     | '/api/search'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
+    | '/facts'
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/api/search'
     | '/demo/better-auth'
     | '/demo/tanstack-query'
+    | '/facts/'
     | '/api/auth/$'
     | '/demo/form/address'
     | '/demo/form/simple'
@@ -319,6 +329,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/facts/': {
+      id: '/facts/'
+      path: '/'
+      fullPath: '/facts/'
+      preLoaderRoute: typeof FactsIndexRouteImport
+      parentRoute: typeof FactsRoute
     }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
@@ -415,10 +432,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface FactsRouteChildren {
+  FactsIndexRoute: typeof FactsIndexRoute
   FactsScopeTypeScopeIdRoute: typeof FactsScopeTypeScopeIdRoute
 }
 
 const FactsRouteChildren: FactsRouteChildren = {
+  FactsIndexRoute: FactsIndexRoute,
   FactsScopeTypeScopeIdRoute: FactsScopeTypeScopeIdRoute,
 }
 
