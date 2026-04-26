@@ -1,0 +1,10 @@
+Jeah but did not exit properly? Can I assume the data was saved?
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/18.txt:1019-1025
+
+---
+
+Ah so it was my bad? I just broke it because it was writing to the DB?
+
+---
+
+Okay. thanks
