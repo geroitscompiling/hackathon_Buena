@@ -1,10 +1,10 @@
-import type { db as appDb } from "#/db";
+import type { AppDrizzleDatabase } from "#/db/drizzleTypes.ts";
 import { createMcpTools, listMcpTools } from "#/mcp/server";
 import type { EmbeddingClient } from "#/services/semanticIndex";
 import { CaseAgentRuntime } from "./CaseAgentRuntime";
 import type { CaseLifecycleService, GuardedClosureResult } from "./CaseLifecycleService";
 
-type CaseAssistDb = typeof appDb;
+type CaseAssistDb = AppDrizzleDatabase;
 
 type CaseContextBundle = {
 	case: {

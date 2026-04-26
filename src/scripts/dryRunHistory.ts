@@ -2,7 +2,7 @@ import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import dotenv from "dotenv";
 
-import { db } from "../db";
+import { db, queryClient } from "../db";
 import { runPropertyHistoryReplay } from "../engine/pipelines/PropertyHistoryRunner";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
 import {
@@ -47,6 +47,7 @@ async function preloadExistingGoldFacts(propertyId: string) {
 }
 
 async function main() {
+  try {
   const mode = (process.env.HISTORY_MODE ?? "mock").trim().toLowerCase();
   if (mode !== "mock" && mode !== "live") {
     throw new Error(`Unsupported HISTORY_MODE: ${mode}. Use "mock" or "live".`);
@@ -175,6 +176,9 @@ async function main() {
   console.log(`Conflict log stored at: ${conflictLogPath}`);
   console.log(`Days processed: ${replay.totalDaysProcessed}`);
   console.log(`Conflicts blocked: ${replay.totals.factsBlockedAsConflicts}`);
+  } finally {
+    await queryClient.end();
+  }
 }
 
 main().catch((error) => {

@@ -63,6 +63,8 @@ export const facts = pgTable(
 			.references(() => sources.id),
 		isGoldStandard: boolean("isGoldStandard").notNull(),
 		confidenceScore: real("confidenceScore").notNull(),
+		/** Calendar date (YYYY-MM-DD) when the fact becomes valid; distinct from source ingestion time. */
+		validFrom: text("validFrom"),
 		embedding: vector("embedding", { dimensions: embeddingDimensions }),
 	},
 	(table) => [

@@ -30,6 +30,26 @@ describe("FactExtractor", () => {
     ]);
   });
 
+  it("fills validFrom from referenceDate when the model omits it", async () => {
+    const llm: LlmJsonClient = {
+      generateJson: vi.fn().mockResolvedValue({
+        facts: [
+          {
+            category: "maintenance",
+            key: "repair",
+            value: "Heizung defekt.",
+            confidenceScore: 0.9,
+          },
+        ],
+      }),
+    };
+
+    const extractor = new FactExtractor(llm);
+    const facts = await extractor.extract("Text", { referenceDate: "2026-04-26" });
+
+    expect(facts[0]?.validFrom).toBe("2026-04-26");
+  });
+
   it("filters out invalid categories, malformed records, and primitive values", async () => {
     const llm: LlmJsonClient = {
       generateJson: vi.fn().mockResolvedValue({

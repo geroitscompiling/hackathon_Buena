@@ -9,6 +9,8 @@ import {
 	formatSemanticSearchQuery,
 	SemanticIndexService,
 	semanticSearch,
+	semanticSearchSchema,
+	SEMANTIC_SEARCH_MAX_RESULTS,
 } from "../semanticIndex";
 
 function vectorOf(first: number, second = 0): number[] {
@@ -67,6 +69,12 @@ describe("semanticIndex", () => {
 			fileType: "eml",
 			ingestionDate: "2026-04-25T11:00:00.000Z",
 		});
+		await db.insert(schema.sources).values({
+			id: "source-stamm",
+			fileId: "stammdaten.json",
+			fileType: "json",
+			ingestionDate: "2026-04-25T12:00:00.000Z",
+		});
 		await db.insert(schema.facts).values({
 			id: "fact-1",
 			propertyId: "LIE-001",
@@ -79,6 +87,20 @@ describe("semanticIndex", () => {
 		});
 		await db.insert(schema.factHouses).values({
 			factId: "fact-1",
+			houseId: "LIE-001-H1",
+		});
+		await db.insert(schema.facts).values({
+			id: "fact-gold",
+			propertyId: "LIE-001",
+			category: "identity",
+			key: "building_year",
+			value: "1998",
+			sourceId: "source-stamm",
+			isGoldStandard: true,
+			confidenceScore: 1,
+		});
+		await db.insert(schema.factHouses).values({
+			factId: "fact-gold",
 			houseId: "LIE-001-H1",
 		});
 		await db.insert(schema.cases).values({
@@ -133,22 +155,36 @@ describe("semanticIndex", () => {
 		await testDb?.close();
 	});
 
+	it("semanticSearchSchema allows limit up to SEMANTIC_SEARCH_MAX_RESULTS", () => {
+		expect(
+			semanticSearchSchema.parse({ query: "roof", limit: SEMANTIC_SEARCH_MAX_RESULTS })
+				.limit,
+		).toBe(SEMANTIC_SEARCH_MAX_RESULTS);
+		expect(() =>
+			semanticSearchSchema.parse({
+				query: "roof",
+				limit: SEMANTIC_SEARCH_MAX_RESULTS + 1,
+			}),
+		).toThrow();
+	});
+
 	it("formats search inputs for asymmetric retrieval", () => {
 		expect(formatSemanticSearchQuery("roof leak")).toBe(
 			"task: search result | query: roof leak",
 		);
-		expect(
-			formatFactEmbeddingDocument({
-				propertyId: "LIE-001",
-				houseId: "LIE-001-H1",
-				apartmentId: null,
-				category: "maintenance",
-				key: "roof_leak",
-				value: "reported after rain",
-				isGoldStandard: false,
-				sourceFileId: "EMAIL-1.eml",
-			}),
-		).toContain("key=roof_leak");
+		const factDoc = formatFactEmbeddingDocument({
+			propertyId: "LIE-001",
+			houseId: "LIE-001-H1",
+			apartmentId: null,
+			category: "maintenance",
+			key: "roof_leak",
+			value: "reported after rain",
+			isGoldStandard: false,
+			sourceFileId: "EMAIL-1.eml",
+			validFrom: "2026-04-01",
+		});
+		expect(factDoc).toContain("key=roof_leak");
+		expect(factDoc).toContain("validFrom=2026-04-01");
 		expect(
 			formatCaseEmbeddingDocument({
 				propertyId: "LIE-001",
@@ -170,7 +206,7 @@ describe("semanticIndex", () => {
 		});
 
 		await expect(indexService.backfillMissingEmbeddings()).resolves.toEqual({
-			factsUpdated: 2,
+			factsUpdated: 3,
 			casesUpdated: 2,
 		});
 
@@ -186,6 +222,10 @@ describe("semanticIndex", () => {
 	});
 
 	it("returns mixed semantic search results filtered by scope", async () => {
+		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: null })
+			.where(eq(schema.facts.id, "fact-gold"));
 		await testDb.db
 			.update(schema.facts)
 			.set({ embedding: vectorOf(1) })
@@ -320,5 +360,56 @@ describe("semanticIndex", () => {
 			const payload = row.payload as { apartmentId?: string; apartmentIds?: string[] };
 			return payload.apartmentId === "LIE-001-H1-A1" || payload.apartmentIds?.includes("LIE-001-H1-A1");
 		})).toBe(true);
+	});
+
+	it("filters facts by gold standard when requested", async () => {
+		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: vectorOf(1) })
+			.where(eq(schema.facts.id, "fact-1"));
+		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: vectorOf(1) })
+			.where(eq(schema.facts.id, "fact-gold"));
+
+		const goldOnly = await semanticSearch(
+			{
+				embedDocument: async () => vectorOf(1),
+				embedQuery: async () => vectorOf(1),
+			},
+			testDb.db,
+			{
+				query: "building year stamm",
+				entityType: "fact",
+				goldStandard: "gold",
+				limit: 10,
+			},
+		);
+
+		expect(goldOnly.map((row) => row.id)).toEqual(["fact-gold"]);
+
+		const nonGold = await semanticSearch(
+			{
+				embedDocument: async () => vectorOf(1),
+				embedQuery: async () => vectorOf(1),
+			},
+			testDb.db,
+			{
+				query: "maintenance roof",
+				entityType: "fact",
+				goldStandard: "nonGold",
+				limit: 10,
+			},
+		);
+
+		expect(nonGold.map((row) => row.id)).toContain("fact-1");
+		expect(nonGold.map((row) => row.id)).not.toContain("fact-gold");
+		expect(
+			nonGold.every(
+				(row) =>
+					row.entityType === "fact" &&
+					(row.payload as { isGoldStandard: boolean }).isGoldStandard === false,
+			),
+		).toBe(true);
 	});
 });

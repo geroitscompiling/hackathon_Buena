@@ -14,9 +14,11 @@ export class CsvIngestor implements Ingestor {
     const anredeIdx = headers.indexOf("anrede");
     const vornameIdx = headers.indexOf("vorname");
     const nachnameIdx = headers.indexOf("nachname");
+    const einheitIdsIdx = headers.indexOf("einheit_ids");
     
     const facts: BuildingFact[] = [];
     const ingestionDate = new Date().toISOString();
+    const validFrom = ingestionDate.slice(0, 10);
     const propertyId = "LIE-001"; // Defaulting as agreed
 
     for (let i = 1; i < lines.length; i++) {
@@ -32,20 +34,50 @@ export class CsvIngestor implements Ingestor {
         columns[nachnameIdx]
       ].filter(Boolean).join(" ");
 
-      facts.push({
-        id: crypto.randomUUID(),
-        propertyId,
-        category: "governance",
-        key: `owner_${id}`,
-        value: ownerName,
-        source: {
-          fileId,
-          fileType: "csv",
-          ingestionDate,
-        },
-        isGoldStandard: true,
-        confidenceScore: 1.0,
-      });
+      const unitIds =
+        einheitIdsIdx >= 0
+          ? (columns[einheitIdsIdx] ?? "")
+              .split(";")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [];
+
+      if (unitIds.length === 0) {
+        facts.push({
+          id: crypto.randomUUID(),
+          propertyId,
+          category: "governance",
+          key: `owner_${id}`,
+          value: ownerName,
+          source: {
+            fileId,
+            fileType: "csv",
+            ingestionDate,
+          },
+          isGoldStandard: true,
+          confidenceScore: 1.0,
+          validFrom,
+        });
+      } else {
+        for (const einheitId of unitIds) {
+          facts.push({
+            id: crypto.randomUUID(),
+            propertyId,
+            category: "governance",
+            key: `owner_${id}_${einheitId}`,
+            value: ownerName,
+            source: {
+              fileId,
+              fileType: "csv",
+              ingestionDate,
+            },
+            isGoldStandard: true,
+            confidenceScore: 1.0,
+            validFrom,
+            erpScope: { einheitId },
+          });
+        }
+      }
     }
 
     return facts;

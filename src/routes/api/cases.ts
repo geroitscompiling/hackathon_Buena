@@ -13,6 +13,7 @@ export const Route = createFileRoute("/api/cases")({
 					limit: searchParams.get("limit") ?? undefined,
 					ownerUserId: searchParams.get("ownerUserId") ?? undefined,
 					propertyId: searchParams.get("propertyId") ?? undefined,
+					q: searchParams.get("q") ?? undefined,
 					status: searchParams.get("status") ?? undefined,
 				});
 

@@ -44,6 +44,7 @@ describe("PdfIngestor", () => {
 
     expect(facts).toHaveLength(1);
     expect(facts[0].isGoldStandard).toBe(false);
+    expect(facts[0].validFrom).toBe("2026-01-01");
     expect(facts[0].source.fileType).toBe("pdf");
     expect(facts[0].source.fileId).toBe("20260101_DL-001_INV-00195.pdf");
     expect(extractor.extract).toHaveBeenCalledWith(expect.any(String), {

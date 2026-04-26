@@ -37,7 +37,7 @@ export function AppSidebar() {
 							</SidebarMenuItem>
 							<SidebarMenuItem>
 								<SidebarMenuButton asChild tooltip="Cases">
-									<Link to="/cases">
+									<Link to="/cases" search={{ q: "" }}>
 										<BriefcaseBusiness />
 										<span>Cases</span>
 									</Link>
@@ -53,7 +53,15 @@ export function AppSidebar() {
 							</SidebarMenuItem>
 							<SidebarMenuItem>
 								<SidebarMenuButton asChild tooltip="Search">
-									<Link to="/search">
+									<Link
+										to="/search"
+										search={{
+											query: "",
+											entityType: "all",
+											goldStandard: "all",
+											limit: 10,
+										}}
+									>
 										<FileSearch />
 										<span>Search</span>
 									</Link>

@@ -1,8 +1,7 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
-import * as relations from "./relations.ts";
-import * as schema from "./schema.ts";
+import { drizzleAppSchema } from "./drizzleTypes.ts";
 
 const defaultDbUrl = "postgres://postgres:postgres@localhost:5433/buena";
 
@@ -32,8 +31,5 @@ export const queryClient = postgres(dbUrl, {
 });
 
 export const db = drizzle(queryClient, {
-	schema: {
-		...schema,
-		...relations,
-	},
+	schema: drizzleAppSchema,
 });

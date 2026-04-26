@@ -6,8 +6,8 @@ import {
 	deleteApartment,
 	updateApartment,
 } from "#/services/apartments";
-import { listCases } from "#/services/cases";
-import { listFacts, listFactsForScope } from "#/services/facts";
+import { countCases, listCases } from "#/services/cases";
+import { countFacts, listFacts, listFactsForScope } from "#/services/facts";
 import { createHouse, deleteHouse, updateHouse } from "#/services/houses";
 import {
 	createProperty,
@@ -149,6 +149,101 @@ describe("db queries", () => {
 		expect(apartmentFacts[0].key).toBe("door_status");
 		expect(cases).toHaveLength(1);
 		expect(cases[0].owner.name).toBe("Alice Manager");
+	});
+
+	it("counts facts and lists more than the old 100-row cap", async () => {
+		await db.insert(schema.facts).values({
+			id: "fact-2",
+			propertyId: "LIE-001",
+			category: "lease",
+			key: "deposit",
+			value: "2 months",
+			sourceId: "source-1",
+			isGoldStandard: false,
+			confidenceScore: 0.9,
+		});
+
+		expect(await countFacts(db, {})).toBe(2);
+		expect(await countFacts(db, { propertyId: "LIE-001" })).toBe(2);
+
+		const listed = await listFacts(db, { limit: 150 });
+		expect(listed).toHaveLength(2);
+	});
+
+	it("filters facts by content query, house scope, and gold standard", async () => {
+		await db.insert(schema.facts).values({
+			id: "fact-gold",
+			propertyId: "LIE-001",
+			category: "core_erp",
+			key: "baujahr",
+			value: "1928",
+			sourceId: "source-1",
+			isGoldStandard: true,
+			confidenceScore: 1,
+		});
+
+		const byDoor = await listFacts(db, { q: "door", limit: 20 });
+		expect(byDoor.map((f) => f.id)).toEqual(["fact-1"]);
+
+		const byHouse = await listFacts(db, { houseId: "LIE-001-H1", limit: 20 });
+		expect(byHouse.map((f) => f.id)).toEqual(["fact-1"]);
+
+		const goldOnly = await listFacts(db, {
+			goldStandard: "gold",
+			limit: 20,
+		});
+		expect(goldOnly.map((f) => f.id)).toContain("fact-gold");
+		expect(goldOnly.every((f) => f.isGoldStandard)).toBe(true);
+
+		const nonGold = await listFacts(db, {
+			goldStandard: "nonGold",
+			limit: 20,
+		});
+		expect(nonGold.map((f) => f.id)).toContain("fact-1");
+		expect(nonGold.every((f) => !f.isGoldStandard)).toBe(true);
+
+		expect(await countFacts(db, { q: "door" })).toBe(1);
+		expect(await countFacts(db, { goldStandard: "gold" })).toBe(1);
+	});
+
+	it("counts cases and lists more than the old 100-row cap", async () => {
+		await db.insert(schema.cases).values({
+			id: "case-2",
+			propertyId: "LIE-001",
+			houseId: "LIE-001-H1",
+			apartmentId: "LIE-001-H1-A1",
+			ownerUserId: "user-1",
+			caseKey: "test-window|window|draft",
+			closurePredicate: null,
+			title: "Drafty window",
+			summary: "Tenant reports cold draft.",
+			status: "open",
+			createdAt: "2026-04-25T11:00:00.000Z",
+			updatedAt: "2026-04-25T11:00:00.000Z",
+		});
+
+		expect(await countCases(db, {})).toBe(2);
+		expect(await countCases(db, { propertyId: "LIE-001" })).toBe(2);
+
+		const listed = await listCases(db, { limit: 150 });
+		expect(listed).toHaveLength(2);
+	});
+
+	it("filters cases by content query and status", async () => {
+		const byDraft = await listCases(db, { q: "draft", limit: 50 });
+		expect(byDraft.map((c) => c.id)).toEqual(["case-2"]);
+
+		expect(await countCases(db, { q: "draft" })).toBe(1);
+
+		const openOnly = await listCases(db, { status: "open", limit: 50 });
+		expect(openOnly).toHaveLength(2);
+
+		const byPropertyAndText = await listCases(db, {
+			propertyId: "LIE-001",
+			q: "door",
+			limit: 50,
+		});
+		expect(byPropertyAndText.map((c) => c.id)).toEqual(["case-1"]);
 	});
 
 	it("creates, updates, and deletes hierarchy records", async () => {

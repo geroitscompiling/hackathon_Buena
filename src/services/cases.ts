@@ -1,8 +1,29 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db, type AppDatabase } from "#/services/database";
 import * as schema from "#/db/schema";
+
+/** Upper bound for case lists (API / MCP); avoids accidental huge reads. */
+const LIST_CASES_MAX = 10_000;
+
+/** Escape `%`, `_`, `\` for SQL `LIKE` / `ESCAPE '\\'`. */
+export function escapeSqlLikePattern(fragment: string): string {
+	return fragment
+		.replaceAll("\\", "\\\\")
+		.replaceAll("%", "\\%")
+		.replaceAll("_", "\\_");
+}
+
+function caseContentMatches(term: string) {
+	const pattern = `%${escapeSqlLikePattern(term.trim().toLowerCase())}%`;
+	return or(
+		sql`LOWER(${schema.cases.title}) LIKE ${pattern} ESCAPE '\\'`,
+		sql`LOWER(${schema.cases.summary}) LIKE ${pattern} ESCAPE '\\'`,
+		sql`LOWER(${schema.cases.caseKey}) LIKE ${pattern} ESCAPE '\\'`,
+		sql`LOWER(${schema.cases.id}) LIKE ${pattern} ESCAPE '\\'`,
+	);
+}
 
 export const listCasesSchema = z.object({
 	propertyId: z.string().trim().min(1).optional(),
@@ -10,10 +31,15 @@ export const listCasesSchema = z.object({
 	apartmentId: z.string().trim().min(1).optional(),
 	status: z.string().trim().min(1).optional(),
 	ownerUserId: z.string().trim().min(1).optional(),
-	limit: z.coerce.number().int().positive().max(100).default(50),
+	/** Case-insensitive match on title, summary, case key, and id (use propertyId to narrow by property). */
+	q: z.string().trim().min(1).max(500).optional(),
+	limit: z.coerce.number().int().positive().max(LIST_CASES_MAX).default(50),
 });
 
+export const countCasesSchema = listCasesSchema.omit({ limit: true });
+
 export type ListCasesArgs = z.infer<typeof listCasesSchema>;
+export type CountCasesArgs = z.infer<typeof countCasesSchema>;
 export type CaseListItem = typeof schema.cases.$inferSelect & {
 	apartment: typeof schema.apartments.$inferSelect | null;
 	house: typeof schema.houses.$inferSelect | null;
@@ -23,9 +49,9 @@ export type CaseListItem = typeof schema.cases.$inferSelect & {
 
 export async function listCases(
 	database: AppDatabase = db,
-	args: ListCasesArgs,
+	args: unknown,
 ): Promise<CaseListItem[]> {
-	const { apartmentId, houseId, limit, ownerUserId, propertyId, status } =
+	const { apartmentId, houseId, limit, ownerUserId, propertyId, q, status } =
 		listCasesSchema.parse(args);
 	const filters = [
 		propertyId ? eq(schema.cases.propertyId, propertyId) : undefined,
@@ -33,6 +59,7 @@ export async function listCases(
 		apartmentId ? eq(schema.cases.apartmentId, apartmentId) : undefined,
 		status ? eq(schema.cases.status, status) : undefined,
 		ownerUserId ? eq(schema.cases.ownerUserId, ownerUserId) : undefined,
+		q ? caseContentMatches(q) : undefined,
 	].filter(Boolean);
 
 	return (await database.query.cases.findMany({
@@ -46,4 +73,28 @@ export async function listCases(
 			property: true,
 		},
 	})) as CaseListItem[];
+}
+
+export async function countCases(
+	database: AppDatabase = db,
+	args: unknown,
+): Promise<number> {
+	const { apartmentId, houseId, ownerUserId, propertyId, q, status } =
+		countCasesSchema.parse(args);
+	const filters = [
+		propertyId ? eq(schema.cases.propertyId, propertyId) : undefined,
+		houseId ? eq(schema.cases.houseId, houseId) : undefined,
+		apartmentId ? eq(schema.cases.apartmentId, apartmentId) : undefined,
+		status ? eq(schema.cases.status, status) : undefined,
+		ownerUserId ? eq(schema.cases.ownerUserId, ownerUserId) : undefined,
+		q ? caseContentMatches(q) : undefined,
+	].filter(Boolean);
+
+	const query = database.select({ cnt: count() }).from(schema.cases);
+	const [row] =
+		filters.length > 0
+			? await query.where(and(...filters))
+			: await query;
+
+	return Number(row?.cnt ?? 0);
 }

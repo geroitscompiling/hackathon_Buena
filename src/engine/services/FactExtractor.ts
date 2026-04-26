@@ -45,7 +45,8 @@ Return valid JSON only using this shape:
       "category": "core_erp" | "financial" | "maintenance" | "governance",
       "key": "topic_tag_like_repair_ownership_payment",
       "value": "A concrete fact sentence in the source language",
-      "confidenceScore": 0.0
+      "confidenceScore": 0.0,
+      "validFrom": "YYYY-MM-DD"
     }
   ]
 }
@@ -62,6 +63,7 @@ Rules:
 - For payments or invoices, avoid "An invoice is due." and prefer "Invoice INV-2048 from Firma Mueller for heating pump repair in apartment WE 49 is due on 2026-01-12 for 830.15 EUR."
 - Apply the same level of specificity to legal, insurance, meeting, contract, and governance facts whenever the source provides those details.
 - Always use absolute dates such as "2026-04-26" instead of relative dates such as "heute", "gestern", "today", or "yesterday".
+- When you can infer the earliest date the fact applies from the document, set "validFrom" to that calendar date as "YYYY-MM-DD". Otherwise omit "validFrom".
 - Do not emit generic keys like "email_signal_detected" or long machine-style event keys.
 ${referenceDateInstruction}
 
@@ -77,7 +79,11 @@ Document:
 
       return response.facts
         .map((rawFact) => this.normalizeFact(rawFact))
-        .filter((fact): fact is ExtractedFact => fact !== null);
+        .filter((fact): fact is ExtractedFact => fact !== null)
+        .map((fact) => ({
+          ...fact,
+          validFrom: fact.validFrom ?? context?.referenceDate,
+        }));
     } catch (error) {
       if (this.options.strictErrors) {
         throw new Error(
@@ -100,6 +106,7 @@ Document:
     const key = candidate.key;
     const value = candidate.value;
     const confidenceScore = candidate.confidenceScore;
+    const rawValidFrom = candidate.validFrom;
 
     if (typeof category !== "string" || !allowedCategories.includes(category as BuildingFactCategory)) {
       return null;
@@ -117,11 +124,20 @@ Document:
       return null;
     }
 
+    let validFrom: string | undefined;
+    if (typeof rawValidFrom === "string") {
+      const trimmed = rawValidFrom.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        validFrom = trimmed;
+      }
+    }
+
     return {
       category: category as BuildingFactCategory,
       key: key.trim(),
       value: value.trim(),
       confidenceScore,
+      ...(validFrom ? { validFrom } : {}),
     };
   }
 }

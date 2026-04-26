@@ -26,8 +26,9 @@ describe("JsonIngestor", () => {
     expect(einheitenFact).toBeDefined();
     expect(einheitenFact?.value).toBe(52); // length of einheiten array
     
-    const ownerFact = facts.find(f => f.key === "owner_EIG-001");
+    const ownerFact = facts.find(f => f.key === "owner_EIG-001_EH-037");
     expect(ownerFact).toBeDefined();
+    expect(ownerFact?.erpScope?.einheitId).toBe("EH-037");
     expect(ownerFact?.category).toBe("governance");
     expect(ownerFact?.isGoldStandard).toBe(true);
   });

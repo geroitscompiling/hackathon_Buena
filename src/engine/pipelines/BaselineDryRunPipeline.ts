@@ -10,6 +10,9 @@ import { GeminiEmbeddingService } from "../services/GeminiEmbeddingService";
 import { Gatekeeper } from "../services/Gatekeeper";
 import { GeminiService } from "../services/GeminiService";
 import { HierarchyResolver } from "../services/HierarchyResolver";
+import { collectBaselineUnstructuredRelativePaths } from "../baseline/collectBaselineUnstructuredPaths";
+import type { ErpStammdatenContext } from "../baseline/loadErpStammdatenContext";
+import { loadErpStammdatenContextFromFile } from "../baseline/loadErpStammdatenContext";
 import { deriveDocumentMetadataFromText } from "../case/deriveDocumentMetadataFromText";
 import type { CaseDocumentExtractor } from "../services/CaseExtractor";
 import {
@@ -18,18 +21,26 @@ import {
 } from "../services/CaseLifecycleService";
 import { CaseAssistOrchestrator } from "../services/CaseAssistOrchestrator";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
+import type { AppDrizzleDatabase } from "../../db/drizzleTypes.ts";
 import {
+  apartments,
   factApartments,
   factHouses,
   facts,
+  houses,
   properties,
   sources,
   users,
 } from "../../db/schema";
-import type { db as appDb } from "../../db";
 import { SemanticIndexService, type EmbeddingClient } from "#/services/semanticIndex";
 
-type BaselineDryRunDb = typeof appDb;
+type BaselineDryRunDb = AppDrizzleDatabase;
+
+/** Injected resolver must support ERP materialization when gold facts carry `erpScope`. */
+export type BaselineHierarchyResolver = Pick<
+  HierarchyResolver,
+  "resolve" | "materializeHouseApartment"
+>;
 
 export interface BaselineDryRunOptions {
   db: BaselineDryRunDb;
@@ -37,13 +48,14 @@ export interface BaselineDryRunOptions {
   includeCoreIngestions?: boolean;
   propertyId?: string;
   propertyName?: string;
+  /** When omitted, all `.eml` / `.pdf` under `emails/` and `rechnungen/` (excluding HistoryPopulationData) are processed. Pass `[]` for none. */
   noisyInputFiles?: string[];
   /** Caps the number of noisy baseline files processed after core ERP ingestions. */
   maxNoisyFiles?: number;
   gatekeeper?: RelevanceGatekeeper;
   extractor?: BuildingFactExtractor;
   strictAiErrors?: boolean;
-  hierarchyResolver?: Pick<HierarchyResolver, "resolve">;
+  hierarchyResolver?: BaselineHierarchyResolver;
   factPersistencePolicy?: Pick<FactPersistencePolicy, "evaluate">;
   preloadedExistingFacts?: Array<{
     id: string;
@@ -81,6 +93,8 @@ export interface BaselineDryRunOptions {
     "refreshFactEmbeddingById" | "refreshCaseEmbeddingById"
   >;
   embeddingClient?: EmbeddingClient;
+  /** Override default core ERP file order (paths relative to `datasetRootPath`). */
+  coreIngestionRelativePaths?: ReadonlyArray<string>;
 }
 
 export interface BaselineDryRunSummary {
@@ -91,6 +105,9 @@ export interface BaselineDryRunSummary {
   factsPersisted: number;
   goldFactsPersisted: number;
   nonGoldFactsPersisted: number;
+  /** Noisy paths scheduled for this run (`noisyInputFiles` length, or default corpus size). */
+  noisySourcesScheduled: number;
+  /** Noisy files that completed `ingest()` (read file + Gatekeeper, and Extractor when relevant). */
   noisySourcesEvaluated: number;
   noisySourcesWithFacts: number;
   casesOpened: number;
@@ -101,24 +118,27 @@ export interface BaselineDryRunSummary {
   assistProposedClose: number;
   assistGuardedClosed: number;
   assistGuardedRejected: number;
+  /** Facts that had null embeddings and were embedded during the final backfill pass. */
+  embeddingBackfillFacts: number;
+  /** Cases that had null embeddings and were embedded during the final backfill pass. */
+  embeddingBackfillCases: number;
 }
 
-const defaultNoisyInputFiles = [
-  "emails/2026-01/20260101_074000_EMAIL-06545.eml",
-  "rechnungen/2025-12/20251203_DL-015_INV-00184.pdf",
-];
-
 function isUniqueConstraintError(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
+  let current: unknown = error;
+  for (let depth = 0; depth < 6 && current; depth += 1) {
+    if (!current || typeof current !== "object") {
+      return false;
+    }
+    const maybe = current as { message?: unknown; code?: unknown; cause?: unknown };
+    const message = typeof maybe.message === "string" ? maybe.message : "";
+    const code = typeof maybe.code === "string" ? maybe.code : "";
+    if (code === "23505" || /unique|constraint|primary key/i.test(message)) {
+      return true;
+    }
+    current = maybe.cause;
   }
-
-  const maybeError = error as { message?: unknown; code?: unknown };
-  const message =
-    typeof maybeError.message === "string" ? maybeError.message : "";
-  const code = typeof maybeError.code === "string" ? maybeError.code : "";
-
-  return code === "23505" || /unique|constraint|primary key/i.test(message);
+  return false;
 }
 
 function deriveDocumentMetadataFromFact(
@@ -128,6 +148,12 @@ function deriveDocumentMetadataFromFact(
   apartmentId?: string;
   unitLabel?: string;
 } {
+  if (fact.erpScope?.einheitId && fact.erpScope.hausId) {
+    return {
+      houseId: `${fact.propertyId}-${fact.erpScope.hausId}`,
+      apartmentId: `${fact.propertyId}-${fact.erpScope.einheitId}`,
+    };
+  }
   const raw = `${fact.key} ${String(fact.value)}`;
   const apartmentMatch = raw.match(/\b([A-Z]{3}-\d{3}-H\d+-A\d+)\b/);
   if (apartmentMatch?.[1]) {
@@ -147,6 +173,47 @@ function deriveDocumentMetadataFromFact(
   }
 
   return {};
+}
+
+function enrichBuildingFactWithErpHaus(
+  fact: BuildingFact,
+  ctx: ErpStammdatenContext | null,
+): BuildingFact {
+  if (!ctx || !fact.erpScope?.einheitId || fact.erpScope.hausId) {
+    return fact;
+  }
+  const row = ctx.unitToHaus.get(fact.erpScope.einheitId);
+  if (!row) {
+    return fact;
+  }
+  return {
+    ...fact,
+    erpScope: { ...fact.erpScope, hausId: row.hausId },
+  };
+}
+
+async function ensureErpApartmentHierarchyForFact(
+  db: BaselineDryRunDb,
+  resolver: Pick<HierarchyResolver, "materializeHouseApartment">,
+  propertyId: string,
+  erpHausId: string,
+  erpEinheitId: string,
+  ctx: ErpStammdatenContext,
+): Promise<void> {
+  const housePk = `${propertyId}-${erpHausId}`;
+  const aptPk = `${propertyId}-${erpEinheitId}`;
+  const unitRow = ctx.unitToHaus.get(erpEinheitId);
+  const apartmentName = unitRow?.einheitNr ?? erpEinheitId;
+  const houseName = ctx.hausIdToDisplayName.get(erpHausId) ?? erpHausId;
+  await db
+    .insert(houses)
+    .values({ id: housePk, propertyId, name: houseName })
+    .onConflictDoNothing();
+  await db
+    .insert(apartments)
+    .values({ id: aptPk, houseId: housePk, name: apartmentName })
+    .onConflictDoNothing();
+  resolver.materializeHouseApartment(housePk, aptPk, apartmentName);
 }
 
 async function buildDefaultHierarchyResolver(
@@ -215,8 +282,8 @@ export async function runBaselineDryRun({
   includeCoreIngestions = true,
   propertyId = "LIE-001",
   propertyName = "WEG Immanuelkirchstraße 26",
-  noisyInputFiles = defaultNoisyInputFiles,
   maxNoisyFiles,
+  noisyInputFiles,
   gatekeeper,
   extractor,
   strictAiErrors = false,
@@ -230,6 +297,7 @@ export async function runBaselineDryRun({
   caseAssistOrchestrator,
   semanticIndexService,
   embeddingClient,
+  coreIngestionRelativePaths,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
   await db
     .insert(properties)
@@ -285,21 +353,33 @@ export async function runBaselineDryRun({
   const resolvedFactPersistencePolicy =
     factPersistencePolicy ?? new FactPersistencePolicy();
 
-  const coreIngestions = [
-    {
-      ingestor: new JsonIngestor(),
-      relativePath: "stammdaten/stammdaten.json",
-    },
-    {
-      ingestor: new CsvIngestor(),
-      relativePath: "stammdaten/eigentuemer.csv",
-    },
+  const datasetRootResolved = path.resolve(datasetRootPath);
+  const erpContext = await loadErpStammdatenContextFromFile(
+    path.join(datasetRootResolved, "stammdaten/stammdaten.json"),
+  );
+
+  const defaultCorePaths = [
+    "stammdaten/stammdaten.json",
+    "stammdaten/eigentuemer.csv",
   ] as const;
+  const corePaths = [...(coreIngestionRelativePaths ?? defaultCorePaths)];
+  const coreRelativePathSet = new Set(corePaths);
+  const coreIngestions = corePaths.map((relativePath) => {
+    if (relativePath.endsWith(".json")) {
+      return { ingestor: new JsonIngestor(), relativePath };
+    }
+    return { ingestor: new CsvIngestor(), relativePath };
+  });
+
+  const resolvedNoisyInputFiles =
+    noisyInputFiles !== undefined
+      ? noisyInputFiles
+      : collectBaselineUnstructuredRelativePaths(datasetRootResolved);
 
   const limitedNoisyInputFiles =
     maxNoisyFiles !== undefined && maxNoisyFiles >= 0
-      ? noisyInputFiles.slice(0, maxNoisyFiles)
-      : noisyInputFiles;
+      ? resolvedNoisyInputFiles.slice(0, maxNoisyFiles)
+      : resolvedNoisyInputFiles;
 
   const noisyIngestions = limitedNoisyInputFiles.map((relativePath) => ({
     ingestor: relativePath.endsWith(".eml")
@@ -307,6 +387,7 @@ export async function runBaselineDryRun({
       : new PdfIngestor(resolvedGatekeeper, resolvedExtractor, propertyId),
     relativePath,
   }));
+  const noisySourcesScheduled = noisyIngestions.length;
 
   const persistedFacts: BuildingFact[] = [];
   const existingPolicyFacts: Array<{
@@ -324,6 +405,7 @@ export async function runBaselineDryRun({
     isGoldStandard: boolean;
   }> = [...preloadedExistingFacts];
   const sourceIds = new Set<string>();
+  let noisySourcesEvaluated = 0;
   let noisySourcesWithFacts = 0;
   let factsInserted = 0;
   let factsBlockedAsConflicts = 0;
@@ -349,14 +431,13 @@ export async function runBaselineDryRun({
     maxCasesPerRun !== undefined && maxCasesPerRun >= 0 ? maxCasesPerRun : undefined;
 
   for (const ingestion of ingestions) {
-    const filePath = path.resolve(datasetRootPath, ingestion.relativePath);
+    const filePath = path.join(datasetRootResolved, ingestion.relativePath);
     await fs.access(filePath);
     const fileId = path.basename(filePath);
     const factsForFile = await ingestion.ingestor.ingest(filePath, fileId);
-    const isCoreIngestion =
-      ingestion.relativePath === "stammdaten/stammdaten.json" ||
-      ingestion.relativePath === "stammdaten/eigentuemer.csv";
-    if (ingestion.relativePath !== "stammdaten/stammdaten.json" && ingestion.relativePath !== "stammdaten/eigentuemer.csv") {
+    const isCoreIngestion = coreRelativePathSet.has(ingestion.relativePath);
+    if (!isCoreIngestion) {
+      noisySourcesEvaluated += 1;
       if (factsForFile.length > 0) {
         noisySourcesWithFacts += 1;
       }
@@ -383,12 +464,28 @@ export async function runBaselineDryRun({
     const closureEvidenceThisFile: NewFactSnapshot[] = [];
 
     for (const fact of factsForFile) {
+      const enrichedFact = enrichBuildingFactWithErpHaus(fact, erpContext);
+      if (
+        enrichedFact.erpScope?.einheitId &&
+        enrichedFact.erpScope.hausId &&
+        erpContext
+      ) {
+        await ensureErpApartmentHierarchyForFact(
+          db,
+          resolvedHierarchyResolver,
+          propertyId,
+          enrichedFact.erpScope.hausId,
+          enrichedFact.erpScope.einheitId,
+          erpContext,
+        );
+      }
+
       const resolvedScope = await resolvedHierarchyResolver.resolve({
-        propertyId: fact.propertyId,
-        documentMetadata: deriveDocumentMetadataFromFact(fact),
+        propertyId: enrichedFact.propertyId,
+        documentMetadata: deriveDocumentMetadataFromFact(enrichedFact),
         extractedFact: {
-          key: fact.key,
-          value: fact.value,
+          key: enrichedFact.key,
+          value: enrichedFact.value,
         },
       });
 
@@ -396,11 +493,11 @@ export async function runBaselineDryRun({
         existingFacts: existingPolicyFacts,
         incomingFact: {
           scope: resolvedScope,
-          category: fact.category,
-          key: fact.key,
-          value: String(fact.value),
+          category: enrichedFact.category,
+          key: enrichedFact.key,
+          value: String(enrichedFact.value),
           sourceId,
-          isGoldStandard: fact.isGoldStandard,
+          isGoldStandard: enrichedFact.isGoldStandard,
         },
       });
 
@@ -413,8 +510,8 @@ export async function runBaselineDryRun({
           propertyId: resolvedScope.propertyId,
           houseId: resolvedScope.houseId,
           apartmentId: resolvedScope.apartmentId,
-          category: fact.category,
-          key: fact.key,
+          category: enrichedFact.category,
+          key: enrichedFact.key,
           reason: policyDecision.reason,
         });
         continue;
@@ -423,35 +520,35 @@ export async function runBaselineDryRun({
       if (policyDecision.outcome === "updated_idempotent") {
         factsUpdatedIdempotent += 1;
         closureEvidenceThisFile.push({
-          id: fact.id,
+          id: enrichedFact.id,
           propertyId: resolvedScope.propertyId,
-          key: fact.key,
-          value: String(fact.value),
+          key: enrichedFact.key,
+          value: String(enrichedFact.value),
           scope: resolvedScope,
         });
         continue;
       }
 
       factsInserted += 1;
-      persistedFacts.push(fact);
+      persistedFacts.push(enrichedFact);
       await db.insert(facts).values({
-        id: fact.id,
+        id: enrichedFact.id,
         propertyId: resolvedScope.propertyId,
-        category: fact.category,
-        key: fact.key,
-        value: String(fact.value),
+        category: enrichedFact.category,
+        key: enrichedFact.key,
+        value: String(enrichedFact.value),
         sourceId,
-        isGoldStandard: fact.isGoldStandard,
-        confidenceScore: fact.confidenceScore,
+        isGoldStandard: enrichedFact.isGoldStandard,
+        confidenceScore: enrichedFact.confidenceScore,
+        validFrom: enrichedFact.validFrom ?? null,
       });
-      await resolvedSemanticIndexService.refreshFactEmbeddingById(fact.id);
 
       if (resolvedScope.scopeType === "house" || resolvedScope.scopeType === "apartment") {
         if (!resolvedScope.houseId) {
           throw new Error("Resolved house/apartment scope is missing required houseId");
         }
         await db.insert(factHouses).values({
-          factId: fact.id,
+          factId: enrichedFact.id,
           houseId: resolvedScope.houseId,
         });
       }
@@ -461,31 +558,33 @@ export async function runBaselineDryRun({
           throw new Error("Resolved apartment scope is missing required apartmentId");
         }
         await db.insert(factApartments).values({
-          factId: fact.id,
+          factId: enrichedFact.id,
           apartmentId: resolvedScope.apartmentId,
         });
       }
 
+      await resolvedSemanticIndexService.refreshFactEmbeddingById(enrichedFact.id);
+
       existingPolicyFacts.push({
-        id: fact.id,
+        id: enrichedFact.id,
         scope: resolvedScope,
-        category: fact.category,
-        key: fact.key,
-        value: String(fact.value),
+        category: enrichedFact.category,
+        key: enrichedFact.key,
+        value: String(enrichedFact.value),
         sourceId,
-        isGoldStandard: fact.isGoldStandard,
+        isGoldStandard: enrichedFact.isGoldStandard,
       });
 
       persistedInThisFile.push({
-        id: fact.id,
-        key: fact.key,
-        value: String(fact.value),
+        id: enrichedFact.id,
+        key: enrichedFact.key,
+        value: String(enrichedFact.value),
       });
       closureEvidenceThisFile.push({
-        id: fact.id,
+        id: enrichedFact.id,
         propertyId: resolvedScope.propertyId,
-        key: fact.key,
-        value: String(fact.value),
+        key: enrichedFact.key,
+        value: String(enrichedFact.value),
         scope: resolvedScope,
       });
     }
@@ -568,6 +667,19 @@ export async function runBaselineDryRun({
   const goldFactsPersisted = persistedFacts.filter((fact) => fact.isGoldStandard).length;
   const nonGoldFactsPersisted = persistedFacts.length - goldFactsPersisted;
 
+  let embeddingBackfillFacts = 0;
+  let embeddingBackfillCases = 0;
+  if (resolvedEmbeddingClient) {
+    const batchSize = 500;
+    const backfillIndex = new SemanticIndexService(db, resolvedEmbeddingClient);
+    let batch: { factsUpdated: number; casesUpdated: number };
+    do {
+      batch = await backfillIndex.backfillMissingEmbeddings(batchSize);
+      embeddingBackfillFacts += batch.factsUpdated;
+      embeddingBackfillCases += batch.casesUpdated;
+    } while (batch.factsUpdated > 0 || batch.casesUpdated > 0);
+  }
+
   return {
     sourcesPersisted: sourceIds.size,
     factsInserted,
@@ -576,7 +688,8 @@ export async function runBaselineDryRun({
     factsPersisted: factsInserted,
     goldFactsPersisted,
     nonGoldFactsPersisted,
-    noisySourcesEvaluated: noisyIngestions.length,
+    noisySourcesScheduled,
+    noisySourcesEvaluated,
     noisySourcesWithFacts,
     casesOpened,
     casesUpdated,
@@ -586,5 +699,7 @@ export async function runBaselineDryRun({
     assistProposedClose,
     assistGuardedClosed,
     assistGuardedRejected,
+    embeddingBackfillFacts,
+    embeddingBackfillCases,
   };
 }

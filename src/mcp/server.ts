@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import type { ZodTypeAny } from "zod";
 import { z } from "zod";
 
-import type { db } from "#/db/index";
+import type { AppDrizzleDatabase } from "#/db/drizzleTypes.ts";
 import * as schema from "#/db/schema";
 import { CaseLifecycleService, factSatisfiesClosurePredicate, loadFactScopes } from "#/engine/services/CaseLifecycleService";
 import { listCases, listCasesSchema } from "#/services/cases";
@@ -28,13 +28,14 @@ import {
 	type SemanticSearchResult,
 } from "#/services/semanticIndex";
 
-type AppDatabase = typeof db;
+type AppDatabase = AppDrizzleDatabase;
 
 type McpToolDefinition<TSchema extends ZodTypeAny> = {
 	name: string;
 	description: string;
 	schema: TSchema;
-	execute: (args: z.infer<TSchema>) => Promise<unknown>;
+	/** MCP passes parsed JSON; validated with `schema` at runtime via service `parse` calls. */
+	execute: (args: unknown) => Promise<unknown>;
 };
 
 const semanticSearchToolSchema = semanticSearchSchema.strict();
@@ -717,10 +718,11 @@ export function createMcpTools(
 			description:
 				"Gets semantically related cases for an existing case within its scope.",
 			schema: getRelatedCasesSchema,
-			execute: async (args) => {
+			execute: async (args: unknown) => {
+				const parsed = getRelatedCasesSchema.parse(args);
 				const bundle = await getCaseContextBundle(database, {
-					caseId: args.caseId,
-					relatedCasesLimit: args.limit,
+					caseId: parsed.caseId,
+					relatedCasesLimit: parsed.limit,
 					relatedFactsLimit: 1,
 				}, options);
 				return onlyCases(bundle.relatedCases);
@@ -731,11 +733,12 @@ export function createMcpTools(
 			description:
 				"Gets semantically related facts for an existing case within its scope.",
 			schema: getRelatedFactsSchema,
-			execute: async (args) => {
+			execute: async (args: unknown) => {
+				const parsed = getRelatedFactsSchema.parse(args);
 				const bundle = await getCaseContextBundle(database, {
-					caseId: args.caseId,
+					caseId: parsed.caseId,
 					relatedCasesLimit: 1,
-					relatedFactsLimit: args.limit,
+					relatedFactsLimit: parsed.limit,
 				}, options);
 				return onlyFacts(bundle.relatedFacts);
 			},
@@ -745,8 +748,8 @@ export function createMcpTools(
 			description:
 				"Returns a single case context bundle with related cases and facts.",
 			schema: getCaseContextBundleSchema,
-			execute: (args) =>
-				getCaseContextBundle(database, args, {
+			execute: (args: unknown) =>
+				getCaseContextBundle(database, getCaseContextBundleSchema.parse(args), {
 					embeddingClient: options.embeddingClient,
 				}),
 		},
