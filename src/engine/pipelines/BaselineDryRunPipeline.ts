@@ -16,6 +16,7 @@ import {
   CaseLifecycleService,
   type NewFactSnapshot,
 } from "../services/CaseLifecycleService";
+import { CaseAssistOrchestrator } from "../services/CaseAssistOrchestrator";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
 import {
   factApartments,
@@ -72,6 +73,7 @@ export interface BaselineDryRunOptions {
   /** Caps merged case intents for the whole run (mock dry-run readability). */
   maxCasesPerRun?: number;
   caseLifecycleService?: CaseLifecycleService;
+  caseAssistOrchestrator?: Pick<CaseAssistOrchestrator, "run">;
   semanticIndexService?: Pick<
     SemanticIndexService,
     "refreshFactEmbeddingById" | "refreshCaseEmbeddingById"
@@ -93,6 +95,10 @@ export interface BaselineDryRunSummary {
   casesUpdated: number;
   casesResolved: number;
   factCaseLinksCreated: number;
+  assistRuns: number;
+  assistProposedClose: number;
+  assistGuardedClosed: number;
+  assistGuardedRejected: number;
 }
 
 const defaultNoisyInputFiles = [
@@ -218,6 +224,7 @@ export async function runBaselineDryRun({
   caseExtractor,
   maxCasesPerRun,
   caseLifecycleService,
+  caseAssistOrchestrator,
   semanticIndexService,
   embeddingClient,
 }: BaselineDryRunOptions): Promise<BaselineDryRunSummary> {
@@ -264,6 +271,11 @@ export async function runBaselineDryRun({
     caseLifecycleService ??
     new CaseLifecycleService(db, {
       semanticIndexService: resolvedSemanticIndexService,
+    });
+  const assistOrchestrator =
+    caseAssistOrchestrator ??
+    new CaseAssistOrchestrator(db, lifecycle, {
+      embeddingClient: resolvedEmbeddingClient,
     });
   const resolvedHierarchyResolver =
     hierarchyResolver ?? (await buildDefaultHierarchyResolver(db, propertyId));
@@ -312,6 +324,10 @@ export async function runBaselineDryRun({
   let casesUpdated = 0;
   let casesResolved = 0;
   let factCaseLinksCreated = 0;
+  let assistRuns = 0;
+  let assistProposedClose = 0;
+  let assistGuardedClosed = 0;
+  let assistGuardedRejected = 0;
 
   if (caseExtractor) {
     await ensureDefaultCaseOwner(db);
@@ -498,6 +514,33 @@ export async function runBaselineDryRun({
         newFacts: closureEvidenceThisFile,
         nowIso,
       });
+      if (batch.caseKeys.length > 0) {
+        const touchedCases = await db.query.cases.findMany({
+          where: (caseTable, { and, eq, inArray }) =>
+            and(
+              eq(caseTable.propertyId, propertyId),
+              inArray(caseTable.caseKey, batch.caseKeys),
+            ),
+          columns: { id: true },
+        });
+        for (const touchedCase of touchedCases) {
+          const assist = await assistOrchestrator.run({
+            caseId: touchedCase.id,
+            propertyId,
+            confidenceThreshold: 0.8,
+            nowIso,
+          });
+          assistRuns += 1;
+          if (assist.recommendation.proposedAction === "close_case") {
+            assistProposedClose += 1;
+          }
+          if (assist.guardrailResult?.closed === true) {
+            assistGuardedClosed += 1;
+          } else if (assist.guardrailResult?.closed === false) {
+            assistGuardedRejected += 1;
+          }
+        }
+      }
     }
   }
 
@@ -518,5 +561,9 @@ export async function runBaselineDryRun({
     casesUpdated,
     casesResolved,
     factCaseLinksCreated,
+    assistRuns,
+    assistProposedClose,
+    assistGuardedClosed,
+    assistGuardedRejected,
   };
 }

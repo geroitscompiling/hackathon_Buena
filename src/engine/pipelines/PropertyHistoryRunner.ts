@@ -32,6 +32,10 @@ export interface PropertyHistoryReplaySummary {
     | "casesUpdated"
     | "casesResolved"
     | "factCaseLinksCreated"
+    | "assistRuns"
+    | "assistProposedClose"
+    | "assistGuardedClosed"
+    | "assistGuardedRejected"
   >;
 }
 
@@ -108,6 +112,10 @@ export async function runPropertyHistoryReplay({
     casesUpdated: 0,
     casesResolved: 0,
     factCaseLinksCreated: 0,
+    assistRuns: 0,
+    assistProposedClose: 0,
+    assistGuardedClosed: 0,
+    assistGuardedRejected: 0,
   };
 
   for (const dayDirectory of selectedDayDirectories) {
@@ -131,6 +139,10 @@ export async function runPropertyHistoryReplay({
     totals.casesUpdated += summary.casesUpdated;
     totals.casesResolved += summary.casesResolved;
     totals.factCaseLinksCreated += summary.factCaseLinksCreated;
+    totals.assistRuns += summary.assistRuns;
+    totals.assistProposedClose += summary.assistProposedClose;
+    totals.assistGuardedClosed += summary.assistGuardedClosed;
+    totals.assistGuardedRejected += summary.assistGuardedRejected;
   }
 
   return {

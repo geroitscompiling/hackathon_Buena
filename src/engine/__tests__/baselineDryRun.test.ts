@@ -290,5 +290,63 @@ describe("Baseline dry-run pipeline", () => {
 		expect(summary.casesOpened).toBeGreaterThanOrEqual(1);
 		expect((await db.select().from(cases)).length).toBeGreaterThanOrEqual(1);
 		expect((await db.select().from(factCases)).length).toBeGreaterThanOrEqual(1);
+		expect(summary.assistRuns).toBeGreaterThanOrEqual(1);
+	});
+
+	it("runs MCP assist orchestration during case lifecycle processing", async () => {
+		let assistCalls = 0;
+		const summary = await runBaselineDryRun({
+			db,
+			propertyId: "LIE-001",
+			datasetRootPath: "testfiles",
+			noisyInputFiles: ["emails/2026-01/20260101_074000_EMAIL-06545.eml"],
+			gatekeeper: { isRelevant: async () => true },
+			extractor: {
+				extract: async () => [
+					{
+						category: "maintenance",
+						key: "windowtrack_signal",
+						value: "LIE-001-H1-A1",
+						confidenceScore: 0.9,
+					},
+				],
+			},
+			caseExtractor: {
+				extract: async () => [
+					{
+						title: "Window orchestration",
+						summary: "From email",
+						status: "open",
+						scopeHint: "apartment",
+						primarySignal: "windowtrack",
+						confidence: 0.9,
+					},
+				],
+			},
+			caseAssistOrchestrator: {
+				run: async () => {
+					assistCalls += 1;
+					return {
+						bundle: {
+							case: { id: "case-x" },
+							relatedCases: [],
+							relatedFacts: [],
+						},
+						recommendation: {
+							proposedAction: "keep_open",
+							confidence: 0.6,
+							why: "stubbed",
+						},
+					};
+				},
+			},
+			embeddingClient: {
+				embedDocument: async () => Array.from({ length: 1536 }, () => 0),
+				embedQuery: async () => Array.from({ length: 1536 }, () => 0),
+			},
+		});
+
+		expect(assistCalls).toBeGreaterThanOrEqual(1);
+		expect(summary.assistRuns).toBe(assistCalls);
 	});
 });
