@@ -4,6 +4,7 @@ import { db } from "../db";
 import * as schema from "../db/schema";
 import { runBaselineDryRun } from "../engine/pipelines/BaselineDryRunPipeline";
 import { runPropertyHistoryReplay } from "../engine/pipelines/PropertyHistoryRunner";
+import { CaseAssistOrchestrator } from "../engine/services/CaseAssistOrchestrator";
 import { CaseLifecycleService } from "../engine/services/CaseLifecycleService";
 import { createMcpTools } from "../mcp/server";
 import type { EmbeddingClient } from "../services/semanticIndex";
@@ -171,6 +172,7 @@ async function runJudgeDemoHistoryMcpAssist(): Promise<void> {
 		throw new Error("Unable to resolve assist case for demo output.");
 	}
 	const lifecycle = new CaseLifecycleService(db);
+	const orchestrator = new CaseAssistOrchestrator(db, lifecycle, { embeddingClient });
 
 	const queryOne = await semanticSearch.execute({
 		query: "window issue in LIE-001-H1-A1",
@@ -235,6 +237,12 @@ async function runJudgeDemoHistoryMcpAssist(): Promise<void> {
 	const traces = await db.query.caseActionTraces.findMany({
 		where: (trace, { eq }) => eq(trace.caseId, assistCase.id),
 	});
+	const assistBundle = await orchestrator.run({
+		caseId: assistCase.id,
+		propertyId: PROPERTY_ID,
+		confidenceThreshold: 0.8,
+		nowIso: new Date().toISOString(),
+	});
 
 	console.log("=== JUDGE DEMO: HISTORY + MCP + GUARDED CASE ASSIST ===");
 	console.log(
@@ -257,6 +265,8 @@ async function runJudgeDemoHistoryMcpAssist(): Promise<void> {
 				caseId: assistCase.id,
 				rejected,
 				accepted,
+				orchestratedRecommendation: assistBundle.recommendation,
+				orchestratedGuardrailResult: assistBundle.guardrailResult,
 				traceReasons: traces.map((trace) => trace.reason),
 				traceEvidence: traces.map((trace) => trace.evidenceFactIds),
 			},

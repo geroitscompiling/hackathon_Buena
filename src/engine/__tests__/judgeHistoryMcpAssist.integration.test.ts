@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import * as schema from "#/db/schema";
 import { runBaselineDryRun } from "#/engine/pipelines/BaselineDryRunPipeline";
+import { CaseAssistOrchestrator } from "#/engine/services/CaseAssistOrchestrator";
 import { CaseLifecycleService } from "#/engine/services/CaseLifecycleService";
 import { createMcpTools } from "#/mcp/server";
 import type { EmbeddingClient } from "#/services/semanticIndex";
@@ -262,6 +263,19 @@ describe("judge history + MCP assist workflow (E4.6)", () => {
 				"rejected",
 				"approved",
 			]);
+
+			const orchestrator = new CaseAssistOrchestrator(db, lifecycle, {
+				embeddingClient,
+			});
+			const orchestrated = await orchestrator.run({
+				caseId: caseRow.id,
+				propertyId: "LIE-001",
+				confidenceThreshold: 0.8,
+				nowIso: "2026-04-26T12:00:00.000Z",
+			});
+			expect(orchestrated.bundle.case.id).toBe(caseRow.id);
+			expect(orchestrated.recommendation.proposedAction).toBe("close_case");
+			expect(orchestrated.guardrailResult?.reason).toBe("already_terminal");
 		} finally {
 			await testDb.close();
 		}
