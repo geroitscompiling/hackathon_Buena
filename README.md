@@ -18,7 +18,7 @@ make run-initial
 ```
 
 Key targets:
-- `make db-reset` removes local SQLite files (`local.db`, `local.db-shm`, `local.db-wal`)
+- `make db-reset` recreates the local Postgres volume for a clean database state
 - `make db-setup` runs schema push + seed on a clean DB
 - `make run-initial` executes this ticket's baseline dry-run flow end-to-end
 - `make run-history` replays history in mock mode; add `DAY=day-03` to limit the run to a single day
