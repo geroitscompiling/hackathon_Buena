@@ -37,7 +37,7 @@ The primary developer strictly enforces high-quality software engineering:
 3. **Tech Stack & Conventions**
    - **Language**: TypeScript (strict mode).
    - **Framework**: Vite + React + TanStack Start (Router).
-   - **Database**: `better-sqlite3` + Drizzle ORM (for local `SourceRegistry` and facts).
+   - **Database**: Dockerized Postgres + `pgvector`, modeled with Drizzle ORM.
    - **Styling**: Tailwind CSS + shadcn/ui.
    - **AI Provider**: Google Gemini (via `GEMINI_API_KEY` in `.env`).
 
@@ -52,6 +52,6 @@ The primary developer strictly enforces high-quality software engineering:
   - `make install`
   - `make run-initial` (baseline dry-run ticket flow)
   - `make run-history` (history epic placeholder until implemented)
-- If local SQLite state is broken, run `make db-reset` before rerunning setup flows.
+- If local Postgres state is broken, run `make db-reset` before rerunning setup flows.
 
 *Note: Always cross-reference the `IMPLEMENTATION_PLAN.md` for specific Epic and Ticket details.*
