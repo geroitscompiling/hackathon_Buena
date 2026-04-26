@@ -2,6 +2,10 @@
 
 This repo is a **property intelligence POC**: it ingests ERP exports plus unstructured documents (emails, PDFs) from local fixtures, extracts **facts** with **Google Gemini** (with source traceability), and can **replay** a simulated 10-day timeline. The web app is a **TanStack Start** (React + Vite) UI on top of **Postgres + pgvector**.
 
+## Landing page
+
+Hosted landing page: https://buena-home-hero.lovable.app/
+
 ## Prerequisites
 
 - **Node.js** and **pnpm**
