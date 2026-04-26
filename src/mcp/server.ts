@@ -18,6 +18,7 @@ import {
 import {
 	semanticSearch,
 	semanticSearchSchema,
+	type EmbeddingClient,
 	type SemanticSearchResult,
 } from "#/services/semanticIndex";
 
@@ -57,6 +58,7 @@ const getCaseContextBundleSchema = z
 async function getCaseContextBundle(
 	database: AppDatabase | undefined,
 	args: z.infer<typeof getCaseContextBundleSchema>,
+	options: { embeddingClient?: EmbeddingClient } = {},
 ) {
 	const dbHandle = database;
 	if (!dbHandle) {
@@ -87,7 +89,7 @@ async function getCaseContextBundle(
 			entityType: "case",
 			...scopeFilters,
 			limit: args.relatedCasesLimit + 1,
-		})
+		}, options)
 	)
 		.filter((row) => row.entityType === "case" && row.id !== caseRow.id)
 		.slice(0, args.relatedCasesLimit);
@@ -96,7 +98,7 @@ async function getCaseContextBundle(
 		entityType: "fact",
 		...scopeFilters,
 		limit: args.relatedFactsLimit,
-	});
+	}, options);
 
 	return {
 		case: caseRow,
@@ -116,16 +118,22 @@ function onlyFacts(results: SemanticSearchResult[]): SemanticSearchResult[] {
 async function runSemanticSearchSafe(
 	database: AppDatabase,
 	args: z.infer<typeof semanticSearchToolSchema>,
+	options: { embeddingClient?: EmbeddingClient } = {},
 ): Promise<SemanticSearchResult[]> {
 	try {
-		const embedding = new GeminiEmbeddingService();
+		const embedding = options.embeddingClient ?? new GeminiEmbeddingService();
 		return await semanticSearch(embedding, database, args);
 	} catch {
 		return [];
 	}
 }
 
-export function createMcpTools(database?: AppDatabase) {
+export function createMcpTools(
+	database?: AppDatabase,
+	options: { embeddingClient?: EmbeddingClient } = {},
+) {
+	const embeddingClientFactory = () =>
+		options.embeddingClient ?? new GeminiEmbeddingService();
 	return [
 		{
 			name: "list_property_hierarchies",
@@ -154,7 +162,7 @@ export function createMcpTools(database?: AppDatabase) {
 				"Searches facts and cases by natural language using vector similarity.",
 			schema: semanticSearchToolSchema,
 			execute: (args) =>
-				semanticSearch(new GeminiEmbeddingService(), database, args),
+				semanticSearch(embeddingClientFactory(), database, args),
 		},
 		{
 			name: "get_related_cases",
@@ -166,7 +174,7 @@ export function createMcpTools(database?: AppDatabase) {
 					caseId: args.caseId,
 					relatedCasesLimit: args.limit,
 					relatedFactsLimit: 1,
-				});
+				}, options);
 				return onlyCases(bundle.relatedCases);
 			},
 		},
@@ -180,7 +188,7 @@ export function createMcpTools(database?: AppDatabase) {
 					caseId: args.caseId,
 					relatedCasesLimit: 1,
 					relatedFactsLimit: args.limit,
-				});
+				}, options);
 				return onlyFacts(bundle.relatedFacts);
 			},
 		},
@@ -189,7 +197,10 @@ export function createMcpTools(database?: AppDatabase) {
 			description:
 				"Returns a single case context bundle with related cases and facts.",
 			schema: getCaseContextBundleSchema,
-			execute: (args) => getCaseContextBundle(database, args),
+			execute: (args) =>
+				getCaseContextBundle(database, args, {
+					embeddingClient: options.embeddingClient,
+				}),
 		},
 	] as const satisfies readonly McpToolDefinition<ZodTypeAny>[];
 }

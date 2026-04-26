@@ -22,6 +22,7 @@
     "embeddings:backfill": "tsx src/scripts/backfillEmbeddings.ts",
     "dry-run:baseline": "tsx src/scripts/dryRunBaseline.ts",
     "dry-run:history": "tsx src/scripts/dryRunHistory.ts",
+    "demo:judge-history-mcp-assist": "tsx src/scripts/runJudgeDemoHistoryMcpAssist.ts",
     "gemini:diagnose": "tsx src/scripts/diagnoseGemini.ts"
   },
   "dependencies": {
