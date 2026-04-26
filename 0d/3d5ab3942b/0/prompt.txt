@@ -1,0 +1,6 @@
+It seems like the agents getting Data from PDF and EML and verifying those data have a promt that causes them replying in German. Can you please check and change their answer to English EVERYWHERE
+
+---
+
+Nah one test if failing right now:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/20.txt:1005-1011
