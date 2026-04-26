@@ -63,17 +63,6 @@ export function CasesTable({ cases }: CasesTableProps) {
 									) : null}
 								</div>
 							</div>
-							<div className="space-y-1 break-words">
-								<p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
-									Owner
-								</p>
-								<p className="font-medium leading-snug">{caseItem.owner.name}</p>
-								{caseItem.owner.email ? (
-									<p className="break-all text-xs text-muted-foreground">
-										{caseItem.owner.email}
-									</p>
-								) : null}
-							</div>
 							<div className="space-y-2 text-sm text-muted-foreground">
 								<div>
 									<p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
@@ -99,12 +88,11 @@ export function CasesTable({ cases }: CasesTableProps) {
 			<Table className="hidden table-fixed md:table">
 				<TableHeader>
 					<TableRow>
-						<TableHead className="min-w-0 w-[26%] whitespace-normal">Case</TableHead>
+						<TableHead className="min-w-0 w-[30%] whitespace-normal">Case</TableHead>
 						<TableHead className="w-[12%] whitespace-normal">Status</TableHead>
-						<TableHead className="w-[18%] whitespace-normal">Property</TableHead>
-						<TableHead className="w-[16%] whitespace-normal">Scope</TableHead>
-						<TableHead className="w-[16%] whitespace-normal">Owner</TableHead>
-						<TableHead className="w-[12%] whitespace-normal">
+						<TableHead className="w-[20%] whitespace-normal">Property</TableHead>
+						<TableHead className="w-[18%] whitespace-normal">Scope</TableHead>
+						<TableHead className="w-[20%] whitespace-normal">
 							Created / updated
 						</TableHead>
 					</TableRow>
@@ -144,16 +132,6 @@ export function CasesTable({ cases }: CasesTableProps) {
 									) : null}
 									{!caseItem.house && !caseItem.apartment ? (
 										<span className="text-sm text-muted-foreground">Property only</span>
-									) : null}
-								</div>
-							</TableCell>
-							<TableCell className="min-w-0 align-top whitespace-normal">
-								<div className="space-y-1 break-words">
-									<p className="font-medium leading-snug">{caseItem.owner.name}</p>
-									{caseItem.owner.email ? (
-										<p className="break-all text-xs text-muted-foreground">
-											{caseItem.owner.email}
-										</p>
 									) : null}
 								</div>
 							</TableCell>
