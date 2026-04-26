@@ -30,7 +30,7 @@ describe("DemoSnapshotPanel", () => {
 
     expect(screen.getByText("Cases Total")).toBeTruthy();
     expect(screen.getByText("12")).toBeTruthy();
-    expect(screen.getByText("History Days")).toBeTruthy();
+    expect(screen.getByText("History Replay Days")).toBeTruthy();
     expect(screen.getByText("10")).toBeTruthy();
     expect(screen.getByText("Latest Guardrail Traces")).toBeTruthy();
     expect(screen.getByText("case-1")).toBeTruthy();

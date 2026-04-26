@@ -31,7 +31,7 @@ export function DemoSnapshotPanel({ data }: DemoSnapshotPanelProps) {
         <MetricCard title="Cases Resolved" value={data.casesResolved} />
         <MetricCard title="Facts Total" value={data.factsTotal} />
         <MetricCard
-          title="History Days"
+          title="History Replay Days"
           value={data.historyDaysProcessed ?? "n/a"}
           description="From latest judge summary artifact"
         />
