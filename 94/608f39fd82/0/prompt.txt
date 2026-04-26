@@ -1,0 +1,4 @@
+Good, now let's take care of failing tests:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/20.txt:826-999 
+and 
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/20.txt:763-824
