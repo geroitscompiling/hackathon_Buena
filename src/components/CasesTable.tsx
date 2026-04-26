@@ -8,18 +8,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "#/components/ui/table";
+import { formatMediumDateTime } from "#/lib/formatTimestamp";
 import type { CaseListItem } from "#/services/cases";
 
 type CasesTableProps = {
 	cases: CaseListItem[];
 };
-
-function formatCaseTimestamp(iso: string): string {
-	return new Date(iso).toLocaleString("en-GB", {
-		dateStyle: "medium",
-		timeStyle: "short",
-	});
-}
 
 export function CasesTable({ cases }: CasesTableProps) {
 	if (cases.length === 0) {
@@ -86,7 +80,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 										Created
 									</p>
 									<p className="leading-tight">
-										{formatCaseTimestamp(caseItem.createdAt)}
+										{formatMediumDateTime(caseItem.createdAt)}
 									</p>
 								</div>
 								<div>
@@ -94,7 +88,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 										Updated
 									</p>
 									<p className="leading-tight">
-										{formatCaseTimestamp(caseItem.updatedAt)}
+										{formatMediumDateTime(caseItem.updatedAt)}
 									</p>
 								</div>
 							</div>
@@ -170,7 +164,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 											Created
 										</p>
 										<p className="leading-tight">
-											{formatCaseTimestamp(caseItem.createdAt)}
+											{formatMediumDateTime(caseItem.createdAt)}
 										</p>
 									</div>
 									<div>
@@ -178,7 +172,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 											Updated
 										</p>
 										<p className="leading-tight">
-											{formatCaseTimestamp(caseItem.updatedAt)}
+											{formatMediumDateTime(caseItem.updatedAt)}
 										</p>
 									</div>
 								</div>

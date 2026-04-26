@@ -14,10 +14,14 @@ export const Route = createFileRoute("/api/facts")({
 			GET: async ({ request }) => {
 				const searchParams = new URL(request.url).searchParams;
 				const result = await listFacts(undefined, {
+					apartmentId: searchParams.get("apartmentId") ?? undefined,
 					category: searchParams.get("category") ?? undefined,
+					goldStandard: searchParams.get("goldStandard") ?? undefined,
+					houseId: searchParams.get("houseId") ?? undefined,
 					key: searchParams.get("key") ?? undefined,
 					limit: searchParams.get("limit") ?? undefined,
 					propertyId: searchParams.get("propertyId") ?? undefined,
+					q: searchParams.get("q") ?? undefined,
 					sourceId: searchParams.get("sourceId") ?? undefined,
 				});
 
