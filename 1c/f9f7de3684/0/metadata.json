@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "1cf9f7de3684",
+  "session_id": "24378d99-06d6-4d7f-a348-ef900f217bf3",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T09:37:22.005262Z",
+  "branch": "caseOverview",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/SearchResults.tsx",
+    "src/engine/__tests__/propertyHistoryRunner.test.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/pipelines/PropertyHistoryRunner.ts",
+    "src/scripts/backfillEmbeddings.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "7b9fa2180161",
+  "checkpoint_transcript_start": 267,
+  "transcript_lines_at_start": 267,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 16
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T09:37:21.998363Z",
+    "agent_lines": 67,
+    "agent_removed": 10,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 67,
+    "total_lines_changed": 77,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

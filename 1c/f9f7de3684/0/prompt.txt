@@ -1,0 +1,3 @@
+Okay, good news: Case Search Works. Filter is aPPLIED. 
+
+Bad news overall search is not working: Gives out zero results (search for cases, search for facts)

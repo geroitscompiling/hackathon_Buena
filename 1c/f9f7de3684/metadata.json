@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "1cf9f7de3684",
+  "strategy": "manual-commit",
+  "branch": "caseOverview",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/SearchResults.tsx",
+    "src/engine/__tests__/propertyHistoryRunner.test.ts",
+    "src/engine/pipelines/BaselineDryRunPipeline.ts",
+    "src/engine/pipelines/PropertyHistoryRunner.ts",
+    "src/scripts/backfillEmbeddings.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1c/f9f7de3684/0/metadata.json",
+      "transcript": "/1c/f9f7de3684/0/full.jsonl",
+      "content_hash": "/1c/f9f7de3684/0/content_hash.txt",
+      "prompt": "/1c/f9f7de3684/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
