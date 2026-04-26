@@ -1,0 +1,1 @@
+Okay, I did a fresh install and ran the make initial-live script. Since 30 Minutes the script is talking with the AI Agents. Don't interfere ich just want to know if this is okay based on the amount of data or if there might be a loop
