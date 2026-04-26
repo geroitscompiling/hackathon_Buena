@@ -1,0 +1,14 @@
+There is an issue reported by IDE:
+@CaseAgentRuntime.ts (410-412) 
+ient(baseUrl: string): Promise<McpClient> {
+
+Add to Chat
+⌘L
+
+Quick Edit
+⌘K
+backup
+Type 'Promise<{ [x: string]: unknown; content: ({ type: "text"; text: string; annotations?: { audience?: ("assistant" | "user")[] | undefined; priority?: number | undefined; lastModified?: string | undefined; } | undefined; _meta?: Record<...> | undefined; } | { ...; } | { ...; } | { ...; } | { ...; })[]; _meta?: { ...; }...' is not assignable to type 'Promise<McpCallToolResult>'.
+  Type '{ [x: string]: unknown; content: ({ type: "text"; text: string; annotations?: { audience?: ("assistant" | "user")[] | undefined; priority?: number | undefined; lastModified?: string | undefined; } | undefined; _meta?: Record<...> | undefined; } | { ...; } | { ...; } | { ...; } | { ...; })[]; _meta?: { ...; } | undef...' is not assignable to type 'McpCallToolResult'.
+    Type '{ [x: string]: unknown; toolResult: unknown; _meta?: { [x: string]: unknown; progressToken?: string | number | undefined; "io.modelcontextprotocol/related-task"?: { taskId: string; } | undefined; } | undefined; }' has no properties in common with type 'McpCallToolResult'.ts(2322)
+CaseAgentRuntime.ts(44, 12): The expected type comes from the return type of this signature.
