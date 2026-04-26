@@ -1,3 +1,4 @@
+import { StatusBadge } from "#/components/StatusBadge";
 import { Badge } from "#/components/ui/badge";
 import {
 	Table,
@@ -47,9 +48,7 @@ export function CasesTable({ cases }: CasesTableProps) {
 									</div>
 								</TableCell>
 								<TableCell className="align-top">
-									<Badge variant="outline" className="rounded-full">
-										{caseItem.status}
-									</Badge>
+									<StatusBadge status={caseItem.status} />
 								</TableCell>
 								<TableCell className="min-w-44 align-top">
 									<div className="space-y-1">
