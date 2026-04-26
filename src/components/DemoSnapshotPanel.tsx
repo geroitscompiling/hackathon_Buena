@@ -1,5 +1,6 @@
 import { Badge } from "#/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#/components/ui/card";
+import { formatMediumDateTime } from "#/lib/formatTimestamp";
 
 export type DemoSnapshotTrace = {
   id: string;
@@ -61,10 +62,7 @@ export function DemoSnapshotPanel({ data }: DemoSnapshotPanelProps) {
                       {trace.decision}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(trace.createdAt).toLocaleString("en-GB", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
+                      {formatMediumDateTime(trace.createdAt)}
                     </span>
                   </div>
                 </div>

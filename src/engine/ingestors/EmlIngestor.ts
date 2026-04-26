@@ -23,8 +23,9 @@ export class EmlIngestor implements Ingestor {
     }
 
     const ingestionDate = new Date().toISOString();
+    const referenceDate = deriveReferenceDate(fileId, ingestionDate);
     const extractedFacts = await this.extractor.extract(content, {
-      referenceDate: deriveReferenceDate(fileId, ingestionDate),
+      referenceDate,
     });
 
     return extractedFacts.map((fact) => ({
@@ -40,6 +41,7 @@ export class EmlIngestor implements Ingestor {
       },
       isGoldStandard: false,
       confidenceScore: fact.confidenceScore,
+      validFrom: fact.validFrom ?? referenceDate,
     }));
   }
 }

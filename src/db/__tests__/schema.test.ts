@@ -59,6 +59,7 @@ describe("Database Schema", () => {
 		expect(retrievedFacts).toHaveLength(1);
 		expect(retrievedFacts[0].propertyId).toBe("LIE-001");
 		expect(retrievedFacts[0].isGoldStandard).toBe(true);
+		expect(retrievedFacts[0].validFrom).toBeNull();
 
 		const retrievedSources = await db
 			.select()

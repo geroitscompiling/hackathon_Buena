@@ -170,6 +170,42 @@ describe("db queries", () => {
 		expect(listed).toHaveLength(2);
 	});
 
+	it("filters facts by content query, house scope, and gold standard", async () => {
+		await db.insert(schema.facts).values({
+			id: "fact-gold",
+			propertyId: "LIE-001",
+			category: "core_erp",
+			key: "baujahr",
+			value: "1928",
+			sourceId: "source-1",
+			isGoldStandard: true,
+			confidenceScore: 1,
+		});
+
+		const byDoor = await listFacts(db, { q: "door", limit: 20 });
+		expect(byDoor.map((f) => f.id)).toEqual(["fact-1"]);
+
+		const byHouse = await listFacts(db, { houseId: "LIE-001-H1", limit: 20 });
+		expect(byHouse.map((f) => f.id)).toEqual(["fact-1"]);
+
+		const goldOnly = await listFacts(db, {
+			goldStandard: "gold",
+			limit: 20,
+		});
+		expect(goldOnly.map((f) => f.id)).toContain("fact-gold");
+		expect(goldOnly.every((f) => f.isGoldStandard)).toBe(true);
+
+		const nonGold = await listFacts(db, {
+			goldStandard: "nonGold",
+			limit: 20,
+		});
+		expect(nonGold.map((f) => f.id)).toContain("fact-1");
+		expect(nonGold.every((f) => !f.isGoldStandard)).toBe(true);
+
+		expect(await countFacts(db, { q: "door" })).toBe(1);
+		expect(await countFacts(db, { goldStandard: "gold" })).toBe(1);
+	});
+
 	it("counts cases and lists more than the old 100-row cap", async () => {
 		await db.insert(schema.cases).values({
 			id: "case-2",

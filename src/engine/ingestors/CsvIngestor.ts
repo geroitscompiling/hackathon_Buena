@@ -18,6 +18,7 @@ export class CsvIngestor implements Ingestor {
     
     const facts: BuildingFact[] = [];
     const ingestionDate = new Date().toISOString();
+    const validFrom = ingestionDate.slice(0, 10);
     const propertyId = "LIE-001"; // Defaulting as agreed
 
     for (let i = 1; i < lines.length; i++) {
@@ -55,6 +56,7 @@ export class CsvIngestor implements Ingestor {
           },
           isGoldStandard: true,
           confidenceScore: 1.0,
+          validFrom,
         });
       } else {
         for (const einheitId of unitIds) {
@@ -71,6 +73,7 @@ export class CsvIngestor implements Ingestor {
             },
             isGoldStandard: true,
             confidenceScore: 1.0,
+            validFrom,
             erpScope: { einheitId },
           });
         }

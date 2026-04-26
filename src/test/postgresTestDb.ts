@@ -73,6 +73,7 @@ export async function bootstrapAppSchema(
 			"sourceId" text NOT NULL REFERENCES "sources"("id"),
 			"isGoldStandard" boolean NOT NULL,
 			"confidenceScore" real NOT NULL,
+			"validFrom" text,
 			"embedding" vector(1536)
 		);
 

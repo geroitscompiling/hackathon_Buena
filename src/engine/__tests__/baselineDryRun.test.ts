@@ -144,6 +144,10 @@ describe("Baseline dry-run pipeline", () => {
 			.from(facts)
 			.where(and(eq(facts.key, "repair"), eq(facts.isGoldStandard, false)));
 		expect(aiFact).toHaveLength(1);
+		expect(aiFact[0]?.validFrom).toBe("2026-01-01");
+
+		const goldRow = goldFact[0];
+		expect(goldRow?.validFrom).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 	});
 
 	it("writes scoped links and blocks AI overwrite of matching gold semantic identity", async () => {

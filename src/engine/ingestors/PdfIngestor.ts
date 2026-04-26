@@ -25,8 +25,9 @@ export class PdfIngestor implements Ingestor {
     }
 
     const ingestionDate = new Date().toISOString();
+    const referenceDate = deriveReferenceDate(fileId, ingestionDate);
     const extractedFacts = await this.extractor.extract(content, {
-      referenceDate: deriveReferenceDate(fileId, ingestionDate),
+      referenceDate,
     });
 
     return extractedFacts.map((fact) => ({
@@ -42,6 +43,7 @@ export class PdfIngestor implements Ingestor {
       },
       isGoldStandard: false,
       confidenceScore: fact.confidenceScore,
+      validFrom: fact.validFrom ?? referenceDate,
     }));
   }
 }

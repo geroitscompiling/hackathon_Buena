@@ -25,6 +25,8 @@ export interface BuildingFact {
   source: SourceRef;
   isGoldStandard: boolean;
   confidenceScore: number;
+  /** ISO calendar date YYYY-MM-DD: when the stated fact applies / becomes valid (not ingestion time). */
+  validFrom?: string;
   erpScope?: BuildingFactErpScope;
 }
 
@@ -45,6 +47,8 @@ export interface ExtractedFact {
   key: string;
   value: string;
   confidenceScore: number;
+  /** Optional; otherwise pipelines default from document / reference date. YYYY-MM-DD. */
+  validFrom?: string;
 }
 
 export interface FactExtractionContext {

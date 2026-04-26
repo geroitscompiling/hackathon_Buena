@@ -58,6 +58,7 @@ export function formatFactEmbeddingDocument(input: {
 	value: string;
 	isGoldStandard: boolean;
 	sourceFileId: string;
+	validFrom?: string | null;
 }): string {
 	return compactParts([
 		"title: fact",
@@ -67,6 +68,7 @@ export function formatFactEmbeddingDocument(input: {
 		`category=${input.category}`,
 		`key=${input.key}`,
 		`value=${input.value}`,
+		input.validFrom ? `validFrom=${input.validFrom}` : null,
 		`gold=${input.isGoldStandard ? "true" : "false"}`,
 		`source=${input.sourceFileId}`,
 	]);
@@ -127,6 +129,7 @@ export class SemanticIndexService {
 				value: fact.value,
 				isGoldStandard: fact.isGoldStandard,
 				sourceFileId: fact.source.fileId,
+				validFrom: fact.validFrom,
 			}),
 		);
 

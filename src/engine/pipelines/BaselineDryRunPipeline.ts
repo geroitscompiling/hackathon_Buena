@@ -532,6 +532,7 @@ export async function runBaselineDryRun({
         sourceId,
         isGoldStandard: enrichedFact.isGoldStandard,
         confidenceScore: enrichedFact.confidenceScore,
+        validFrom: enrichedFact.validFrom ?? null,
       });
 
       if (resolvedScope.scopeType === "house" || resolvedScope.scopeType === "apartment") {
