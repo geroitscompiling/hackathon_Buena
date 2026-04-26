@@ -1,0 +1,6 @@
+I merged the changes to main however ther was a conflict so I accepted both streams for now. This is causing issues:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/18.txt:983-1027 
+and tests are failing:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/18.txt:980-1019 
+
+FIx it please :D

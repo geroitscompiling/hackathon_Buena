@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "0cf1a562474f",
+  "strategy": "manual-commit",
+  "branch": "factTableFix",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/components/FactsTable.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0c/f1a562474f/0/metadata.json",
+      "transcript": "/0c/f1a562474f/0/full.jsonl",
+      "content_hash": "/0c/f1a562474f/0/content_hash.txt",
+      "prompt": "/0c/f1a562474f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
