@@ -1,0 +1,102 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "ec4c2ef9f45f",
+  "session_id": "24378d99-06d6-4d7f-a348-ef900f217bf3",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T09:31:09.8192Z",
+  "branch": "caseOverview",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "src/components/SearchResults.tsx",
+    "src/routes/cases.tsx",
+    "src/routes/search.tsx",
+    "src/services/__tests__/casesPageSearch.test.ts",
+    "src/services/cases.ts",
+    "src/services/casesOverviewFilters.ts",
+    "src/services/casesPageSearch.ts",
+    "src/services/semanticIndex.ts",
+    "src/services/semanticSearchShared.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "da52f035b986",
+  "checkpoint_transcript_start": 107,
+  "transcript_lines_at_start": 107,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 15
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T09:31:09.812489Z",
+    "agent_lines": 114,
+    "agent_removed": 98,
+    "human_added": 59,
+    "human_modified": 53,
+    "human_removed": 0,
+    "total_committed": 226,
+    "total_lines_changed": 324,
+    "agent_percentage": 65.4320987654321,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 62,
+      "agent_lines_removed": 38
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 102,
+      "agent_lines_removed": 62
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 114,
+      "agent_lines_removed": 79
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 112,
+      "user_lines_removed": 53,
+      "agent_lines_added": 118,
+      "agent_lines_removed": 80,
+      "user_added_per_file": {
+        "src/components/SearchResults.tsx": 1,
+        "src/routes/search.tsx": 95,
+        "src/services/semanticIndex.ts": 5,
+        "src/services/semanticSearchShared.ts": 11
+      },
+      "user_removed_per_file": {
+        "src/components/SearchResults.tsx": 1,
+        "src/routes/search.tsx": 42,
+        "src/services/semanticIndex.ts": 10
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

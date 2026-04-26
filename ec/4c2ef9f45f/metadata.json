@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "ec4c2ef9f45f",
+  "strategy": "manual-commit",
+  "branch": "caseOverview",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "src/components/SearchResults.tsx",
+    "src/routes/cases.tsx",
+    "src/routes/search.tsx",
+    "src/services/__tests__/casesPageSearch.test.ts",
+    "src/services/cases.ts",
+    "src/services/casesOverviewFilters.ts",
+    "src/services/casesPageSearch.ts",
+    "src/services/semanticIndex.ts",
+    "src/services/semanticSearchShared.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ec/4c2ef9f45f/0/metadata.json",
+      "transcript": "/ec/4c2ef9f45f/0/full.jsonl",
+      "content_hash": "/ec/4c2ef9f45f/0/content_hash.txt",
+      "prompt": "/ec/4c2ef9f45f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

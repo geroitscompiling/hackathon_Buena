@@ -1,0 +1,27 @@
+Mabe that helps, I get some Browser erroirs:
+Unhandled Promise Rejection: ReferenceError: Can't find variable: Buffer
+And huge amounts of sourceMap Errors 
+such as: [Error] Failed to load resource: the server responded with a status of 404 () (Q7GRFEEB-zsqH-FML.js.map, line 0)
+
+However, thos seem to be on other pages as well.
+As for now the filter function is not working. I can't pick a Status (empty)
+
+---
+
+okay, nevermind. however: You whit is not working. I can't filter by status. Now I see "all statuses" in Safari (not chrome though) but when clicking oin the dropDown it gives me Zero. Why Is it so hard right now to build a shitty search/filter bar?
+
+---
+
+Good, I now can select a status but it does now good. When I hit apply filters page loads/reeloads (URL: http://localhost:3000/cases?q=) but there is not data beeing filtered. It shows everything still
+
+---
+
+I just realised, the same problem occurs under the global Search:
+http://localhost:3000/search?query=&entityType=all&goldStandard=all&limit=10
+Nothing can be picked from Select and Search is zero working at all.
+
+---
+
+DUDE, I am fucking losing it. You fix NOTHING. If must be inspect the workflow on your oiwn (agentic).
+I go to cases, I select a status to filter, eg open, I hit Apply Filter the fucking page just reloads :http://localhost:3000/cases?q=
+NOTHING WORKS
