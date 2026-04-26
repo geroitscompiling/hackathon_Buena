@@ -86,16 +86,16 @@ describe("Baseline dry-run pipeline", () => {
 					? [
 							{
 								category: "maintenance",
-								key: "email_signal_detected",
-								value: true,
+								key: "repair",
+								value: "Am 24.10. wurde eine Heizungsreparatur fuer LIE-001-H1-A1 angefragt.",
 								confidenceScore: 0.91,
 							},
 					  ]
 					: [
 							{
 								category: "financial",
-								key: "invoice_signal_detected",
-								value: true,
+								key: "payment",
+								value: "Die Rechnung 20251203_DL-015_INV-00184 ist weiterhin offen.",
 								confidenceScore: 0.88,
 							},
 					  ],
@@ -142,7 +142,7 @@ describe("Baseline dry-run pipeline", () => {
 		const aiFact = await db
 			.select()
 			.from(facts)
-			.where(and(eq(facts.key, "email_signal_detected"), eq(facts.isGoldStandard, false)));
+			.where(and(eq(facts.key, "repair"), eq(facts.isGoldStandard, false)));
 		expect(aiFact).toHaveLength(1);
 	});
 
@@ -160,8 +160,8 @@ describe("Baseline dry-run pipeline", () => {
 						? [
 								{
 									category: "maintenance",
-									key: "email_signal_detected",
-									value: "LIE-001-H1-A1",
+									key: "repair",
+									value: "Am 24.10. wurde eine Reparatur fuer die Wohnung LIE-001-H1-A1 beantragt.",
 									confidenceScore: 0.91,
 								},
 								{
@@ -211,8 +211,8 @@ describe("Baseline dry-run pipeline", () => {
 				extract: async () => [
 					{
 						category: "maintenance",
-						key: "email_signal_detected",
-						value: true,
+						key: "repair",
+						value: "Am 24.10. wurde eine Reparatur fuer die Heizungsanlage angefragt.",
 						confidenceScore: 0.91,
 					},
 				],

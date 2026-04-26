@@ -32,11 +32,10 @@ Key targets:
 
 ## Database Setup
 
-Initialize the SQLite database and seed initial test data:
+Initialize the database schema:
 
 ```bash
 pnpm run db:push
-pnpm run db:seed
 ```
 
 ## Initial Setup from Test Data

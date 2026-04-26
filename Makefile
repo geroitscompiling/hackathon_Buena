@@ -43,7 +43,6 @@ db-reset:
 db-setup: db-start
 	docker compose exec -T postgres psql -U postgres -d buena -c "CREATE EXTENSION IF NOT EXISTS vector;"
 	DATABASE_URL=$(DATABASE_URL) pnpm run db:push
-	DATABASE_URL=$(DATABASE_URL) pnpm run db:seed
 
 # After a long baseline import, snapshot the DB so you can skip re-running LLM-heavy ingestion.
 # Backup: creates .db-backups/buena-YYYYMMDD-HHMMSS.dump (Postgres custom format, includes pgvector).

@@ -43,8 +43,12 @@ export interface GatekeeperResult {
 export interface ExtractedFact {
   category: BuildingFactCategory;
   key: string;
-  value: string | number | boolean;
+  value: string;
   confidenceScore: number;
+}
+
+export interface FactExtractionContext {
+  referenceDate?: string;
 }
 
 export interface RelevanceGatekeeper {
@@ -52,5 +56,5 @@ export interface RelevanceGatekeeper {
 }
 
 export interface BuildingFactExtractor {
-  extract(documentText: string): Promise<ExtractedFact[]>;
+  extract(documentText: string, context?: FactExtractionContext): Promise<ExtractedFact[]>;
 }
