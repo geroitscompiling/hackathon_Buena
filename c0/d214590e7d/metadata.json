@@ -3,10 +3,17 @@
   "checkpoint_id": "c0d214590e7d",
   "strategy": "manual-commit",
   "branch": "epic_5",
-  "checkpoints_count": 4,
+  "checkpoints_count": 6,
   "files_touched": [
+    "IMPLEMENTATION_PLAN.md",
     "Makefile",
     "README.md",
+    "src/components/AppSidebar.tsx",
+    "src/components/DemoSnapshotPanel.tsx",
+    "src/components/__tests__/AppSidebar.test.tsx",
+    "src/components/__tests__/DemoSnapshotPanel.test.tsx",
+    "src/routeTree.gen.ts",
+    "src/routes/demo-snapshot.tsx",
     "src/scripts/runJudgeDemoHistoryMcpAssist.ts"
   ],
   "sessions": [
@@ -15,6 +22,12 @@
       "transcript": "/c0/d214590e7d/0/full.jsonl",
       "content_hash": "/c0/d214590e7d/0/content_hash.txt",
       "prompt": "/c0/d214590e7d/0/prompt.txt"
+    },
+    {
+      "metadata": "/c0/d214590e7d/1/metadata.json",
+      "transcript": "/c0/d214590e7d/1/full.jsonl",
+      "content_hash": "/c0/d214590e7d/1/content_hash.txt",
+      "prompt": "/c0/d214590e7d/1/prompt.txt"
     }
   ],
   "token_usage": {

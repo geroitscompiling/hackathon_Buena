@@ -1,0 +1,62 @@
+This is weird, an Epic just for some makefiles edits? :D 
+
+R5.1 [TEST] Judge demo script contract
+Added contract tests in src/scripts/__tests__/judgeDemoRunner.test.ts.
+Covers canonical 5-step flow sections:
+DB readiness
+history replay
+canonical MCP/semantic queries
+guarded case assist
+structured summary
+Asserts summary artifact persistence and required keys.
+R5.2 Deterministic one-command run
+Standardized command surface in Makefile:
+make run-stage-live = stage primary flow (run-initial + run-history-live)
+make run-demo-history = failover (judgeDemoRunner)
+Kept explicit mode behavior:
+stage primary is live path
+failover defaults to mock unless HISTORY_MODE=live is passed
+Updated help text to clearly label live-primary vs failover usage.
+R5.3 Summary + trace bundle
+runJudgeDemoHistoryMcpAssist.ts now routes through runJudgeDemoRunner.
+Summary artifact written via runner (artifacts/judge-demo-summary.json) includes:
+facts inserted/blocked/idempotent
+cases opened/updated/resolved
+guardrail approved/rejected
+semantic snapshots
+conflict + trace artifact paths
+Guarded assist trace persisted to artifacts/judge-demo-case-assist-trace.json.
+R5.5 [TEST] Failure-mode UX
+Runner tests cover non-zero exits + remediation text for:
+missing env/model config (MISSING_ENV_CONFIG)
+DB unavailable (DB_UNAVAILABLE)
+MCP/tool failures (MCP_TOOL_FAILURE)
+Script dependency wiring maps runtime failures to these codes/messages.
+R5.6 Final hardening checklist
+Added make pre-demo-check to run:
+db-setup
+pnpm test
+pnpm lint
+baseline mock flow
+history mock flow
+judge failover flow
+Remaining items:
+
+R5.4 (stretch) Read-only operator snapshot: not implemented in this pass.
+Optional polish: add explicit docs section “Stage script vs Failover script” with command examples and expected artifacts.
+Risks / tradeoffs:
+
+run-demo-history currently resets DB as part of its deterministic failover behavior; good for consistency, but slower.
+Live mode in failover depends on env presence and external model/tool availability; remediation is present but still external-failure-prone.
+pre-demo-check includes multiple heavy commands; reliable but longer runtime before demo.
+Exact verification commands used:
+
+pnpm test src/scripts/__tests__/judgeDemoRunner.test.ts
+pnpm lint
+And per your confirmation:
+
+Full suite status is green (“all tests are green”).
+
+---
+
+jeah make it so, if it wasn't that much of work, maybe we implement 5.4 after all?
