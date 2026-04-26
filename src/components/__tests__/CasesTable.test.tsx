@@ -73,7 +73,7 @@ describe("CasesTable", () => {
 		});
 		expect(links.length).toBeGreaterThanOrEqual(1);
 		for (const link of links) {
-			expect(link).toHaveAttribute("href", "/cases/case-1");
+			expect(link.getAttribute("href")).toBe("/cases/case-1");
 		}
 	});
 });
