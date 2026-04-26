@@ -1,0 +1,1 @@
+Implementing the Case Search was a Pain in the ass. So you might really want to check it out and understand how it works.
