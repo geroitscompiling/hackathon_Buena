@@ -1,0 +1,13 @@
+I wanted to test to add a fact manually as a human, but browsing to the fact site i git:
+[
+  {
+    "origin": "number",
+    "code": "too_big",
+    "maximum": 100,
+    "inclusive": true,
+    "path": [
+      "limit"
+    ],
+    "message": "Too big: expected number to be <=100"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "fbf4dfbcd655",
+  "strategy": "manual-commit",
+  "branch": "humanEditAndDates",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/routes/facts.$scopeType.$scopeId.tsx",
+    "src/routes/facts.index.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/fb/f4dfbcd655/0/metadata.json",
+      "transcript": "/fb/f4dfbcd655/0/full.jsonl",
+      "content_hash": "/fb/f4dfbcd655/0/content_hash.txt",
+      "prompt": "/fb/f4dfbcd655/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
