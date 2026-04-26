@@ -270,7 +270,14 @@ describe("CaseLifecycleService guarded closure actions (E4.5)", () => {
 		const testDb = await createEngineDb();
 		const db = testDb.db;
 		try {
-			const lifecycle = new CaseLifecycleService(db);
+			const embeddingRefreshCalls: string[] = [];
+			const lifecycle = new CaseLifecycleService(db, {
+				semanticIndexService: {
+					refreshCaseEmbeddingById: async (caseId: string) => {
+						embeddingRefreshCalls.push(caseId);
+					},
+				},
+			});
 			await db.insert(cases).values({
 				id: "guard-case-2",
 				propertyId: "LIE-001",
@@ -329,6 +336,76 @@ describe("CaseLifecycleService guarded closure actions (E4.5)", () => {
 			expect(traces).toHaveLength(1);
 			expect(traces[0].decision).toBe("approved");
 			expect(traces[0].contextSummary).toContain("predicate evidence");
+			expect(embeddingRefreshCalls).toEqual(["guard-case-2"]);
+		} finally {
+			await testDb.close();
+		}
+	});
+});
+
+describe("embedding freshness after case status transitions (E4.3)", () => {
+	it("refreshes case embedding when auto-close resolves a case", async () => {
+		const testDb = await createEngineDb();
+		const db = testDb.db;
+		try {
+			const resolver = new HierarchyResolver({
+				propertyId: "LIE-001",
+				houses: [{ id: "LIE-001-H1", apartments: [{ id: "LIE-001-H1-A1", name: "Unit 1" }] }],
+			});
+			const embeddingRefreshCalls: string[] = [];
+			const lifecycle = new CaseLifecycleService(db, {
+				semanticIndexService: {
+					refreshCaseEmbeddingById: async (caseId: string) => {
+						embeddingRefreshCalls.push(caseId);
+					},
+				},
+			});
+			await lifecycle.processIntentsForDocument({
+				propertyId: "LIE-001",
+				intents: [
+					{
+						title: "Leak repair ticket",
+						summary: "Awaiting vendor",
+						status: "open",
+						scopeHint: "apartment",
+						primarySignal: "leak-77",
+						closurePredicate: "repair_completed",
+						confidence: 0.92,
+					},
+				],
+				resolver,
+				documentMetadata: { apartmentId: "LIE-001-H1-A1", houseId: "LIE-001-H1" },
+				nowIso: "2026-04-25T10:00:00.000Z",
+			});
+			embeddingRefreshCalls.length = 0;
+			await db.insert(schema.sources).values({
+				id: "source-y",
+				fileId: "y.eml",
+				fileType: "eml",
+				ingestionDate: "2026-04-25T12:00:00.000Z",
+			});
+			const factId = "fact-close-2";
+			await db.insert(facts).values({
+				id: factId,
+				propertyId: "LIE-001",
+				category: "maintenance",
+				key: "repair_completed",
+				value: "yes",
+				sourceId: "source-y",
+				isGoldStandard: false,
+				confidenceScore: 0.99,
+			});
+			await db.insert(schema.factHouses).values({ factId, houseId: "LIE-001-H1" });
+			await db.insert(schema.factApartments).values({ factId, apartmentId: "LIE-001-H1-A1" });
+			const scopeMap = await loadFactScopes(db, [factId]);
+			const scope = scopeMap.get(factId);
+			if (!scope) throw new Error("Expected fact scope");
+			await lifecycle.evaluateAutoClose({
+				propertyId: "LIE-001",
+				newFacts: [{ id: factId, propertyId: "LIE-001", key: "repair_completed", value: "yes", scope }],
+				nowIso: "2026-04-27T10:00:00.000Z",
+			});
+			expect(embeddingRefreshCalls).toHaveLength(1);
 		} finally {
 			await testDb.close();
 		}
