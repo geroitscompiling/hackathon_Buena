@@ -1,0 +1,35 @@
+You are taking over implementation in the Buena Context-Loom repo.
+## Mission
+Continue from current state and execute **Epic 4 (MCP + Semantic Retrieval + Agentic Case Assist)** as defined in `IMPLEMENTATION_PLAN.md`.
+Do **not** restart Epics R1/R2 — they are already implemented and test-backed in this branch/history.
+## Current State (must respect)
+- Stack is now Postgres + pgvector (local via Docker).
+- Semantic search exists in:
+  - API route: `src/routes/api/search.ts`
+  - UI page: `src/routes/search.tsx`
+  - UI results: `src/components/SearchResults.tsx`
+- R1 and R2 behavior exists (hierarchy resolution, gold-fact protection path, case extraction/lifecycle/auto-close, fact-case links).
+- Makefile DB/dev flows are already updated for Postgres-based setup.
+- `IMPLEMENTATION_PLAN.md` was updated to include Epic 4 tickets `E4.1`..`E4.7`.
+## Hard constraints
+- TDD first: write/adjust tests before logic changes.
+- Keep `temperature: 0` for all fact/case-generating LLM calls.
+- Keep ERP gold-protection invariant (no silent overwrite by AI outputs).
+- Do not degrade existing R1/R2 behavior while implementing Epic 4.
+## What to implement now (Epic 4 priority order)
+1. **E4.2 MCP tool contract stabilization**
+   - Define/lock MCP tool schemas for:
+     - `semantic_search`
+     - `get_related_cases`
+     - `get_related_facts`
+     - `get_case_context_bundle`
+   - Add integration tests for valid/invalid requests and error payloads.
+2. **E4.1 Semantic retrieval quality gates**
+   - Add retrieval tests with canonical prompts and expected top-k relevance.
+   - Include scoped filtering tests (`propertyId`, `houseId`, `apartmentId`).
+3. **E4.5 Guarded agent actions**
+   - Implement guardrails for any agent-proposed case closure:
+     - closure predicate evidence exists,
+     - scope aligns,
+     - confidence threshold passes.
+   - Persist trace metadata for closure decisions (why/evidence ids/context summary).

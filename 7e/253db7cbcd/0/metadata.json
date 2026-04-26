@@ -1,0 +1,56 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "7e253db7cbcd",
+  "session_id": "117f8a6b-cc85-4397-9e41-b9339a37b130",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T04:28:24.621177Z",
+  "branch": "Epic_4",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "drizzle/0006_case_action_traces.sql",
+    "package.json",
+    "src/db/relations.ts",
+    "src/db/schema.ts",
+    "src/engine/__tests__/caseLifecycle.integration.test.ts",
+    "src/engine/services/CaseLifecycleService.ts",
+    "src/mcp/__tests__/registry.test.ts",
+    "src/mcp/__tests__/server.test.ts",
+    "src/mcp/server.ts",
+    "src/services/__tests__/semanticIndex.test.ts",
+    "src/test/postgresTestDb.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "7feb77bbee05",
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T04:28:24.616858Z",
+    "agent_lines": 755,
+    "agent_removed": 6,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 755,
+    "total_lines_changed": 761,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
