@@ -10,6 +10,12 @@ export type BuildingFactCategory =
   | "maintenance"
   | "governance";
 
+/** ERP-stable identifiers for gold imports that must scope to houses/apartments. */
+export type BuildingFactErpScope = {
+	hausId?: string;
+	einheitId: string;
+};
+
 export interface BuildingFact {
   id: string;
   propertyId: string;
@@ -19,6 +25,7 @@ export interface BuildingFact {
   source: SourceRef;
   isGoldStandard: boolean;
   confidenceScore: number;
+  erpScope?: BuildingFactErpScope;
 }
 
 export interface Ingestor {

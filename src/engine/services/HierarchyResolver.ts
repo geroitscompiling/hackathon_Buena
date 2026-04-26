@@ -34,6 +34,22 @@ export type ResolvedHierarchyScope = {
 export class HierarchyResolver {
 	constructor(private readonly hierarchy: PropertyHierarchy) {}
 
+	/** Upserts resolver state when DB materializes ERP house/apartment rows (same IDs as DB PKs). */
+	materializeHouseApartment(
+		houseId: string,
+		apartmentId: string,
+		apartmentName?: string,
+	): void {
+		let house = this.hierarchy.houses.find((h) => h.id === houseId);
+		if (!house) {
+			house = { id: houseId, apartments: [] };
+			this.hierarchy.houses.push(house);
+		}
+		if (!house.apartments.some((a) => a.id === apartmentId)) {
+			house.apartments.push({ id: apartmentId, name: apartmentName });
+		}
+	}
+
 	async resolve(input: HierarchyResolverInput): Promise<ResolvedHierarchyScope> {
 		const propertyId = input.propertyId.trim();
 		if (!propertyId) {
