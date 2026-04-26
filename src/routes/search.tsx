@@ -296,27 +296,29 @@ function SearchPage() {
 								placeholder="LIE-001-H1-A1"
 							/>
 						</div>
-						<div className="flex flex-wrap items-end gap-3 md:col-span-2 xl:col-span-7">
-							<div className="w-full min-w-[12rem] sm:w-auto sm:max-w-[14rem]">
-								<label htmlFor="search-limit" className="mb-2 block text-sm font-medium">
-									Results limit
-								</label>
-								<Input
-									id="search-limit"
-									name="limit"
-									value={limit}
-									onChange={(event) => setLimit(event.target.value)}
-									inputMode="numeric"
-									placeholder={`max ${formatIntegerGrouped(SEMANTIC_SEARCH_MAX_RESULTS)}`}
-									aria-describedby="search-limit-hint"
-								/>
-								<p id="search-limit-hint" className="mt-1 text-xs text-muted-foreground">
-									Capped at {formatIntegerGrouped(SEMANTIC_SEARCH_MAX_RESULTS)} per search.
-								</p>
+						<div className="space-y-1 md:col-span-2 xl:col-span-7">
+							<div className="flex flex-wrap items-end gap-3 xl:justify-between xl:gap-4">
+								<div className="min-w-[12rem] w-full sm:w-auto sm:max-w-[14rem]">
+									<label htmlFor="search-limit" className="mb-2 block text-sm font-medium">
+										Results limit
+									</label>
+									<Input
+										id="search-limit"
+										name="limit"
+										value={limit}
+										onChange={(event) => setLimit(event.target.value)}
+										inputMode="numeric"
+										placeholder={`max ${formatIntegerGrouped(SEMANTIC_SEARCH_MAX_RESULTS)}`}
+										aria-describedby="search-limit-hint"
+									/>
+								</div>
+								<Button type="submit" className="min-w-28 shrink-0">
+									Search
+								</Button>
 							</div>
-							<Button type="submit" className="min-w-28 shrink-0">
-								Search
-							</Button>
+							<p id="search-limit-hint" className="text-xs text-muted-foreground sm:max-w-[14rem]">
+								Capped at {formatIntegerGrouped(SEMANTIC_SEARCH_MAX_RESULTS)} per search.
+							</p>
 						</div>
 					</form>
 				</CardContent>
