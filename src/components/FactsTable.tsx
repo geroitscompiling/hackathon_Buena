@@ -155,6 +155,81 @@ export function FactsTable({ facts, onEditFact }: FactsTableProps) {
 					))}
 				</TableBody>
 			</Table>
+		<div className="overflow-hidden rounded-lg border bg-card">
+			<div className="overflow-x-auto">
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Topic</TableHead>
+							<TableHead>Value</TableHead>
+							<TableHead>Property</TableHead>
+							<TableHead>Scope</TableHead>
+							<TableHead>Source</TableHead>
+							<TableHead>Meta</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{facts.map((fact) => (
+							<TableRow key={fact.id}>
+								<TableCell className="min-w-36 align-top whitespace-normal break-words">
+									<div className="space-y-1">
+										<p className="font-semibold">{fact.key}</p>
+										<p className="text-xs text-muted-foreground break-all">{fact.id}</p>
+									</div>
+								</TableCell>
+								<TableCell className="min-w-40 max-w-xl align-top whitespace-pre-wrap break-words">
+									{fact.value}
+								</TableCell>
+								<TableCell className="min-w-44 align-top whitespace-normal break-words">
+									<div className="space-y-1">
+										<p className="font-medium">{fact.property.name}</p>
+										<p className="text-xs text-muted-foreground break-all">{fact.property.id}</p>
+									</div>
+								</TableCell>
+								<TableCell className="min-w-56 align-top">
+									<div className="flex flex-wrap gap-1.5">
+										{fact.houseIds.map((houseId) => (
+											<Badge key={houseId} variant="outline">
+												{houseId}
+											</Badge>
+										))}
+										{fact.apartmentIds.map((apartmentId) => (
+											<Badge key={apartmentId} variant="secondary">
+												{apartmentId}
+											</Badge>
+										))}
+										{fact.caseIds.map((caseId) => (
+											<Badge key={caseId}>{caseId}</Badge>
+										))}
+										{fact.houseIds.length === 0 &&
+										fact.apartmentIds.length === 0 &&
+										fact.caseIds.length === 0 ? (
+											<span className="text-sm text-muted-foreground">Property only</span>
+										) : null}
+									</div>
+								</TableCell>
+								<TableCell className="min-w-36 align-top whitespace-normal break-words">
+									<div className="space-y-1">
+										<p className="font-medium break-all">{fact.source.fileId}</p>
+										<p className="text-xs uppercase tracking-wide text-muted-foreground">
+											{fact.source.fileType}
+										</p>
+									</div>
+								</TableCell>
+								<TableCell className="min-w-36 align-top">
+									<div className="flex flex-wrap gap-1.5">
+										<Badge variant="outline">{fact.category}</Badge>
+										<Badge variant="secondary">
+											{Math.round(fact.confidenceScore * 100)}%
+										</Badge>
+										{fact.isGoldStandard ? <Badge>Gold</Badge> : null}
+									</div>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</div>
 		</div>
 	);
 }
