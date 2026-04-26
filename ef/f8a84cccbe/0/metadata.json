@@ -1,0 +1,51 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "eff8a84cccbe",
+  "session_id": "8f3effb9-39e0-470a-bf57-b5004779a8aa",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T05:30:02.196939Z",
+  "branch": "epic_5",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/components/DemoSnapshotPanel.tsx",
+    "src/components/__tests__/DemoSnapshotPanel.test.tsx",
+    "src/scripts/__tests__/judgeDemoRunner.test.ts",
+    "src/scripts/judgeDemoRunner.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "a56be30f457c",
+  "checkpoint_transcript_start": 31,
+  "transcript_lines_at_start": 31,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 7
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T05:30:02.192495Z",
+    "agent_lines": 7,
+    "agent_removed": 2,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 7,
+    "total_lines_changed": 9,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
