@@ -1,0 +1,13 @@
+The case Overview needs some restyling. Basially the text in the first row needs to break so the table fits to the screen and I don't have to scroll vertically.
+
+---
+
+In addition this needs a filter. I now have 60 cases. I need to filter by "content" Like "BSR Statreinigung, filter by Status, etc. Just the normal ass shit. Please implement it
+
+---
+
+And cases need a created and updated state. This can be done in one Row to save line spaces maybe? Basically we want to see when the case was created and when it was updated
+
+---
+
+thanks, but what is with the filter?
