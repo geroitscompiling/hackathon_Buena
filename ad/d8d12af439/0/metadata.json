@@ -1,0 +1,82 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "add8d12af439",
+  "session_id": "111143c0-dd57-4dda-b473-6da65cae9cf6",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T11:01:19.249369Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "src/components/CaseDetailView.tsx",
+    "src/engine/services/CaseAgentRuntime.ts",
+    "src/mcp/server.ts",
+    "src/services/apartments.ts",
+    "src/services/houses.ts",
+    "src/services/properties.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "f9777ae0d88b",
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T11:01:19.245866Z",
+    "agent_lines": 0,
+    "agent_removed": 70,
+    "human_added": 48,
+    "human_modified": 62,
+    "human_removed": 0,
+    "total_committed": 57,
+    "total_lines_changed": 180,
+    "agent_percentage": 38.88888888888889,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 30,
+      "user_lines_removed": 6,
+      "agent_lines_added": 5,
+      "agent_lines_removed": 70,
+      "user_added_per_file": {
+        "src/services/apartments.ts": 10,
+        "src/services/houses.ts": 10,
+        "src/services/properties.ts": 10
+      },
+      "user_removed_per_file": {
+        "src/services/apartments.ts": 2,
+        "src/services/houses.ts": 2,
+        "src/services/properties.ts": 2
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 39,
+      "agent_lines_removed": 76
+    }
+  ]
+}

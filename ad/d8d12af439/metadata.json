@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "add8d12af439",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "src/components/CaseDetailView.tsx",
+    "src/engine/services/CaseAgentRuntime.ts",
+    "src/mcp/server.ts",
+    "src/services/apartments.ts",
+    "src/services/houses.ts",
+    "src/services/properties.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ad/d8d12af439/0/metadata.json",
+      "transcript": "/ad/d8d12af439/0/full.jsonl",
+      "content_hash": "/ad/d8d12af439/0/content_hash.txt",
+      "prompt": "/ad/d8d12af439/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

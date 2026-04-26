@@ -1,0 +1,42 @@
+we had a major change incoming with some merge conflicts, for now: Fix Linter please including warnings:
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/20.txt:580-718
+
+---
+
+queries.test.ts shows an error according to IDE:
+Starting from Line 256:
+'property' is possibly 'undefined'.ts(18048)
+⌘+click to open in new tab
+const property: {
+    id: string;
+    name: string;
+} | undefined
+            id: "LIE-003",
+backup
+'house' is possibly 'undefined'.ts(18048)
+⌘+click to open in new tab
+const house: {
+    propertyId: string;
+    id: string;
+    name: string;
+} | undefined
+'house' is possibly 'undefined'.ts(18048)
+⌘+click to open in new tab
+const house: {
+    propertyId: string;
+    id: string;
+    name: string;
+} | undefined
+
+You get the idea
+
+---
+
+sever.ts in Folder mcp is showig an error according to IDE:
+Argument of type '{ limit: number; propertyId: string; houseId: string | undefined; apartmentId: string | undefined; query: string; entityType: "fact"; }' is not assignable to parameter of type '{ query: string; entityType: "fact" | "case" | "all"; goldStandard: "all" | "gold" | "nonGold"; limit: number; propertyId?: string | undefined; houseId?: string | undefined; apartmentId?: string | undefined; }'.
+  Property 'goldStandard' is missing in type '{ limit: number; propertyId: string; houseId: string | undefined; apartmentId: string | undefined; query: string; entityType: "fact"; }' but required in type '{ query: string; entityType: "fact" | "case" | "all"; goldStandard: "all" | "gold" | "nonGold"; limit: number; propertyId?: string | undefined; houseId?: string | undefined; apartmentId?: string | undefined; }'.ts(2345)
+semanticIndex.ts(22, 2): 'goldStandard' is declared here.
+Argument of type '{ limit: number; propertyId: string; houseId: string | undefined; apartmentId: string | undefined; query: string; entityType: "case"; }' is not assignable to parameter of type '{ query: string; entityType: "fact" | "case" | "all"; goldStandard: "all" | "gold" | "nonGold"; limit: number; propertyId?: string | undefined; houseId?: string | undefined; apartmentId?: string | undefined; }'.
+  Property 'goldStandard' is missing in type '{ limit: number; propertyId: string; houseId: string | undefined; apartmentId: string | undefined; query: string; entityType: "case"; }' but required in type '{ query: string; entityType: "fact" | "case" | "all"; goldStandard: "all" | "gold" | "nonGold"; limit: number; propertyId?: string | undefined; houseId?: string | undefined; apartmentId?: string | undefined; }'.ts(2345)
+semanticIndex.ts(22, 2): 'goldStandard' is declared here.
