@@ -91,7 +91,7 @@ Common variables (see `.env.example`):
 - `GEMINI_MAX_RETRIES`, `GEMINI_MIN_REQUEST_DELAY_MS` — rate limit / backoff for AI calls
 - `GEMINI_DEBUG=1` — extra retry diagnostics
 
-Pioneer AI by Fastino Labs is used through its OpenAI-compatible chat completions endpoint with `X-API-Key` authentication. The baseline gatekeeper, fact extractor, and case extractor all run at `temperature: 0`.
+Pioneer AI by Fastino Labs is used through its OpenAI-compatible chat completions endpoint with `X-API-Key` authentication. It can capture inference data for adaptive finetuning on the Pioneer platform, so production extraction traces can become training signal for improved checkpoints. The baseline gatekeeper, fact extractor, and case extractor all run at `temperature: 0`.
 
 ## Extending baseline file roots
 
