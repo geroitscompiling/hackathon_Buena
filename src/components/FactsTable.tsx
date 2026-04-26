@@ -39,19 +39,19 @@ export function FactsTable({ facts }: FactsTableProps) {
 					<TableBody>
 						{facts.map((fact) => (
 							<TableRow key={fact.id}>
-								<TableCell className="min-w-36 align-top">
+								<TableCell className="min-w-36 align-top whitespace-normal break-words">
 									<div className="space-y-1">
 										<p className="font-semibold">{fact.key}</p>
-										<p className="text-xs text-muted-foreground">{fact.id}</p>
+										<p className="text-xs text-muted-foreground break-all">{fact.id}</p>
 									</div>
 								</TableCell>
-								<TableCell className="min-w-40 align-top">
+								<TableCell className="min-w-40 max-w-xl align-top whitespace-pre-wrap break-words">
 									{fact.value}
 								</TableCell>
-								<TableCell className="min-w-44 align-top">
+								<TableCell className="min-w-44 align-top whitespace-normal break-words">
 									<div className="space-y-1">
 										<p className="font-medium">{fact.property.name}</p>
-										<p className="text-xs text-muted-foreground">{fact.property.id}</p>
+										<p className="text-xs text-muted-foreground break-all">{fact.property.id}</p>
 									</div>
 								</TableCell>
 								<TableCell className="min-w-56 align-top">
@@ -76,9 +76,9 @@ export function FactsTable({ facts }: FactsTableProps) {
 										) : null}
 									</div>
 								</TableCell>
-								<TableCell className="min-w-36 align-top">
+								<TableCell className="min-w-36 align-top whitespace-normal break-words">
 									<div className="space-y-1">
-										<p className="font-medium">{fact.source.fileId}</p>
+										<p className="font-medium break-all">{fact.source.fileId}</p>
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
 											{fact.source.fileType}
 										</p>
