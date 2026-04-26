@@ -29,8 +29,8 @@ describe("EmlIngestor", () => {
       extract: vi.fn().mockResolvedValue([
         {
           category: "governance",
-          key: "owner_objection",
-          value: "Sonderumlage objection submitted",
+          key: "ownership",
+          value: "Ein Eigentuemer hat Widerspruch gegen die Sonderumlage eingelegt.",
           confidenceScore: 0.91,
         },
       ]),
@@ -46,5 +46,8 @@ describe("EmlIngestor", () => {
     expect(facts[0].isGoldStandard).toBe(false);
     expect(facts[0].source.fileType).toBe("eml");
     expect(facts[0].source.fileId).toBe("20260101_083800_EMAIL-06547.eml");
+    expect(extractor.extract).toHaveBeenCalledWith(expect.any(String), {
+      referenceDate: "2026-01-01",
+    });
   });
 });

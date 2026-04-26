@@ -29,8 +29,8 @@ describe("PdfIngestor", () => {
       extract: vi.fn().mockResolvedValue([
         {
           category: "financial",
-          key: "invoice_total",
-          value: 1088.85,
+          key: "payment",
+          value: "Die Rechnung INV-00195 ueber 1.088,85 EUR ist zur Zahlung faellig.",
           confidenceScore: 0.98,
         },
       ]),
@@ -46,5 +46,8 @@ describe("PdfIngestor", () => {
     expect(facts[0].isGoldStandard).toBe(false);
     expect(facts[0].source.fileType).toBe("pdf");
     expect(facts[0].source.fileId).toBe("20260101_DL-001_INV-00195.pdf");
+    expect(extractor.extract).toHaveBeenCalledWith(expect.any(String), {
+      referenceDate: "2026-01-01",
+    });
   });
 });

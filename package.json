@@ -18,7 +18,6 @@
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts",
     "embeddings:backfill": "tsx src/scripts/backfillEmbeddings.ts",
     "dry-run:baseline": "tsx src/scripts/dryRunBaseline.ts",
     "dry-run:history": "tsx src/scripts/dryRunHistory.ts",

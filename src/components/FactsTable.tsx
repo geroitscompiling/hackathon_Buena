@@ -28,7 +28,7 @@ export function FactsTable({ facts }: FactsTableProps) {
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>Key</TableHead>
+							<TableHead>Topic</TableHead>
 							<TableHead>Value</TableHead>
 							<TableHead>Property</TableHead>
 							<TableHead>Scope</TableHead>
