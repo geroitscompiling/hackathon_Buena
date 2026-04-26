@@ -116,6 +116,26 @@ describe("judge history + MCP assist workflow (E4.6)", () => {
 			};
 			const embeddingClient = deterministicEmbeddingClient();
 
+			const stubCaseAssist = {
+				run: async (input: {
+					caseId: string;
+					propertyId: string;
+					confidenceThreshold: number;
+					nowIso: string;
+				}) => ({
+					bundle: {
+						case: { id: input.caseId },
+						relatedCases: [],
+						relatedFacts: [],
+					},
+					recommendation: {
+						proposedAction: "keep_open" as const,
+						confidence: 0.5,
+						why: "test stub during ingest",
+					},
+				}),
+			};
+
 			const first = await runBaselineDryRun({
 				db,
 				propertyId: "LIE-001",
@@ -125,6 +145,7 @@ describe("judge history + MCP assist workflow (E4.6)", () => {
 				gatekeeper,
 				extractor,
 				caseExtractor,
+				caseAssistOrchestrator: stubCaseAssist,
 				embeddingClient,
 			});
 			const second = await runBaselineDryRun({
@@ -136,6 +157,7 @@ describe("judge history + MCP assist workflow (E4.6)", () => {
 				gatekeeper,
 				extractor,
 				caseExtractor,
+				caseAssistOrchestrator: stubCaseAssist,
 				embeddingClient,
 			});
 

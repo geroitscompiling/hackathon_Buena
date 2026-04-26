@@ -535,6 +535,26 @@ describe("full dataset case cardinality (R2.7)", () => {
 				];
 			};
 
+			const stubCaseAssist = {
+				run: async (input: {
+					caseId: string;
+					propertyId: string;
+					confidenceThreshold: number;
+					nowIso: string;
+				}) => ({
+					bundle: {
+						case: { id: input.caseId },
+						relatedCases: [],
+						relatedFacts: [],
+					},
+					recommendation: {
+						proposedAction: "keep_open" as const,
+						confidence: 0.5,
+						why: "test stub",
+					},
+				}),
+			};
+
 			await runPropertyHistoryReplay({
 				dayRootPath: root,
 				runDay: async ({ datasetRootPath, noisyInputFiles }) =>
@@ -547,6 +567,7 @@ describe("full dataset case cardinality (R2.7)", () => {
 						gatekeeper,
 						extractor,
 						caseExtractor: { extract: async (documentText) => caseFromText(documentText) },
+						caseAssistOrchestrator: stubCaseAssist,
 						embeddingClient: {
 							embedDocument: async () => Array.from({ length: 1536 }, () => 0),
 							embedQuery: async () => Array.from({ length: 1536 }, () => 0),
