@@ -45,6 +45,36 @@ type McpClient = {
 	close: () => Promise<void>;
 };
 
+/** MCP SDK `callTool` is a union (content result vs task `toolResult`); narrow to what we parse. */
+function normalizeMcpCallToolResult(raw: unknown): McpCallToolResult {
+	if (!raw || typeof raw !== "object") {
+		return {};
+	}
+	const obj = raw as Record<string, unknown>;
+
+	if ("toolResult" in obj && typeof obj.toolResult !== "undefined") {
+		const toolResult = obj.toolResult;
+		return {
+			structuredContent:
+				toolResult !== null && typeof toolResult === "object" && !Array.isArray(toolResult)
+					? (toolResult as Record<string, unknown>)
+					: { value: toolResult as unknown },
+		};
+	}
+
+	const content = obj.content;
+	const structuredContent = obj.structuredContent;
+	const isError = obj.isError;
+
+	return {
+		content: Array.isArray(content)
+			? (content as Array<{ type?: string; text?: string }>)
+			: undefined,
+		structuredContent,
+		isError: typeof isError === "boolean" ? isError : undefined,
+	};
+}
+
 type RuntimeTranscriptMessage = {
 	role: "assistant";
 	content: string;
@@ -407,8 +437,8 @@ async function createDefaultMcpClient(baseUrl: string): Promise<McpClient> {
 		connect: async () => {
 			await client.connect(transport);
 		},
-		listTools: async () => client.listTools({}),
-		callTool: async (args) => client.callTool(args),
+		listTools: async () => client.listTools({}) as Promise<McpListToolsResult>,
+		callTool: async (args) => normalizeMcpCallToolResult(await client.callTool(args)),
 		close: async () => {
 			await transport.terminateSession();
 			await client.close();
