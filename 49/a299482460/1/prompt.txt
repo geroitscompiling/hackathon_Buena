@@ -1,0 +1,14 @@
+Fix applied
+Updated src/routes/api/mcp.ts to inject DB-backed MCP tools at route wiring:
+now calls handleMcpHttpRequest(request, createMcpTools(db))
+applies to POST (and same handler wiring for GET/DELETE, which still return 405 per transport guard)
+This closes the runtime gap where default createMcpTools() had no DB handle.
+
+---
+
+I did that for you, all tests are green.
+
+---
+
+No worries, I just merged it back to main and created a new branch for Epic 5:
+Same task, can you define the tickets and add them to the implementation plan + Create the handover for the next agent?
