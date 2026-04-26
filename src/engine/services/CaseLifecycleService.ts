@@ -336,6 +336,7 @@ export class CaseLifecycleService {
 					.update(cases)
 					.set({ status: TERMINAL_CASE_STATUS, updatedAt: input.nowIso })
 					.where(eq(cases.id, caseRow.id));
+				await this.options.semanticIndexService?.refreshCaseEmbeddingById(caseRow.id);
 				resolved += 1;
 				break;
 			}
@@ -484,6 +485,7 @@ export class CaseLifecycleService {
 			.update(cases)
 			.set({ status: TERMINAL_CASE_STATUS, updatedAt: input.nowIso })
 			.where(eq(cases.id, caseRow.id));
+		await this.options.semanticIndexService?.refreshCaseEmbeddingById(caseRow.id);
 		await this.persistClosureDecisionTrace({
 			caseId: caseRow.id,
 			action: "close_case",
