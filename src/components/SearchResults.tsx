@@ -1,6 +1,6 @@
 import { Badge } from "#/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "#/components/ui/card";
-import type { SemanticSearchResult } from "#/services/semanticIndex";
+import type { SemanticSearchResult } from "#/services/semanticSearchShared";
 
 type SearchResultsProps = {
 	results: SemanticSearchResult[];

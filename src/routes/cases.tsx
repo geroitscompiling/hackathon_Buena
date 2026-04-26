@@ -1,28 +1,23 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 
 import { CasesTable } from "#/components/CasesTable";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "#/components/ui/select";
+import { cn } from "#/lib/utils";
 import {
 	CASES_OVERVIEW_LOAD_LIMIT,
 	casesOverviewFilterInputSchema,
-	countCases,
-	listCases,
 	normalizeCasesOverviewFilters,
-} from "#/services/cases";
-
-const CASE_STATUS_ALL = "all" as const;
+} from "#/services/casesOverviewFilters";
+import {
+	type CasesPageSearch,
+	CASE_STATUS_ALL,
+	buildCasesSearchFromFormFields,
+	casesPageSearchSchema,
+} from "#/services/casesPageSearch";
 
 const CASE_STATUS_OPTIONS = [
 	{ value: CASE_STATUS_ALL, label: "All statuses" },
@@ -34,19 +29,11 @@ const CASE_STATUS_OPTIONS = [
 	{ value: "resolved", label: "Resolved" },
 ] as const;
 
-const casesPageSearchSchema = z.object({
-	q: z.string().optional().default(""),
-	status: z.string().optional(),
-	propertyId: z.string().optional(),
-	houseId: z.string().optional(),
-	apartmentId: z.string().optional(),
-});
-
-const getCasesOverview = createServerFn({
-	method: "GET",
-})
+/** DB runs only on the server — avoids `Buffer` / driver code in the browser on client navigations. */
+const fetchCasesOverview = createServerFn({ method: "POST" })
 	.inputValidator((data) => casesOverviewFilterInputSchema.parse(data))
 	.handler(async ({ data }) => {
+		const { countCases, listCases } = await import("#/services/cases");
 		const filters = normalizeCasesOverviewFilters(data);
 		const total = await countCases(undefined, filters);
 		const limit = Math.min(CASES_OVERVIEW_LOAD_LIMIT, Math.max(total, 1));
@@ -56,35 +43,45 @@ const getCasesOverview = createServerFn({
 
 export const Route = createFileRoute("/cases")({
 	validateSearch: (search) => casesPageSearchSchema.parse(search),
-	component: CasesPage,
+	/** Re-run loader when any validated search field changes (structural compare). */
+	loaderDeps: ({ search }) => search,
 	loader: async ({ location }) => {
-		const s = location.search as z.infer<typeof casesPageSearchSchema>;
-		return getCasesOverview({
+		const s = location.search as CasesPageSearch;
+		return fetchCasesOverview({
 			data: {
-				apartmentId: s.apartmentId,
-				houseId: s.houseId,
-				propertyId: s.propertyId,
-				q: s.q,
-				status: s.status,
+				apartmentId: s.apartmentId?.trim() || undefined,
+				houseId: s.houseId?.trim() || undefined,
+				propertyId: s.propertyId?.trim() || undefined,
+				q: s.q?.trim() || undefined,
+				status: s.status?.trim() || undefined,
 			},
 		});
 	},
+	component: CasesPage,
 });
 
 function CasesPage() {
 	const search = Route.useSearch();
-	const navigate = useNavigate({ from: Route.fullPath });
+	const navigate = useNavigate();
 	const { cases, total } = Route.useLoaderData();
 
 	const [q, setQ] = useState(search.q);
-	const [status, setStatus] = useState(search.status ?? CASE_STATUS_ALL);
+	const [status, setStatus] = useState(
+		search.status && search.status.trim() !== ""
+			? search.status
+			: CASE_STATUS_ALL,
+	);
 	const [propertyId, setPropertyId] = useState(search.propertyId ?? "");
 	const [houseId, setHouseId] = useState(search.houseId ?? "");
 	const [apartmentId, setApartmentId] = useState(search.apartmentId ?? "");
 
 	useEffect(() => {
 		setQ(search.q);
-		setStatus(search.status ?? CASE_STATUS_ALL);
+		setStatus(
+			search.status && search.status.trim() !== ""
+				? search.status
+				: CASE_STATUS_ALL,
+		);
 		setPropertyId(search.propertyId ?? "");
 		setHouseId(search.houseId ?? "");
 		setApartmentId(search.apartmentId ?? "");
@@ -98,10 +95,10 @@ function CasesPage() {
 
 	const hasActiveFilters = Boolean(
 		search.q.trim() ||
-			search.status ||
-			(search.propertyId && search.propertyId.trim()) ||
-			(search.houseId && search.houseId.trim()) ||
-			(search.apartmentId && search.apartmentId.trim()),
+			search.status?.trim() ||
+			search.propertyId?.trim() ||
+			search.houseId?.trim() ||
+			search.apartmentId?.trim(),
 	);
 
 	const headline =
@@ -136,15 +133,18 @@ function CasesPage() {
 						className="grid gap-4 md:grid-cols-2 xl:grid-cols-6"
 						onSubmit={async (event) => {
 							event.preventDefault();
+							const form = event.currentTarget;
+							const fd = new FormData(form);
+							const search = buildCasesSearchFromFormFields({
+								apartmentId: String(fd.get("apartmentId") ?? ""),
+								houseId: String(fd.get("houseId") ?? ""),
+								propertyId: String(fd.get("propertyId") ?? ""),
+								q: String(fd.get("q") ?? ""),
+								status: String(fd.get("status") ?? CASE_STATUS_ALL),
+							});
 							await navigate({
-								search: {
-									apartmentId: apartmentId.trim() || undefined,
-									houseId: houseId.trim() || undefined,
-									propertyId: propertyId.trim() || undefined,
-									q: q.trim() || "",
-									status:
-										status === CASE_STATUS_ALL ? undefined : status.trim(),
-								},
+								to: "/cases",
+								search,
 							});
 						}}
 					>
@@ -154,27 +154,33 @@ function CasesPage() {
 							</label>
 							<Input
 								id="cases-q"
+								name="q"
 								value={q}
 								onChange={(event) => setQ(event.target.value)}
 								placeholder="Title, summary, case key, id…"
 							/>
 						</div>
-						<div>
+						<div className="min-w-0">
 							<label htmlFor="cases-status" className="mb-2 block text-sm font-medium">
 								Status
 							</label>
-							<Select value={status} onValueChange={(value) => setStatus(value)}>
-								<SelectTrigger id="cases-status" className="w-full">
-									<SelectValue placeholder="All statuses" />
-								</SelectTrigger>
-								<SelectContent>
-									{CASE_STATUS_OPTIONS.map((opt) => (
-										<SelectItem key={opt.value} value={opt.value}>
-											{opt.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<select
+								id="cases-status"
+								name="status"
+								value={status}
+								onChange={(event) => setStatus(event.target.value)}
+								className={cn(
+									"h-9 w-full min-w-0 cursor-pointer rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none",
+									"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+									"disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
+								)}
+							>
+								{CASE_STATUS_OPTIONS.map((opt) => (
+									<option key={opt.value} value={opt.value}>
+										{opt.label}
+									</option>
+								))}
+							</select>
 						</div>
 						<div>
 							<label
@@ -185,6 +191,7 @@ function CasesPage() {
 							</label>
 							<Input
 								id="cases-property-id"
+								name="propertyId"
 								value={propertyId}
 								onChange={(event) => setPropertyId(event.target.value)}
 								placeholder="LIE-001"
@@ -196,6 +203,7 @@ function CasesPage() {
 							</label>
 							<Input
 								id="cases-house-id"
+								name="houseId"
 								value={houseId}
 								onChange={(event) => setHouseId(event.target.value)}
 								placeholder="LIE-001-H1"
@@ -210,6 +218,7 @@ function CasesPage() {
 							</label>
 							<Input
 								id="cases-apartment-id"
+								name="apartmentId"
 								value={apartmentId}
 								onChange={(event) => setApartmentId(event.target.value)}
 								placeholder="LIE-001-H1-A1"
@@ -227,13 +236,14 @@ function CasesPage() {
 									setHouseId("");
 									setApartmentId("");
 									await navigate({
-										search: {
-											apartmentId: undefined,
-											houseId: undefined,
-											propertyId: undefined,
+										to: "/cases",
+										search: buildCasesSearchFromFormFields({
+											apartmentId: "",
+											houseId: "",
+											propertyId: "",
 											q: "",
-											status: undefined,
-										},
+											status: CASE_STATUS_ALL,
+										}),
 									});
 								}}
 							>

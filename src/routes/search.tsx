@@ -7,17 +7,23 @@ import { SearchResults } from "#/components/SearchResults";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "#/components/ui/select";
+import { cn } from "#/lib/utils";
 import {
 	SEMANTIC_SEARCH_MAX_RESULTS,
 	type SemanticSearchResult,
-} from "#/services/semanticIndex";
+} from "#/services/semanticSearchShared";
+
+const ENTITY_TYPE_OPTIONS = [
+	{ value: "all" as const, label: "All entities" },
+	{ value: "fact" as const, label: "Facts only" },
+	{ value: "case" as const, label: "Cases only" },
+];
+
+const GOLD_STANDARD_OPTIONS = [
+	{ value: "all" as const, label: "All facts" },
+	{ value: "gold" as const, label: "Gold (ERP JSON / CSV)" },
+	{ value: "nonGold" as const, label: "Non-gold (extracted)" },
+];
 
 function clampSemanticSearchLimit(val: unknown): number {
 	const raw =
@@ -38,6 +44,21 @@ const searchPageSchema = z.object({
 	limit: z.preprocess(clampSemanticSearchLimit, z.number().int().positive()),
 });
 
+type SearchPageSearch = z.infer<typeof searchPageSchema>;
+
+/** Reads raw form strings and validates (single source of truth for URL search). */
+function parseSearchForm(fd: FormData): SearchPageSearch {
+	return searchPageSchema.parse({
+		query: String(fd.get("query") ?? ""),
+		entityType: String(fd.get("entityType") ?? "all"),
+		goldStandard: String(fd.get("goldStandard") ?? "all"),
+		propertyId: String(fd.get("propertyId") ?? "").trim() || undefined,
+		houseId: String(fd.get("houseId") ?? "").trim() || undefined,
+		apartmentId: String(fd.get("apartmentId") ?? "").trim() || undefined,
+		limit: clampSemanticSearchLimit(fd.get("limit")),
+	});
+}
+
 export const Route = createFileRoute("/search")({
 	validateSearch: (search) => searchPageSchema.parse(search),
 	component: SearchPage,
@@ -45,9 +66,10 @@ export const Route = createFileRoute("/search")({
 
 function SearchPage() {
 	const search = Route.useSearch();
-	const navigate = useNavigate({ from: Route.fullPath });
+	const navigate = useNavigate();
 	const [results, setResults] = useState<SemanticSearchResult[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const [searchError, setSearchError] = useState<string | null>(null);
 	const [query, setQuery] = useState(search.query);
 	const [entityType, setEntityType] = useState(search.entityType);
 	const [propertyId, setPropertyId] = useState(search.propertyId ?? "");
@@ -80,10 +102,12 @@ function SearchPage() {
 		async function loadResults() {
 			if (!search.query.trim()) {
 				setResults([]);
+				setSearchError(null);
 				return;
 			}
 
 			setIsLoading(true);
+			setSearchError(null);
 			const params = new URLSearchParams({
 				query: search.query,
 				entityType: search.entityType,
@@ -105,10 +129,11 @@ function SearchPage() {
 			}
 		}
 
-		loadResults().catch(() => {
+		loadResults().catch((err: unknown) => {
 			if (!cancelled) {
 				setResults([]);
 				setIsLoading(false);
+				setSearchError(err instanceof Error ? err.message : "Search failed");
 			}
 		});
 
@@ -141,17 +166,10 @@ function SearchPage() {
 						className="grid gap-4 md:grid-cols-2 xl:grid-cols-7"
 						onSubmit={async (event) => {
 							event.preventDefault();
+							const fd = new FormData(event.currentTarget);
 							await navigate({
 								to: "/search",
-								search: {
-									query,
-									entityType,
-									goldStandard,
-									propertyId: propertyId.trim() || undefined,
-									houseId: houseId.trim() || undefined,
-									apartmentId: apartmentId.trim() || undefined,
-									limit: clampSemanticSearchLimit(limit),
-								},
+								search: parseSearchForm(fd),
 							});
 						}}
 					>
@@ -161,45 +179,59 @@ function SearchPage() {
 							</label>
 							<Input
 								id="search-query"
+								name="query"
 								value={query}
 								onChange={(event) => setQuery(event.target.value)}
 								placeholder="e.g. open roof leak issues in LIE-001"
 							/>
 						</div>
-						<div>
+						<div className="min-w-0">
 							<label htmlFor="search-entity-type" className="mb-2 block text-sm font-medium">
 								Entity Type
 							</label>
-							<Select value={entityType} onValueChange={(value) => setEntityType(value as "all" | "fact" | "case")}>
-								<SelectTrigger id="search-entity-type" className="w-full">
-									<SelectValue placeholder="All entities" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All entities</SelectItem>
-									<SelectItem value="fact">Facts only</SelectItem>
-									<SelectItem value="case">Cases only</SelectItem>
-								</SelectContent>
-							</Select>
+							<select
+								id="search-entity-type"
+								name="entityType"
+								value={entityType}
+								onChange={(event) =>
+									setEntityType(event.target.value as "all" | "fact" | "case")
+								}
+								className={cn(
+									"h-9 w-full min-w-0 cursor-pointer rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none",
+									"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+									"disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
+								)}
+							>
+								{ENTITY_TYPE_OPTIONS.map((opt) => (
+									<option key={opt.value} value={opt.value}>
+										{opt.label}
+									</option>
+								))}
+							</select>
 						</div>
-						<div>
+						<div className="min-w-0">
 							<label htmlFor="search-gold" className="mb-2 block text-sm font-medium">
 								Gold standard (facts)
 							</label>
-							<Select
+							<select
+								id="search-gold"
+								name="goldStandard"
 								value={goldStandard}
-								onValueChange={(value) =>
-									setGoldStandard(value as "all" | "gold" | "nonGold")
+								onChange={(event) =>
+									setGoldStandard(event.target.value as "all" | "gold" | "nonGold")
 								}
+								className={cn(
+									"h-9 w-full min-w-0 cursor-pointer rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none",
+									"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+									"disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
+								)}
 							>
-								<SelectTrigger id="search-gold" className="w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All facts</SelectItem>
-									<SelectItem value="gold">Gold (ERP JSON / CSV)</SelectItem>
-									<SelectItem value="nonGold">Non-gold (extracted)</SelectItem>
-								</SelectContent>
-							</Select>
+								{GOLD_STANDARD_OPTIONS.map((opt) => (
+									<option key={opt.value} value={opt.value}>
+										{opt.label}
+									</option>
+								))}
+							</select>
 						</div>
 						<div>
 							<label htmlFor="search-property-id" className="mb-2 block text-sm font-medium">
@@ -207,6 +239,7 @@ function SearchPage() {
 							</label>
 							<Input
 								id="search-property-id"
+								name="propertyId"
 								value={propertyId}
 								onChange={(event) => setPropertyId(event.target.value)}
 								placeholder="LIE-001"
@@ -218,6 +251,7 @@ function SearchPage() {
 							</label>
 							<Input
 								id="search-house-id"
+								name="houseId"
 								value={houseId}
 								onChange={(event) => setHouseId(event.target.value)}
 								placeholder="LIE-001-H1"
@@ -229,6 +263,7 @@ function SearchPage() {
 							</label>
 							<Input
 								id="search-apartment-id"
+								name="apartmentId"
 								value={apartmentId}
 								onChange={(event) => setApartmentId(event.target.value)}
 								placeholder="LIE-001-H1-A1"
@@ -241,6 +276,7 @@ function SearchPage() {
 								</label>
 								<Input
 									id="search-limit"
+									name="limit"
 									value={limit}
 									onChange={(event) => setLimit(event.target.value)}
 									inputMode="numeric"
@@ -265,6 +301,11 @@ function SearchPage() {
 					<h2 className="text-xl font-semibold">
 						{isLoading ? "Searching..." : `${results.length} matches`}
 					</h2>
+					{searchError ? (
+						<p className="mt-2 text-sm text-destructive" role="alert">
+							{searchError}
+						</p>
+					) : null}
 				</div>
 			</section>
 
