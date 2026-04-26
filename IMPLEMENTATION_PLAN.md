@@ -255,22 +255,75 @@ A **case** is an operational workflow record stored in `cases` (title, summary, 
 - **R4.4**: Implement `ingestion_events`/history persistence model (day, file, action, entity type/id, before/after fingerprints).
 - **R4.5**: Produce per-day summary artifacts for demo (`created_facts`, `updated_facts`, `opened_cases`, `resolved_cases`, conflicts).
 
-### Epic R5: Demo Surface and Verification
-*Goal: Ensure the app can visibly prove hierarchy + cases + history to judges.*
+### Epic R5: Demo Surface and Verification (Current Focus)
+*Goal: Make the judge/demo experience deterministic, fast, and traceable with one-command execution and clear outputs.*
 
-- **R5.1 [TEST]**: Add UI/API tests for timeline rendering and day-by-day case evolution.
-- **R5.2**: Implement timeline/history view wired to persisted ingestion events.
-- **R5.3**: Add one-click demo script (`make run-demo-history`) that resets DB, replays days, and prints headline metrics.
-- **R5.4**: Final hardening checklist run (tests, lint/check, dry-run baseline, dry-run history, diagnose).
+- **R5.1 [TEST] Judge Demo Script Contract**
+  - Add failing integration tests for a single entrypoint script that:
+    1. prepares or validates DB readiness,
+    2. replays history,
+    3. runs canonical MCP/semantic queries,
+    4. executes guarded case assist scenario,
+    5. prints a structured summary block.
+  - Acceptance: test asserts required sections/keys exist in output.
+
+- **R5.2 Deterministic One-Command Run**
+  - Implement/standardize `make run-demo-history` (or equivalent) as canonical demo command.
+  - Ensure deterministic mode defaults:
+    - stable mock embedding path for CI/demo fallback,
+    - predictable case cap behavior in mock mode,
+    - explicit mode banner (`mock`/`live`).
+  - Acceptance: command succeeds on clean machine using documented setup path.
+
+- **R5.3 Demo Summary + Trace Bundle**
+  - Persist and print a concise summary artifact after demo run:
+    - facts inserted/blocked/idempotent,
+    - cases opened/updated/resolved,
+    - guardrail decisions (approved/rejected),
+    - top semantic query hits,
+    - conflict/trace artifact paths.
+  - Acceptance: summary can be shown directly to judges without log digging.
+
+- **R5.4 Read-Only Operator Snapshot (POC Minimal)**
+  - Build or polish a lightweight read-only visualization for:
+    - timeline/day counters,
+    - open vs resolved cases,
+    - latest guarded closure traces.
+  - Keep edit flows out-of-scope.
+  - Acceptance: route/component is stable for demo and covered by frontend tests.
+
+- **R5.5 [TEST] Failure-Mode UX**
+  - Add tests for common demo failure states:
+    - missing env/model config,
+    - DB unavailable,
+    - MCP tool call failure.
+  - Ensure script outputs actionable remediation hints (not stack dumps only).
+  - Acceptance: each failure mode returns non-zero exit and human-readable next action.
+
+- **R5.6 Final Demo Hardening Checklist**
+  - Automate and document pre-demo checks:
+    - `pnpm test`
+    - `pnpm lint`
+    - baseline + history dry-runs
+    - judge demo command
+  - Acceptance: checklist command exits green and is included in README/plan.
 
 ## 5. Ticket Execution Order (Do This Next)
 
 1. **Week Slice A (foundation fix)**: R1.1 -> R1.5
 2. **Week Slice B (cases)**: R2.0 -> R2.8 (implemented; maintain only)
-3. **Week Slice C (semantic + MCP hardening)**: E4.1 -> E4.7
-4. **Week Slice D (history core + polish)**: R4.1 -> R4.5, then R3.1 -> R3.4 and selective R5
+3. **Week Slice C (semantic + MCP hardening)**: E4.1 -> E4.7 (implemented on main; verify and maintain)
+4. **Week Slice D (demo polish + reliability)**: R5.1 -> R5.6, then selective R4/R3 gaps
 
-If time is constrained, prioritize E4.1, E4.2, E4.5, and R4.3 for demo safety.
+If time is constrained, prioritize R5.1, R5.2, R5.3, and R5.5 for demo safety.
+
+## 8. Handover Status (For Other Agents)
+
+1. Epic R1 and R2 are implemented; treat them as stable baseline (do not restart).
+2. Epic 4 has been merged to main; maintain/fix incrementally only.
+3. This branch is for **Epic R5** execution.
+4. First delivery target: deterministic judge command + structured summary + failure-mode messaging.
+5. Keep all guardrails (gold protection, closure guardrails, temperature 0) intact.
 
 ## 6. Demo Go-To Flow (Updated Pitch)
 
