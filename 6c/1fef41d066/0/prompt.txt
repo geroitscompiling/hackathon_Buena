@@ -1,0 +1,2 @@
+Okay, the POC is done and we submitted.
+I want you to read Agents MD, Readme and Implementation Plan, delete Implementation Plan and tidy up the readme file. Goal is to have an easy Readme for Humans that run our POC
