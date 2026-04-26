@@ -58,12 +58,17 @@ describe("PropertyHistoryRunner", () => {
           factsPersisted: noisyInputFiles.length,
           goldFactsPersisted: 0,
           nonGoldFactsPersisted: noisyInputFiles.length,
+          noisySourcesScheduled: noisyInputFiles.length,
           noisySourcesEvaluated: noisyInputFiles.length,
           noisySourcesWithFacts: noisyInputFiles.length,
           casesOpened: 0,
           casesUpdated: 0,
           casesResolved: 0,
           factCaseLinksCreated: 0,
+          assistRuns: 0,
+          assistProposedClose: 0,
+          assistGuardedClosed: 0,
+          assistGuardedRejected: 0,
         };
       },
     });
@@ -75,6 +80,8 @@ describe("PropertyHistoryRunner", () => {
     expect(calls[1].noisyInputFiles).toEqual(["rechnungen/two.pdf"]);
     expect(replay.totalDaysProcessed).toBe(2);
     expect(replay.totals.factsInserted).toBe(2);
+    expect(replay.totals.noisySourcesScheduled).toBe(2);
+    expect(replay.totals.noisySourcesEvaluated).toBe(2);
   });
 
   it("replays only the requested day when a day filter is provided", async () => {
@@ -101,12 +108,17 @@ describe("PropertyHistoryRunner", () => {
           factsPersisted: 1,
           goldFactsPersisted: 0,
           nonGoldFactsPersisted: 1,
+          noisySourcesScheduled: 1,
           noisySourcesEvaluated: 1,
           noisySourcesWithFacts: 1,
           casesOpened: 0,
           casesUpdated: 0,
           casesResolved: 0,
           factCaseLinksCreated: 0,
+          assistRuns: 0,
+          assistProposedClose: 0,
+          assistGuardedClosed: 0,
+          assistGuardedRejected: 0,
         };
       },
     });

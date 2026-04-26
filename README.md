@@ -64,6 +64,8 @@ This baseline flow ingests:
 - core ERP files from `testfiles/stammdaten` as gold facts (with on-demand `houses` / `apartments` rows from ERP unit identifiers when needed)
 - every `.eml` under `testfiles/emails` and `.pdf` under `testfiles/rechnungen` via Gatekeeper + FactExtractor (excluding anything under `HistoryPopulationData`)
 
+To add another top-level fixture tree (e.g. `testfiles/scans`), extend `BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS` in [`src/engine/baseline/collectBaselineUnstructuredPaths.ts`](src/engine/baseline/collectBaselineUnstructuredPaths.ts).
+
 `testfiles/HistoryPopulationData/day-01` to `day-10` are intentionally separate and used for the history replay/population epic, not baseline ingestion.
 
 ## Running the App

@@ -39,6 +39,7 @@ describe("Baseline pipeline default unstructured corpus (N0.1)", () => {
 				},
 			});
 
+			expect(summary.noisySourcesScheduled).toBe(expectedNoisy);
 			expect(summary.noisySourcesEvaluated).toBe(expectedNoisy);
 		},
 		300_000,

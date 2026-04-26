@@ -17,10 +17,10 @@ import type { HierarchyResolver } from "./HierarchyResolver";
 import type { ResolvedHierarchyScope } from "./HierarchyResolver";
 import { createHash } from "node:crypto";
 import { randomUUID } from "node:crypto";
-import type { db as appDb } from "../../db";
+import type { AppDrizzleDatabase } from "../../db/drizzleTypes.ts";
 import type { SemanticIndexService } from "#/services/semanticIndex";
 
-type CaseLifecycleDb = typeof appDb;
+type CaseLifecycleDb = AppDrizzleDatabase;
 
 const ACTIVE_STATUSES = [
 	"open",

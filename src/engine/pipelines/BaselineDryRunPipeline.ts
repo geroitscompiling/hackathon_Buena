@@ -21,6 +21,7 @@ import {
 } from "../services/CaseLifecycleService";
 import { CaseAssistOrchestrator } from "../services/CaseAssistOrchestrator";
 import type { BuildingFact, BuildingFactExtractor, RelevanceGatekeeper } from "../types";
+import type { AppDrizzleDatabase } from "../../db/drizzleTypes.ts";
 import {
   apartments,
   factApartments,
@@ -31,10 +32,15 @@ import {
   sources,
   users,
 } from "../../db/schema";
-import type { db as appDb } from "../../db";
 import { SemanticIndexService, type EmbeddingClient } from "#/services/semanticIndex";
 
-type BaselineDryRunDb = typeof appDb;
+type BaselineDryRunDb = AppDrizzleDatabase;
+
+/** Injected resolver must support ERP materialization when gold facts carry `erpScope`. */
+export type BaselineHierarchyResolver = Pick<
+  HierarchyResolver,
+  "resolve" | "materializeHouseApartment"
+>;
 
 export interface BaselineDryRunOptions {
   db: BaselineDryRunDb;
@@ -47,7 +53,7 @@ export interface BaselineDryRunOptions {
   gatekeeper?: RelevanceGatekeeper;
   extractor?: BuildingFactExtractor;
   strictAiErrors?: boolean;
-  hierarchyResolver?: Pick<HierarchyResolver, "resolve">;
+  hierarchyResolver?: BaselineHierarchyResolver;
   factPersistencePolicy?: Pick<FactPersistencePolicy, "evaluate">;
   preloadedExistingFacts?: Array<{
     id: string;
@@ -86,7 +92,7 @@ export interface BaselineDryRunOptions {
   >;
   embeddingClient?: EmbeddingClient;
   /** Override default core ERP file order (paths relative to `datasetRootPath`). */
-  coreIngestionRelativePaths?: string[];
+  coreIngestionRelativePaths?: ReadonlyArray<string>;
 }
 
 export interface BaselineDryRunSummary {
@@ -97,6 +103,9 @@ export interface BaselineDryRunSummary {
   factsPersisted: number;
   goldFactsPersisted: number;
   nonGoldFactsPersisted: number;
+  /** Noisy paths scheduled for this run (`noisyInputFiles` length, or default corpus size). */
+  noisySourcesScheduled: number;
+  /** Noisy files that completed `ingest()` (read file + Gatekeeper, and Extractor when relevant). */
   noisySourcesEvaluated: number;
   noisySourcesWithFacts: number;
   casesOpened: number;
@@ -179,7 +188,7 @@ function enrichBuildingFactWithErpHaus(
 
 async function ensureErpApartmentHierarchyForFact(
   db: BaselineDryRunDb,
-  resolver: HierarchyResolver,
+  resolver: Pick<HierarchyResolver, "materializeHouseApartment">,
   propertyId: string,
   erpHausId: string,
   erpEinheitId: string,
@@ -346,7 +355,8 @@ export async function runBaselineDryRun({
     "stammdaten/stammdaten.json",
     "stammdaten/eigentuemer.csv",
   ] as const;
-  const corePaths = coreIngestionRelativePaths ?? [...defaultCorePaths];
+  const corePaths = [...(coreIngestionRelativePaths ?? defaultCorePaths)];
+  const coreRelativePathSet = new Set(corePaths);
   const coreIngestions = corePaths.map((relativePath) => {
     if (relativePath.endsWith(".json")) {
       return { ingestor: new JsonIngestor(), relativePath };
@@ -365,6 +375,7 @@ export async function runBaselineDryRun({
       : new PdfIngestor(resolvedGatekeeper, resolvedExtractor, propertyId),
     relativePath,
   }));
+  const noisySourcesScheduled = noisyIngestions.length;
 
   const persistedFacts: BuildingFact[] = [];
   const existingPolicyFacts: Array<{
@@ -382,6 +393,7 @@ export async function runBaselineDryRun({
     isGoldStandard: boolean;
   }> = [...preloadedExistingFacts];
   const sourceIds = new Set<string>();
+  let noisySourcesEvaluated = 0;
   let noisySourcesWithFacts = 0;
   let factsInserted = 0;
   let factsBlockedAsConflicts = 0;
@@ -411,10 +423,9 @@ export async function runBaselineDryRun({
     await fs.access(filePath);
     const fileId = path.basename(filePath);
     const factsForFile = await ingestion.ingestor.ingest(filePath, fileId);
-    const isCoreIngestion =
-      ingestion.relativePath === "stammdaten/stammdaten.json" ||
-      ingestion.relativePath === "stammdaten/eigentuemer.csv";
-    if (ingestion.relativePath !== "stammdaten/stammdaten.json" && ingestion.relativePath !== "stammdaten/eigentuemer.csv") {
+    const isCoreIngestion = coreRelativePathSet.has(ingestion.relativePath);
+    if (!isCoreIngestion) {
+      noisySourcesEvaluated += 1;
       if (factsForFile.length > 0) {
         noisySourcesWithFacts += 1;
       }
@@ -637,7 +648,8 @@ export async function runBaselineDryRun({
     factsPersisted: factsInserted,
     goldFactsPersisted,
     nonGoldFactsPersisted,
-    noisySourcesEvaluated: noisyIngestions.length,
+    noisySourcesScheduled,
+    noisySourcesEvaluated,
     noisySourcesWithFacts,
     casesOpened,
     casesUpdated,

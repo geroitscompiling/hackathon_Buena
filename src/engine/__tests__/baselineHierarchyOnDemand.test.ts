@@ -47,7 +47,7 @@ describe("Baseline on-demand ERP hierarchy (N0.3)", () => {
 	};
 
 	it("scopes owner facts to apartments when CSV runs before hierarchy exists", async () => {
-		await runBaselineDryRun({
+		const summary = await runBaselineDryRun({
 			db,
 			propertyId: "LIE-001",
 			datasetRootPath: path.resolve(__dirname, "../../../testfiles"),
@@ -58,6 +58,9 @@ describe("Baseline on-demand ERP hierarchy (N0.3)", () => {
 			noisyInputFiles: [],
 			...mockAi,
 		});
+
+		expect(summary.noisySourcesScheduled).toBe(0);
+		expect(summary.noisySourcesEvaluated).toBe(0);
 
 		const ownerRows = await db
 			.select()
@@ -93,9 +96,13 @@ describe("Baseline on-demand ERP hierarchy (N0.3)", () => {
 			...mockAi,
 		};
 
-		await runBaselineDryRun(opts);
+		const s1 = await runBaselineDryRun(opts);
+		expect(s1.noisySourcesScheduled).toBe(0);
+		expect(s1.noisySourcesEvaluated).toBe(0);
 		const n1 = (await db.select().from(apartments)).length;
-		await runBaselineDryRun(opts);
+		const s2 = await runBaselineDryRun(opts);
+		expect(s2.noisySourcesScheduled).toBe(0);
+		expect(s2.noisySourcesEvaluated).toBe(0);
 		const n2 = (await db.select().from(apartments)).length;
 		expect(n2).toBe(n1);
 	});

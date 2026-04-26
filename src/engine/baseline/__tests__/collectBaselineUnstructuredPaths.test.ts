@@ -1,10 +1,17 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { collectBaselineUnstructuredRelativePaths } from "../collectBaselineUnstructuredPaths";
+import {
+	BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS,
+	collectBaselineUnstructuredRelativePaths,
+} from "#/engine/baseline/collectBaselineUnstructuredPaths.ts";
 
 describe("collectBaselineUnstructuredRelativePaths", () => {
 	const datasetRoot = path.resolve(__dirname, "../../../../testfiles");
+
+	it("documents default top-level dirs for corpus extension", () => {
+		expect(BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS).toEqual(["emails", "rechnungen"]);
+	});
 
 	it("collects all .eml under emails/ and .pdf under rechnungen/ (not HistoryPopulationData)", () => {
 		const paths = collectBaselineUnstructuredRelativePaths(datasetRoot);

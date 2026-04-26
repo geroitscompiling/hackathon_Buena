@@ -26,6 +26,7 @@ export interface PropertyHistoryReplaySummary {
     | "factsBlockedAsConflicts"
     | "factsUpdatedIdempotent"
     | "factsPersisted"
+    | "noisySourcesScheduled"
     | "noisySourcesEvaluated"
     | "noisySourcesWithFacts"
     | "casesOpened"
@@ -106,6 +107,7 @@ export async function runPropertyHistoryReplay({
     factsBlockedAsConflicts: 0,
     factsUpdatedIdempotent: 0,
     factsPersisted: 0,
+    noisySourcesScheduled: 0,
     noisySourcesEvaluated: 0,
     noisySourcesWithFacts: 0,
     casesOpened: 0,
@@ -133,6 +135,7 @@ export async function runPropertyHistoryReplay({
     totals.factsBlockedAsConflicts += summary.factsBlockedAsConflicts;
     totals.factsUpdatedIdempotent += summary.factsUpdatedIdempotent;
     totals.factsPersisted += summary.factsPersisted;
+    totals.noisySourcesScheduled += summary.noisySourcesScheduled;
     totals.noisySourcesEvaluated += summary.noisySourcesEvaluated;
     totals.noisySourcesWithFacts += summary.noisySourcesWithFacts;
     totals.casesOpened += summary.casesOpened;

@@ -48,6 +48,36 @@ describe("Baseline dry-run pipeline", () => {
 		await testDb?.close();
 	});
 
+	it("treats only coreIngestionRelativePaths as core for noisy scheduling metrics", async () => {
+		const summary = await runBaselineDryRun({
+			db,
+			propertyId: "LIE-001",
+			propertyName: "WEG Immanuelkirchstraße 26",
+			datasetRootPath: "testfiles",
+			includeCoreIngestions: true,
+			coreIngestionRelativePaths: ["stammdaten/stammdaten.json"],
+			noisyInputFiles: [],
+			gatekeeper: { isRelevant: async () => true },
+			extractor: {
+				extract: async () => [
+					{
+						category: "maintenance",
+						key: "unused_for_this_run",
+						value: true,
+						confidenceScore: 0.9,
+					},
+				],
+			},
+			embeddingClient: {
+				embedDocument: async () => Array.from({ length: 1536 }, () => 0),
+				embedQuery: async () => Array.from({ length: 1536 }, () => 0),
+			},
+		});
+
+		expect(summary.noisySourcesScheduled).toBe(0);
+		expect(summary.noisySourcesEvaluated).toBe(0);
+	});
+
 	it("persists baseline ERP and filtered noisy facts with gold semantics", async () => {
 		const gatekeeper: RelevanceGatekeeper = { isRelevant: async () => true };
 		const extractor: BuildingFactExtractor = {
@@ -94,6 +124,8 @@ describe("Baseline dry-run pipeline", () => {
 		expect(summary.factsUpdatedIdempotent).toBeGreaterThan(0);
 		expect(summary.goldFactsPersisted).toBeGreaterThan(1);
 		expect(summary.nonGoldFactsPersisted).toBe(2);
+		expect(summary.noisySourcesScheduled).toBe(2);
+		expect(summary.noisySourcesEvaluated).toBe(2);
 
 		const property = await db.select().from(properties).where(eq(properties.id, "LIE-001"));
 		expect(property).toHaveLength(1);

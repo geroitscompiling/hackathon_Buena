@@ -1,7 +1,8 @@
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-const BASELINE_UNSTRUCTURED_ROOTS = ["emails", "rechnungen"] as const;
+/** Top-level folders under the dataset root scanned for baseline `.eml` / `.pdf`. Extend when adding new fixture trees. */
+export const BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS = ["emails", "rechnungen"] as const;
 
 function walkFilesRecursive(absoluteDir: string, datasetRoot: string, acc: string[]): void {
 	for (const ent of readdirSync(absoluteDir, { withFileTypes: true })) {
@@ -22,8 +23,9 @@ function walkFilesRecursive(absoluteDir: string, datasetRoot: string, acc: strin
 }
 
 /**
- * Lists unstructured baseline inputs: all `.eml` under `emails/` and `.pdf` under `rechnungen/`
- * relative to the dataset root, excluding anything under `HistoryPopulationData` (replay corpus).
+ * Lists unstructured baseline inputs: all `.eml` / `.pdf` under each of
+ * {@link BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS} relative to the dataset root, excluding paths under
+ * `HistoryPopulationData` (replay corpus).
  */
 export function collectBaselineUnstructuredRelativePaths(datasetRootAbsolute: string): string[] {
 	const resolvedRoot = path.resolve(datasetRootAbsolute);
@@ -32,7 +34,7 @@ export function collectBaselineUnstructuredRelativePaths(datasetRootAbsolute: st
 	}
 
 	const acc: string[] = [];
-	for (const root of BASELINE_UNSTRUCTURED_ROOTS) {
+	for (const root of BASELINE_UNSTRUCTURED_TOP_LEVEL_DIRS) {
 		const dir = path.join(resolvedRoot, root);
 		if (statSync(dir, { throwIfNoEntry: false })?.isDirectory()) {
 			walkFilesRecursive(dir, resolvedRoot, acc);

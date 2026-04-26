@@ -2,8 +2,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite/vector";
 import { drizzle } from "drizzle-orm/pglite";
 
-import * as relations from "#/db/relations";
-import * as schema from "#/db/schema";
+import { drizzleAppSchema } from "#/db/drizzleTypes.ts";
 
 export async function createPostgresTestDb() {
 	const rawClient = new PGlite({
@@ -17,10 +16,7 @@ export async function createPostgresTestDb() {
 	await bootstrapAppSchema(queryClient);
 
 	const db = drizzle(queryClient, {
-		schema: {
-			...schema,
-			...relations,
-		},
+		schema: drizzleAppSchema,
 	});
 
 	async function close() {

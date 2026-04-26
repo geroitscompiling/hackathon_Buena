@@ -200,7 +200,7 @@ export async function listProperties(
 
 export async function listPropertyHierarchies(
 	database: AppDatabase = db,
-	args: ListPropertiesArgs,
+	args: unknown,
 ): Promise<PropertyHierarchy[]> {
 	const { limit, search } = listPropertiesSchema.parse(args);
 	const searchFilter = search
