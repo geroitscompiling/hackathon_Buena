@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "c0d214590e7d",
+  "strategy": "manual-commit",
+  "branch": "epic_5",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "Makefile",
+    "README.md",
+    "src/scripts/runJudgeDemoHistoryMcpAssist.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c0/d214590e7d/0/metadata.json",
+      "transcript": "/c0/d214590e7d/0/full.jsonl",
+      "content_hash": "/c0/d214590e7d/0/content_hash.txt",
+      "prompt": "/c0/d214590e7d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}

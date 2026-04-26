@@ -1,0 +1,70 @@
+Continue from current branch and execute **Epic R5 (Demo Surface and Verification)** in `IMPLEMENTATION_PLAN.md`.
+Do not restart completed work:
+- R1 and R2 are implemented and test-backed.
+- Epic 4 is merged to main; only maintain/fix incrementally if needed.
+## Goal
+Deliver a deterministic, judge-ready demo flow with clear outputs and graceful failures.
+## Work scope (in order)
+1. **R5.1 [TEST] Judge demo script contract**
+   - Add/adjust failing tests for one canonical command flow:
+     1) DB ready check/setup
+     2) history replay
+     3) canonical MCP/semantic queries
+     4) guarded case assist scenario
+     5) structured summary output
+2. **R5.2 Deterministic one-command run**
+   - Standardize `make run-demo-history` (or equivalent canonical command).
+   - Ensure deterministic defaults + explicit mode banner (`mock`/`live`).
+3. **R5.3 Summary + trace bundle**
+   - Persist and print concise artifact with:
+     - facts inserted/blocked/idempotent
+     - cases opened/updated/resolved
+     - guardrail decisions
+     - key semantic hit snapshots
+     - trace/conflict artifact paths
+4. **R5.5 [TEST] Failure-mode UX**
+   - Add tests for:
+     - missing env/model config
+     - DB unavailable
+     - MCP/tool failures
+   - Output actionable remediation text and non-zero exit codes.
+5. **R5.6 Final hardening checklist**
+   - Add one command/script that runs:
+     - `pnpm test`
+     - `pnpm lint`
+     - baseline/history demo flows
+     - judge demo command
+   - Ensure docs point to this as pre-demo check.
+(Stretch) 6. **R5.4 Read-only operator snapshot**
+   - Lightweight read-only page/component for timeline/case counters/traces.
+## Constraints
+- TDD first.
+- Keep `temperature: 0` for LLM generation flows.
+- Keep ERP gold-protection and closure guardrails intact.
+- Prefer extending existing scripts/services/routes; avoid architecture rewrites.
+## Verify before handback
+- targeted R5 tests
+- full `pnpm test`
+- `pnpm lint`
+## Handback format
+1. Implemented items mapped to R5 tickets
+2. Remaining items
+3. Risks/tradeoffs
+4. Exact verification commands used
+
+---
+
+sorry, there was a huge misunderstanding from last agent (history-live didn't include the MCP). this was fixed. Now the LIVE Demo includes MCP as well. Just FYI you might want to consider this as you only found that in the judgeDemo, however. This is a failover in case we can't get live agent interaction. Just check the latest PR
+
+---
+
+Again, what we want to do on sage:
+We show the inital run (make initial), we show the simulated history with LIVE requests (make history-live), the judgeDemoRunner is considered a FAILOVER (please verify). So you implementation needs to aim at the live run + JudgeDemoRunner as failover! This is important!
+
+---
+
+understood, we are aligned. proceed
+
+---
+
+all tests are green
