@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "1bd7880bdf1c",
+  "session_id": "9e18c832-25ba-4c08-a140-2b5bb1ac43fa",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T08:13:33.182559Z",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "src/engine/__tests__/baselineDryRun.test.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "b1d642e60c89",
+  "checkpoint_transcript_start": 89,
+  "transcript_lines_at_start": 89,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T08:13:33.17783Z",
+    "agent_lines": 10,
+    "agent_removed": 10,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 10,
+    "total_lines_changed": 20,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

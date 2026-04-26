@@ -1,0 +1,4 @@
+Okay last but not least: We did a huge git merge and are back on main. 
+One test is failing:
+Can you please check. Before you touch the test make sure it's not an app problem. Right now we assume the tesst is failing because LEON created a bug:
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:992-994
