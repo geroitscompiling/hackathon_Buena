@@ -221,6 +221,197 @@ describe("factSatisfiesClosurePredicate", () => {
 	});
 });
 
+describe("CaseLifecycleService guarded closure actions (E4.5)", () => {
+	it("rejects closure when confidence is below threshold and persists a rejection trace", async () => {
+		const testDb = await createEngineDb();
+		const db = testDb.db;
+		try {
+			const lifecycle = new CaseLifecycleService(db);
+			await db.insert(cases).values({
+				id: "guard-case-1",
+				propertyId: "LIE-001",
+				houseId: "LIE-001-H1",
+				apartmentId: "LIE-001-H1-A1",
+				ownerUserId: "user-1",
+				caseKey: "a:LIE-001-H1-A1|signal|test",
+				closurePredicate: "repair_completed",
+				title: "Guarded close case",
+				summary: "still open",
+				status: "open",
+				createdAt: "2026-04-25T10:00:00.000Z",
+				updatedAt: "2026-04-25T10:00:00.000Z",
+			});
+
+			await expect(
+				lifecycle.evaluateGuardedClosureAction({
+					caseId: "guard-case-1",
+					propertyId: "LIE-001",
+					proposedAction: "close_case",
+					proposedConfidence: 0.5,
+					confidenceThreshold: 0.8,
+					nowIso: "2026-04-26T10:00:00.000Z",
+					contextSummary: "low confidence recommendation",
+				}),
+			).resolves.toEqual({
+				closed: false,
+				reason: "confidence_below_threshold",
+			});
+
+			const traces = await db.select().from(schema.caseActionTraces);
+			expect(traces).toHaveLength(1);
+			expect(traces[0].decision).toBe("rejected");
+			expect(traces[0].reason).toBe("confidence_below_threshold");
+		} finally {
+			await testDb.close();
+		}
+	});
+
+	it("closes case when predicate evidence and scope align, and writes trace metadata", async () => {
+		const testDb = await createEngineDb();
+		const db = testDb.db;
+		try {
+			const embeddingRefreshCalls: string[] = [];
+			const lifecycle = new CaseLifecycleService(db, {
+				semanticIndexService: {
+					refreshCaseEmbeddingById: async (caseId: string) => {
+						embeddingRefreshCalls.push(caseId);
+					},
+				},
+			});
+			await db.insert(cases).values({
+				id: "guard-case-2",
+				propertyId: "LIE-001",
+				houseId: "LIE-001-H1",
+				apartmentId: "LIE-001-H1-A1",
+				ownerUserId: "user-1",
+				caseKey: "a:LIE-001-H1-A1|signal|test-2",
+				closurePredicate: "repair_completed",
+				title: "Guarded close case two",
+				summary: "open",
+				status: "open",
+				createdAt: "2026-04-25T10:00:00.000Z",
+				updatedAt: "2026-04-25T10:00:00.000Z",
+			});
+			await db.insert(schema.sources).values({
+				id: "guard-source",
+				fileId: "guard.eml",
+				fileType: "eml",
+				ingestionDate: "2026-04-25T12:00:00.000Z",
+			});
+			await db.insert(facts).values({
+				id: "guard-fact-1",
+				propertyId: "LIE-001",
+				category: "maintenance",
+				key: "repair_completed",
+				value: "yes",
+				sourceId: "guard-source",
+				isGoldStandard: false,
+				confidenceScore: 0.95,
+			});
+			await db.insert(schema.factHouses).values({
+				factId: "guard-fact-1",
+				houseId: "LIE-001-H1",
+			});
+			await db.insert(schema.factApartments).values({
+				factId: "guard-fact-1",
+				apartmentId: "LIE-001-H1-A1",
+			});
+
+			await expect(
+				lifecycle.evaluateGuardedClosureAction({
+					caseId: "guard-case-2",
+					propertyId: "LIE-001",
+					proposedAction: "close_case",
+					proposedConfidence: 0.92,
+					confidenceThreshold: 0.8,
+					nowIso: "2026-04-26T10:00:00.000Z",
+					contextSummary: "predicate evidence found",
+				}),
+			).resolves.toEqual({
+				closed: true,
+				reason: "closed_with_guardrails",
+				evidenceFactIds: ["guard-fact-1"],
+			});
+			const traces = await db.select().from(schema.caseActionTraces);
+			expect(traces).toHaveLength(1);
+			expect(traces[0].decision).toBe("approved");
+			expect(traces[0].contextSummary).toContain("predicate evidence");
+			expect(embeddingRefreshCalls).toEqual(["guard-case-2"]);
+		} finally {
+			await testDb.close();
+		}
+	});
+});
+
+describe("embedding freshness after case status transitions (E4.3)", () => {
+	it("refreshes case embedding when auto-close resolves a case", async () => {
+		const testDb = await createEngineDb();
+		const db = testDb.db;
+		try {
+			const resolver = new HierarchyResolver({
+				propertyId: "LIE-001",
+				houses: [{ id: "LIE-001-H1", apartments: [{ id: "LIE-001-H1-A1", name: "Unit 1" }] }],
+			});
+			const embeddingRefreshCalls: string[] = [];
+			const lifecycle = new CaseLifecycleService(db, {
+				semanticIndexService: {
+					refreshCaseEmbeddingById: async (caseId: string) => {
+						embeddingRefreshCalls.push(caseId);
+					},
+				},
+			});
+			await lifecycle.processIntentsForDocument({
+				propertyId: "LIE-001",
+				intents: [
+					{
+						title: "Leak repair ticket",
+						summary: "Awaiting vendor",
+						status: "open",
+						scopeHint: "apartment",
+						primarySignal: "leak-77",
+						closurePredicate: "repair_completed",
+						confidence: 0.92,
+					},
+				],
+				resolver,
+				documentMetadata: { apartmentId: "LIE-001-H1-A1", houseId: "LIE-001-H1" },
+				nowIso: "2026-04-25T10:00:00.000Z",
+			});
+			embeddingRefreshCalls.length = 0;
+			await db.insert(schema.sources).values({
+				id: "source-y",
+				fileId: "y.eml",
+				fileType: "eml",
+				ingestionDate: "2026-04-25T12:00:00.000Z",
+			});
+			const factId = "fact-close-2";
+			await db.insert(facts).values({
+				id: factId,
+				propertyId: "LIE-001",
+				category: "maintenance",
+				key: "repair_completed",
+				value: "yes",
+				sourceId: "source-y",
+				isGoldStandard: false,
+				confidenceScore: 0.99,
+			});
+			await db.insert(schema.factHouses).values({ factId, houseId: "LIE-001-H1" });
+			await db.insert(schema.factApartments).values({ factId, apartmentId: "LIE-001-H1-A1" });
+			const scopeMap = await loadFactScopes(db, [factId]);
+			const scope = scopeMap.get(factId);
+			if (!scope) throw new Error("Expected fact scope");
+			await lifecycle.evaluateAutoClose({
+				propertyId: "LIE-001",
+				newFacts: [{ id: factId, propertyId: "LIE-001", key: "repair_completed", value: "yes", scope }],
+				nowIso: "2026-04-27T10:00:00.000Z",
+			});
+			expect(embeddingRefreshCalls).toHaveLength(1);
+		} finally {
+			await testDb.close();
+		}
+	});
+});
+
 describe("full dataset case cardinality (R2.7)", () => {
 	const tempRoots: string[] = [];
 

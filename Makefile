@@ -1,4 +1,4 @@
-.PHONY: help install db-start db-stop db-reset db-setup run-initial run-initial-live run-initial-mock run-history run-history-live run-history-mock diagnose dev test lint check
+.PHONY: help install db-start db-stop db-reset db-setup run-initial run-initial-live run-initial-mock run-history run-history-live run-history-mock run-demo-judge-history-mcp-assist diagnose dev test lint check
 
 DATABASE_URL ?= postgres://postgres:postgres@localhost:5433/buena
 
@@ -15,6 +15,7 @@ help:
 	@echo "  make run-history  - replay day-01 to day-10 (mock mode default)"
 	@echo "  make run-history-live - replay day-01 to day-10 with live AI (optionally DAY=day-03)"
 	@echo "  make run-history-mock - replay day-01 to day-10 with deterministic mocks (optionally DAY=day-03)"
+	@echo "  make run-demo-judge-history-mcp-assist - reset DB, replay history, run MCP queries, print guarded case-assist trace"
 	@echo "  make diagnose     - check Gemini models/probe quota signals"
 	@echo "  make dev          - run app locally"
 	@echo "  make test         - run test suite"
@@ -52,6 +53,15 @@ run-history-live:
 
 run-history-mock:
 	HISTORY_MODE=mock HISTORY_DAY=$(DAY) pnpm run dry-run:history
+
+# Why this target exists:
+# - Demo convenience only: one command for a clean, deterministic judge run.
+# - It intentionally resets the DB, replays history, runs MCP queries, and prints guarded case-assist trace output.
+# When to run:
+# - Use this for a "from-zero" scripted demo.
+# - Do NOT use this if you want to keep your current DB state after run-initial/run-history.
+run-demo-judge-history-mcp-assist: db-reset db-setup
+	DATABASE_URL=$(DATABASE_URL) pnpm run demo:judge-history-mcp-assist
 
 diagnose:
 	pnpm run gemini:diagnose

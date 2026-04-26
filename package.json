@@ -22,6 +22,7 @@
     "embeddings:backfill": "tsx src/scripts/backfillEmbeddings.ts",
     "dry-run:baseline": "tsx src/scripts/dryRunBaseline.ts",
     "dry-run:history": "tsx src/scripts/dryRunHistory.ts",
+    "demo:judge-history-mcp-assist": "tsx src/scripts/runJudgeDemoHistoryMcpAssist.ts",
     "gemini:diagnose": "tsx src/scripts/diagnoseGemini.ts"
   },
   "dependencies": {
@@ -38,7 +39,6 @@
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
     "better-auth": "^1.5.3",
-    "better-sqlite3": "^12.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-kit": "^0.31.9",
@@ -56,13 +56,12 @@
     "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "latest",
     "@biomejs/biome": "2.4.5",
+    "@electric-sql/pglite": "latest",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
-    "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -77,8 +76,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
-      "lightningcss",
-      "better-sqlite3"
+      "lightningcss"
     ]
   }
 }

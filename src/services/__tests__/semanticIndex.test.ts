@@ -26,15 +26,29 @@ describe("semanticIndex", () => {
 			id: "LIE-001",
 			name: "Immanuelkirchstrasse 26",
 		});
+		await db.insert(schema.properties).values({
+			id: "LIE-002",
+			name: "Other Property",
+		});
 		await db.insert(schema.houses).values({
 			id: "LIE-001-H1",
 			propertyId: "LIE-001",
 			name: "Front House",
 		});
+		await db.insert(schema.houses).values({
+			id: "LIE-002-H1",
+			propertyId: "LIE-002",
+			name: "Rear House",
+		});
 		await db.insert(schema.apartments).values({
 			id: "LIE-001-H1-A1",
 			houseId: "LIE-001-H1",
 			name: "Unit 1",
+		});
+		await db.insert(schema.apartments).values({
+			id: "LIE-002-H1-A1",
+			houseId: "LIE-002-H1",
+			name: "Unit 2",
 		});
 		await db.insert(schema.users).values({
 			id: "user-1",
@@ -46,6 +60,12 @@ describe("semanticIndex", () => {
 			fileId: "EMAIL-1.eml",
 			fileType: "eml",
 			ingestionDate: "2026-04-25T10:00:00.000Z",
+		});
+		await db.insert(schema.sources).values({
+			id: "source-2",
+			fileId: "EMAIL-2.eml",
+			fileType: "eml",
+			ingestionDate: "2026-04-25T11:00:00.000Z",
 		});
 		await db.insert(schema.facts).values({
 			id: "fact-1",
@@ -74,6 +94,38 @@ describe("semanticIndex", () => {
 			status: "open",
 			createdAt: "2026-04-25T10:00:00.000Z",
 			updatedAt: "2026-04-25T10:00:00.000Z",
+		});
+		await db.insert(schema.facts).values({
+			id: "fact-2",
+			propertyId: "LIE-002",
+			category: "maintenance",
+			key: "boiler_noise",
+			value: "reported in rear house",
+			sourceId: "source-2",
+			isGoldStandard: false,
+			confidenceScore: 0.8,
+		});
+		await db.insert(schema.factHouses).values({
+			factId: "fact-2",
+			houseId: "LIE-002-H1",
+		});
+		await db.insert(schema.factApartments).values({
+			factId: "fact-2",
+			apartmentId: "LIE-002-H1-A1",
+		});
+		await db.insert(schema.cases).values({
+			id: "case-2",
+			propertyId: "LIE-002",
+			houseId: "LIE-002-H1",
+			apartmentId: "LIE-002-H1-A1",
+			ownerUserId: "user-1",
+			caseKey: "boiler|noise|follow-up",
+			closurePredicate: null,
+			title: "Boiler noise follow-up",
+			summary: "Rear house boiler issue",
+			status: "open",
+			createdAt: "2026-04-25T11:00:00.000Z",
+			updatedAt: "2026-04-25T11:00:00.000Z",
 		});
 	});
 
@@ -118,8 +170,8 @@ describe("semanticIndex", () => {
 		});
 
 		await expect(indexService.backfillMissingEmbeddings()).resolves.toEqual({
-			factsUpdated: 1,
-			casesUpdated: 1,
+			factsUpdated: 2,
+			casesUpdated: 2,
 		});
 
 		const fact = await testDb.db.query.facts.findFirst({
@@ -139,9 +191,17 @@ describe("semanticIndex", () => {
 			.set({ embedding: vectorOf(1) })
 			.where(eq(schema.facts.id, "fact-1"));
 		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: vectorOf(0.2, 0.8) })
+			.where(eq(schema.facts.id, "fact-2"));
+		await testDb.db
 			.update(schema.cases)
 			.set({ embedding: vectorOf(0.8, 0.2) })
 			.where(eq(schema.cases.id, "case-1"));
+		await testDb.db
+			.update(schema.cases)
+			.set({ embedding: vectorOf(0.2, 0.8) })
+			.where(eq(schema.cases.id, "case-2"));
 
 		const results = await semanticSearch(
 			{
@@ -161,5 +221,104 @@ describe("semanticIndex", () => {
 		expect(results[0].entityType).toBe("fact");
 		expect(results[1].entityType).toBe("case");
 		expect(results[0].snippet).toContain("roof_leak");
+	});
+
+	it("keeps canonical prompt target within top-3 results", async () => {
+		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: vectorOf(1) })
+			.where(eq(schema.facts.id, "fact-1"));
+		await testDb.db
+			.update(schema.cases)
+			.set({ embedding: vectorOf(0.99, 0.01) })
+			.where(eq(schema.cases.id, "case-1"));
+
+		const results = await semanticSearch(
+			{
+				embedDocument: async () => vectorOf(1),
+				embedQuery: async () => vectorOf(1),
+			},
+			testDb.db,
+			{
+				query: "roof leak reported in unit one",
+				entityType: "all",
+				limit: 5,
+			},
+		);
+
+		expect(results.slice(0, 3).map((row) => row.id)).toContain("fact-1");
+	});
+
+	it("applies scope filters by property, house and apartment", async () => {
+		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: vectorOf(1) })
+			.where(eq(schema.facts.id, "fact-1"));
+		await testDb.db
+			.update(schema.facts)
+			.set({ embedding: vectorOf(0.9, 0.1) })
+			.where(eq(schema.facts.id, "fact-2"));
+		await testDb.db
+			.update(schema.cases)
+			.set({ embedding: vectorOf(1) })
+			.where(eq(schema.cases.id, "case-1"));
+		await testDb.db
+			.update(schema.cases)
+			.set({ embedding: vectorOf(0.9, 0.1) })
+			.where(eq(schema.cases.id, "case-2"));
+
+		const byProperty = await semanticSearch(
+			{
+				embedDocument: async () => vectorOf(1),
+				embedQuery: async () => vectorOf(1),
+			},
+			testDb.db,
+			{
+				query: "maintenance issues",
+				entityType: "all",
+				propertyId: "LIE-001",
+				limit: 10,
+			},
+		);
+		expect(byProperty.every((row) => {
+			const payload = row.payload as { propertyId?: string };
+			return payload.propertyId === "LIE-001";
+		})).toBe(true);
+
+		const byHouse = await semanticSearch(
+			{
+				embedDocument: async () => vectorOf(1),
+				embedQuery: async () => vectorOf(1),
+			},
+			testDb.db,
+			{
+				query: "maintenance issues",
+				entityType: "all",
+				houseId: "LIE-001-H1",
+				limit: 10,
+			},
+		);
+		expect(byHouse.every((row) => {
+			const payload = row.payload as { houseId?: string; houseIds?: string[] };
+			return payload.houseId === "LIE-001-H1" || payload.houseIds?.includes("LIE-001-H1");
+		})).toBe(true);
+
+		const byApartment = await semanticSearch(
+			{
+				embedDocument: async () => vectorOf(1),
+				embedQuery: async () => vectorOf(1),
+			},
+			testDb.db,
+			{
+				query: "maintenance issues",
+				entityType: "all",
+				apartmentId: "LIE-001-H1-A1",
+				limit: 10,
+			},
+		);
+		expect(byApartment.every((row) => {
+			const payload = row.payload as { apartmentId?: string; apartmentIds?: string[] };
+			return payload.apartmentId === "LIE-001-H1-A1" || payload.apartmentIds?.includes("LIE-001-H1-A1");
+		})).toBe(true);
 	});
 });
