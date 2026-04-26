@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as FactsRouteImport } from './routes/facts'
+import { Route as DemoSnapshotRouteImport } from './routes/demo-snapshot'
 import { Route as CasesRouteImport } from './routes/cases'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -36,6 +37,11 @@ const SearchRoute = SearchRouteImport.update({
 const FactsRoute = FactsRouteImport.update({
   id: '/facts',
   path: '/facts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoSnapshotRoute = DemoSnapshotRouteImport.update({
+  id: '/demo-snapshot',
+  path: '/demo-snapshot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CasesRoute = CasesRouteImport.update({
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
+  '/demo-snapshot': typeof DemoSnapshotRoute
   '/facts': typeof FactsRouteWithChildren
   '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
+  '/demo-snapshot': typeof DemoSnapshotRoute
   '/facts': typeof FactsRouteWithChildren
   '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/cases': typeof CasesRoute
+  '/demo-snapshot': typeof DemoSnapshotRoute
   '/facts': typeof FactsRouteWithChildren
   '/search': typeof SearchRoute
   '/api/cases': typeof ApiCasesRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/cases'
+    | '/demo-snapshot'
     | '/facts'
     | '/search'
     | '/api/cases'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/cases'
+    | '/demo-snapshot'
     | '/facts'
     | '/search'
     | '/api/cases'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/cases'
+    | '/demo-snapshot'
     | '/facts'
     | '/search'
     | '/api/cases'
@@ -247,6 +259,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   CasesRoute: typeof CasesRoute
+  DemoSnapshotRoute: typeof DemoSnapshotRoute
   FactsRoute: typeof FactsRouteWithChildren
   SearchRoute: typeof SearchRoute
   ApiCasesRoute: typeof ApiCasesRoute
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       path: '/facts'
       fullPath: '/facts'
       preLoaderRoute: typeof FactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo-snapshot': {
+      id: '/demo-snapshot'
+      path: '/demo-snapshot'
+      fullPath: '/demo-snapshot'
+      preLoaderRoute: typeof DemoSnapshotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cases': {
@@ -408,6 +428,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   CasesRoute: CasesRoute,
+  DemoSnapshotRoute: DemoSnapshotRoute,
   FactsRoute: FactsRouteWithChildren,
   SearchRoute: SearchRoute,
   ApiCasesRoute: ApiCasesRoute,

@@ -1,4 +1,4 @@
-import { Building2, BriefcaseBusiness, FileSearch, FileText } from "lucide-react";
+import { Building2, BriefcaseBusiness, FileSearch, FileText, LayoutDashboard } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import {
@@ -56,6 +56,14 @@ export function AppSidebar() {
 									<Link to="/search">
 										<FileSearch />
 										<span>Search</span>
+									</Link>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<SidebarMenuButton asChild tooltip="Demo Snapshot">
+									<Link to="/demo-snapshot">
+										<LayoutDashboard />
+										<span>Demo Snapshot</span>
 									</Link>
 								</SidebarMenuButton>
 							</SidebarMenuItem>

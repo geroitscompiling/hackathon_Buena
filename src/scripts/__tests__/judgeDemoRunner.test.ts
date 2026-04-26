@@ -79,6 +79,7 @@ describe("runJudgeDemoRunner", () => {
 		const summaryJson = await readFile(result.summaryArtifactPath, "utf8");
 		const summary = JSON.parse(summaryJson) as {
 			mode: string;
+			historyReplay: { totalDaysProcessed: number };
 			facts: { inserted: number; blocked: number; idempotent: number };
 			cases: { opened: number; updated: number; resolved: number };
 			guardrails: { approved: number; rejected: number };
@@ -86,6 +87,7 @@ describe("runJudgeDemoRunner", () => {
 			artifacts: { conflicts: string; traces: string };
 		};
 		expect(summary.mode).toBe("mock");
+		expect(summary.historyReplay.totalDaysProcessed).toBe(10);
 		expect(summary.facts).toEqual({ inserted: 9, blocked: 2, idempotent: 3 });
 		expect(summary.cases).toEqual({ opened: 2, updated: 1, resolved: 1 });
 		expect(summary.guardrails).toEqual({ approved: 1, rejected: 1 });

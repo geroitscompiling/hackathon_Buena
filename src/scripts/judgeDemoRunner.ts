@@ -86,6 +86,9 @@ export async function runJudgeDemoRunner({
 		writeLine("[5/5] Structured summary");
 		const summary = {
 			mode,
+			historyReplay: {
+				totalDaysProcessed: history.totalDaysProcessed,
+			},
 			facts: {
 				inserted: history.totals.factsInserted,
 				blocked: history.totals.factsBlockedAsConflicts,

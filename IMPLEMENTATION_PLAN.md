@@ -255,8 +255,8 @@ A **case** is an operational workflow record stored in `cases` (title, summary, 
 - **R4.4**: Implement `ingestion_events`/history persistence model (day, file, action, entity type/id, before/after fingerprints).
 - **R4.5**: Produce per-day summary artifacts for demo (`created_facts`, `updated_facts`, `opened_cases`, `resolved_cases`, conflicts).
 
-### Epic R5: Demo Surface and Verification (Current Focus)
-*Goal: Make the judge/demo experience deterministic, fast, and traceable with one-command execution and clear outputs.*
+### Epic R5: Demo Reliability & Runbook Automation (Current Focus)
+*Goal: Make the judge/demo experience deterministic, fast, and traceable with one-command execution and clear outputs. This is reliability engineering, not just Makefile cleanup.*
 
 - **R5.1 [TEST] Judge Demo Script Contract**
   - Add failing integration tests for a single entrypoint script that:

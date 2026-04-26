@@ -20,8 +20,12 @@ make run-initial
 Key targets:
 - `make db-reset` recreates the local Postgres volume for a clean database state
 - `make db-setup` runs schema push + seed on a clean DB
-- `make run-initial` executes this ticket's baseline dry-run flow end-to-end
-- `make run-history` replays history in mock mode; add `DAY=day-03` to limit the run to a single day
+- `make run-initial` executes baseline dry-run in live mode (stage step 1)
+- `make run-history-live` replays history in live mode with MCP-enabled flow (stage step 2)
+- `make run-stage-live` runs the stage sequence (`run-initial` then `run-history-live`)
+- `make run-history` replays history in deterministic mock mode; add `DAY=day-03` to limit the run to a single day
+- `make run-demo-history` runs `judgeDemoRunner` as failover (default `HISTORY_MODE=mock`, supports `HISTORY_MODE=live`)
+- `make pre-demo-check` runs `db-setup`, then test/lint plus baseline/history/judge demo verification before presentation
 - `make diagnose` checks Gemini model reachability and quota-style throttle signals (`429`, `Retry-After`)
 
 ## Database Setup
