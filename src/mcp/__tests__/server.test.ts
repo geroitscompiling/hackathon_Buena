@@ -59,6 +59,14 @@ describe("mcp http transport", () => {
 			isGoldStandard: false,
 			confidenceScore: 0.9,
 		});
+		await db.insert(schema.factHouses).values({
+			factId: "fact-1",
+			houseId: "LIE-001-H1",
+		});
+		await db.insert(schema.factApartments).values({
+			factId: "fact-1",
+			apartmentId: "LIE-001-H1-A1",
+		});
 		await db.insert(schema.cases).values({
 			id: "case-1",
 			propertyId: "LIE-001",
@@ -72,6 +80,10 @@ describe("mcp http transport", () => {
 			status: "open",
 			createdAt: "2026-04-25T10:00:00.000Z",
 			updatedAt: "2026-04-25T10:00:00.000Z",
+		});
+		await db.insert(schema.factCases).values({
+			factId: "fact-1",
+			caseId: "case-1",
 		});
 
 		toolRegistry = createMcpTools(db as never);
@@ -126,7 +138,14 @@ describe("mcp http transport", () => {
 		expect(toolsPayload).toContain('"name":"semantic_search"');
 		expect(toolsPayload).toContain('"name":"get_related_cases"');
 		expect(toolsPayload).toContain('"name":"get_related_facts"');
-		expect(toolsPayload).toContain('"name":"get_case_context_bundle"');
+		expect(toolsPayload).toContain('"name":"search_case_history"');
+		expect(toolsPayload).toContain('"name":"get_case_closure_evidence"');
+		expect(toolsPayload).toContain('"name":"list_testfiles_directory"');
+		expect(toolsPayload).toContain('"name":"find_testfiles_files"');
+		expect(toolsPayload).toContain('"name":"grep_testfiles"');
+		expect(toolsPayload).toContain('"name":"read_testfiles_file"');
+		expect(toolsPayload).toContain('"name":"link_fact_to_case"');
+		expect(toolsPayload).toContain('"name":"request_case_closure"');
 
 		const callResponse = await handleMcpHttpRequest(
 			createMcpPostRequest(
@@ -233,6 +252,208 @@ describe("mcp http transport", () => {
 		const invalidPayload = await invalidResponse.text();
 		expect(invalidPayload).toContain('"error"');
 		expect(invalidPayload).toContain("caseId");
+	});
+
+	it("returns scoped history and allows linking facts to a case", async () => {
+		await testDb.db.insert(schema.sources).values({
+			id: "source-2",
+			fileId: "EMAIL-2.eml",
+			fileType: "eml",
+			ingestionDate: "2026-04-26T10:00:00.000Z",
+		});
+		await testDb.db.insert(schema.facts).values({
+			id: "fact-2",
+			propertyId: "LIE-001",
+			category: "maintenance",
+			key: "door_repair_vendor",
+			value: "Mueller scheduled a repeat repair in Unit 1.",
+			sourceId: "source-2",
+			isGoldStandard: false,
+			confidenceScore: 0.88,
+		});
+		await testDb.db.insert(schema.factHouses).values({
+			factId: "fact-2",
+			houseId: "LIE-001-H1",
+		});
+		await testDb.db.insert(schema.factApartments).values({
+			factId: "fact-2",
+			apartmentId: "LIE-001-H1-A1",
+		});
+
+		const historyResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 14,
+					method: "tools/call",
+					params: {
+						name: "search_case_history",
+						arguments: {
+							caseId: "case-1",
+							limit: 5,
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(historyResponse.status).toBe(200);
+		const historyPayload = await historyResponse.text();
+		expect(historyPayload).toContain("fact-2");
+		expect(historyPayload).not.toContain("embedding");
+
+		const linkResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 15,
+					method: "tools/call",
+					params: {
+						name: "link_fact_to_case",
+						arguments: {
+							caseId: "case-1",
+							factId: "fact-2",
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(linkResponse.status).toBe(200);
+		await linkResponse.text();
+		const links = await testDb.db.query.factCases.findMany({
+			where: (factCases, { and, eq }) =>
+				and(eq(factCases.caseId, "case-1"), eq(factCases.factId, "fact-2")),
+		});
+		expect(links).toHaveLength(1);
+	});
+
+	it("supports read-only file exploration inside testfiles only", async () => {
+		const listResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 16,
+					method: "tools/call",
+					params: {
+						name: "list_testfiles_directory",
+						arguments: {
+							relativePath: "bank",
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(listResponse.status).toBe(200);
+		const listPayload = await listResponse.text();
+		expect(listPayload).toContain("kontoauszug_2024_2025.csv");
+
+		const findResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 17,
+					method: "tools/call",
+					params: {
+						name: "find_testfiles_files",
+						arguments: {
+							relativePath: "bank",
+							pattern: "kontoauszug",
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(findResponse.status).toBe(200);
+		const findPayload = await findResponse.text();
+		expect(findPayload).toContain("kontoauszug_2024_2025.csv");
+
+		const grepResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 18,
+					method: "tools/call",
+					params: {
+						name: "grep_testfiles",
+						arguments: {
+							relativePath: "bank/kontoauszug_2024_2025.csv",
+							query: "Chantal Täsche",
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(grepResponse.status).toBe(200);
+		const grepPayload = await grepResponse.text();
+		expect(grepPayload).toContain("Chantal Täsche");
+		expect(grepPayload).not.toContain("vectors");
+
+		const readResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 19,
+					method: "tools/call",
+					params: {
+						name: "read_testfiles_file",
+						arguments: {
+							relativePath: "BUILDING.md",
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(readResponse.status).toBe(200);
+		const readPayload = await readResponse.text();
+		expect(readPayload).toContain("Property Files");
+		expect(readPayload).toContain("LIE-001");
+
+		const outsideResponse = await handleMcpHttpRequest(
+			createMcpPostRequest(
+				{
+					jsonrpc: "2.0",
+					id: 20,
+					method: "tools/call",
+					params: {
+						name: "read_testfiles_file",
+						arguments: {
+							relativePath: "../package.json",
+						},
+					},
+				},
+				{
+					"mcp-protocol-version": "2025-03-26",
+				},
+			),
+			toolRegistry,
+		);
+		expect(outsideResponse.status).toBe(200);
+		const outsidePayload = await outsideResponse.text();
+		expect(outsidePayload).toContain('"error"');
+		expect(outsidePayload).toContain("testfiles");
 	});
 
 	it("rejects unsupported methods for stateless streamable HTTP", async () => {

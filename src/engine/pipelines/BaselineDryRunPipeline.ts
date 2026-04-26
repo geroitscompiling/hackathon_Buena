@@ -38,6 +38,8 @@ export interface BaselineDryRunOptions {
   propertyId?: string;
   propertyName?: string;
   noisyInputFiles?: string[];
+  /** Caps the number of noisy baseline files processed after core ERP ingestions. */
+  maxNoisyFiles?: number;
   gatekeeper?: RelevanceGatekeeper;
   extractor?: BuildingFactExtractor;
   strictAiErrors?: boolean;
@@ -214,6 +216,7 @@ export async function runBaselineDryRun({
   propertyId = "LIE-001",
   propertyName = "WEG Immanuelkirchstraße 26",
   noisyInputFiles = defaultNoisyInputFiles,
+  maxNoisyFiles,
   gatekeeper,
   extractor,
   strictAiErrors = false,
@@ -293,7 +296,12 @@ export async function runBaselineDryRun({
     },
   ] as const;
 
-  const noisyIngestions = noisyInputFiles.map((relativePath) => ({
+  const limitedNoisyInputFiles =
+    maxNoisyFiles !== undefined && maxNoisyFiles >= 0
+      ? noisyInputFiles.slice(0, maxNoisyFiles)
+      : noisyInputFiles;
+
+  const noisyIngestions = limitedNoisyInputFiles.map((relativePath) => ({
     ingestor: relativePath.endsWith(".eml")
       ? new EmlIngestor(resolvedGatekeeper, resolvedExtractor, propertyId)
       : new PdfIngestor(resolvedGatekeeper, resolvedExtractor, propertyId),
@@ -509,23 +517,36 @@ export async function runBaselineDryRun({
         factsForBatch: persistedInThisFile,
       });
       factCaseLinksCreated += linkCount;
-      casesResolved += await lifecycle.evaluateAutoClose({
+      const additionallyLinkedCaseIds = await lifecycle.linkFactsToOpenCasesHeuristic({
+        propertyId,
+        factsForBatch: closureEvidenceThisFile,
+      });
+      const autoClosedCaseIds = await lifecycle.evaluateAutoCloseDetailed({
         propertyId,
         newFacts: closureEvidenceThisFile,
         nowIso,
       });
-      if (batch.caseKeys.length > 0) {
-        const touchedCases = await db.query.cases.findMany({
-          where: (caseTable, { and, eq, inArray }) =>
-            and(
-              eq(caseTable.propertyId, propertyId),
-              inArray(caseTable.caseKey, batch.caseKeys),
-            ),
-          columns: { id: true },
-        });
-        for (const touchedCase of touchedCases) {
+      casesResolved += autoClosedCaseIds.length;
+      const touchedCases =
+        batch.caseKeys.length > 0
+          ? await db.query.cases.findMany({
+              where: (caseTable, { and, eq, inArray }) =>
+                and(
+                  eq(caseTable.propertyId, propertyId),
+                  inArray(caseTable.caseKey, batch.caseKeys),
+                ),
+              columns: { id: true },
+            })
+          : [];
+      const caseIdsForAssist = new Set([
+        ...touchedCases.map((caseRow) => caseRow.id),
+        ...additionallyLinkedCaseIds,
+        ...autoClosedCaseIds,
+      ]);
+      if (caseIdsForAssist.size > 0) {
+        for (const caseId of caseIdsForAssist) {
           const assist = await assistOrchestrator.run({
-            caseId: touchedCase.id,
+            caseId,
             propertyId,
             confidenceThreshold: 0.8,
             nowIso,

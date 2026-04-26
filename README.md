@@ -21,6 +21,7 @@ Key targets:
 - `make db-reset` recreates the local Postgres volume for a clean database state
 - `make db-setup` runs schema push on a clean DB
 - `make run-initial` executes baseline dry-run in live mode (stage step 1)
+- `make run-initial-live FILE_LIMIT=1` limits the baseline run to the first noisy input file while still ingesting core ERP files
 - `make run-history-live` replays history in live mode with MCP-enabled flow (stage step 2)
 - `make run-stage-live` runs the stage sequence (`run-initial` then `run-history-live`)
 - `make run-history` replays history in deterministic mock mode; add `DAY=day-03` to limit the run to a single day

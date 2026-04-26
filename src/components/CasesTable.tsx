@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import { Badge } from "#/components/ui/badge";
 import {
 	Table,
@@ -41,7 +43,13 @@ export function CasesTable({ cases }: CasesTableProps) {
 							<TableRow key={caseItem.id}>
 								<TableCell className="min-w-56 align-top">
 									<div className="space-y-1">
-										<p className="font-semibold">{caseItem.title}</p>
+										<Link
+											to="/cases/$caseId"
+											params={{ caseId: caseItem.id }}
+											className="font-semibold underline-offset-4 hover:underline"
+										>
+											{caseItem.title}
+										</Link>
 										<p className="text-xs text-muted-foreground">{caseItem.id}</p>
 										<p className="text-sm text-muted-foreground">{caseItem.summary}</p>
 									</div>

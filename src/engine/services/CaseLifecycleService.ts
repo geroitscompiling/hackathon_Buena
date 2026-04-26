@@ -294,15 +294,95 @@ export class CaseLifecycleService {
 		return links;
 	}
 
+	async linkFactsToOpenCasesHeuristic(input: {
+		propertyId: string;
+		factsForBatch: Array<{
+			id: string;
+			key: string;
+			value: string;
+			scope: ResolvedHierarchyScope;
+		}>;
+	}): Promise<string[]> {
+		if (input.factsForBatch.length === 0) {
+			return [];
+		}
+
+		const openCases = await this.db.query.cases.findMany({
+			where: (c, { and: a, eq: e, inArray: inArr }) =>
+				a(e(c.propertyId, input.propertyId), inArr(c.status, [...ACTIVE_STATUSES])),
+		});
+
+		const linkedCaseIds = new Set<string>();
+		for (const caseRow of openCases) {
+			const keyTokens = caseRow.caseKey
+				.split(/[^a-z0-9]+/i)
+				.map((token) => token.trim().toLowerCase())
+				.filter((token) => token.length >= 6)
+				.filter((token) => !GENERIC_CASE_KEY_TOKENS.has(token));
+
+			for (const fact of input.factsForBatch) {
+				if (
+					!scopesAlign(
+						{
+							propertyId: caseRow.propertyId,
+							houseId: caseRow.houseId,
+							apartmentId: caseRow.apartmentId,
+						},
+						fact.scope,
+					)
+				) {
+					continue;
+				}
+
+				const fk = fact.key.toLowerCase();
+				const fv = String(fact.value).toLowerCase();
+				const compactFactKey = fk.replace(/[^a-z0-9]/g, "");
+				const overlapScore = keyTokens.reduce((score, token) => {
+					const compactToken = token.replace(/[^a-z0-9]/g, "");
+					const exactWordMatch =
+						new RegExp(`(^|[^a-z0-9])${escapeRegex(token)}([^a-z0-9]|$)`).test(fk) ||
+						new RegExp(`(^|[^a-z0-9])${escapeRegex(token)}([^a-z0-9]|$)`).test(fv);
+					const strongCompactMatch =
+						compactToken.length >= 8 && compactFactKey.includes(compactToken);
+					return score + (exactWordMatch || strongCompactMatch ? 1 : 0);
+				}, 0);
+
+				if (overlapScore < 1) {
+					continue;
+				}
+
+				try {
+					await this.db.insert(factCases).values({
+						factId: fact.id,
+						caseId: caseRow.id,
+					});
+				} catch {
+					/* duplicate PK */
+				}
+				linkedCaseIds.add(caseRow.id);
+			}
+		}
+
+		return [...linkedCaseIds];
+	}
+
 	async evaluateAutoClose(input: {
 		propertyId: string;
 		newFacts: NewFactSnapshot[];
 		nowIso: string;
 	}): Promise<number> {
+		return (await this.evaluateAutoCloseDetailed(input)).length;
+	}
+
+	async evaluateAutoCloseDetailed(input: {
+		propertyId: string;
+		newFacts: NewFactSnapshot[];
+		nowIso: string;
+	}): Promise<string[]> {
 		if (input.newFacts.length === 0) {
-			return 0;
+			return [];
 		}
-		let resolved = 0;
+		const resolvedCaseIds: string[] = [];
 		const openCases = await this.db.query.cases.findMany({
 			where: (c, { and: a, eq: e, isNotNull, inArray: inArr }) =>
 				a(
@@ -337,11 +417,11 @@ export class CaseLifecycleService {
 					.set({ status: TERMINAL_CASE_STATUS, updatedAt: input.nowIso })
 					.where(eq(cases.id, caseRow.id));
 				await this.options.semanticIndexService?.refreshCaseEmbeddingById(caseRow.id);
-				resolved += 1;
+				resolvedCaseIds.push(caseRow.id);
 				break;
 			}
 		}
-		return resolved;
+		return resolvedCaseIds;
 	}
 
 	private async persistClosureDecisionTrace(input: {

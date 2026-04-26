@@ -17,6 +17,18 @@ async function main() {
     throw new Error(`Unsupported BASELINE_MODE: ${mode}. Use "mock" or "live".`);
   }
 
+  const rawFileLimit = process.env.BASELINE_FILE_LIMIT?.trim();
+  const maxNoisyFiles =
+    rawFileLimit && rawFileLimit.length > 0
+      ? Number.parseInt(rawFileLimit, 10)
+      : undefined;
+  if (
+    maxNoisyFiles !== undefined &&
+    (Number.isNaN(maxNoisyFiles) || maxNoisyFiles < 0)
+  ) {
+    throw new Error("BASELINE_FILE_LIMIT must be a non-negative number when set");
+  }
+
   const gatekeeper: RelevanceGatekeeper | undefined =
     mode === "mock"
       ? {
@@ -84,6 +96,7 @@ async function main() {
   const summary = await runBaselineDryRun({
     db,
     strictAiErrors: true,
+    maxNoisyFiles,
     gatekeeper,
     extractor,
     caseExtractor,

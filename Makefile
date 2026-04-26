@@ -10,8 +10,8 @@ help:
 	@echo "  make db-reset     - reset local Postgres volume data"
 	@echo "  make db-setup     - push schema on a clean db"
 	@echo "  make run-initial  - reset db and run baseline dry-run (live AI)"
-	@echo "  make run-initial-live - run baseline dry-run with live AI"
-	@echo "  make run-initial-mock - run baseline dry-run with deterministic mocks"
+	@echo "  make run-initial-live - run baseline dry-run with live AI (optionally FILE_LIMIT=1)"
+	@echo "  make run-initial-mock - run baseline dry-run with deterministic mocks (optionally FILE_LIMIT=1)"
 	@echo "  make run-history  - replay day-01 to day-10 (mock mode default, deterministic)"
 	@echo "  make run-history-live - replay day-01 to day-10 with live AI + MCP (optionally DAY=day-03)"
 	@echo "  make run-history-mock - replay day-01 to day-10 with deterministic mocks (optionally DAY=day-03)"
@@ -43,12 +43,12 @@ db-setup: db-start
 	DATABASE_URL=$(DATABASE_URL) pnpm run db:push
 
 run-initial-live: db-reset db-setup
-	DATABASE_URL=$(DATABASE_URL) pnpm run dry-run:baseline
+	DATABASE_URL=$(DATABASE_URL) $(if $(FILE_LIMIT),BASELINE_FILE_LIMIT=$(FILE_LIMIT)) pnpm run dry-run:baseline
 
 run-initial: run-initial-live
 
 run-initial-mock: db-reset db-setup
-	DATABASE_URL=$(DATABASE_URL) BASELINE_MODE=mock pnpm run dry-run:baseline
+	DATABASE_URL=$(DATABASE_URL) BASELINE_MODE=mock $(if $(FILE_LIMIT),BASELINE_FILE_LIMIT=$(FILE_LIMIT)) pnpm run dry-run:baseline
 
 run-history: run-history-mock
 

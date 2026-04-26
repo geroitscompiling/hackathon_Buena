@@ -1,6 +1,9 @@
 import { relations } from "drizzle-orm";
 
 import {
+	agentRunMessages,
+	agentRuns,
+	agentRunToolCalls,
 	apartments,
 	caseActionTraces,
 	cases,
@@ -80,12 +83,40 @@ export const casesRelations = relations(cases, ({ one, many }) => ({
 	}),
 	factLinks: many(factCases),
 	actionTraces: many(caseActionTraces),
+	agentRuns: many(agentRuns),
 }));
 
 export const caseActionTracesRelations = relations(caseActionTraces, ({ one }) => ({
 	case: one(cases, {
 		fields: [caseActionTraces.caseId],
 		references: [cases.id],
+	}),
+}));
+
+export const agentRunsRelations = relations(agentRuns, ({ one, many }) => ({
+	case: one(cases, {
+		fields: [agentRuns.caseId],
+		references: [cases.id],
+	}),
+	guardrailTrace: one(caseActionTraces, {
+		fields: [agentRuns.guardrailTraceId],
+		references: [caseActionTraces.id],
+	}),
+	messages: many(agentRunMessages),
+	toolCalls: many(agentRunToolCalls),
+}));
+
+export const agentRunMessagesRelations = relations(agentRunMessages, ({ one }) => ({
+	agentRun: one(agentRuns, {
+		fields: [agentRunMessages.agentRunId],
+		references: [agentRuns.id],
+	}),
+}));
+
+export const agentRunToolCallsRelations = relations(agentRunToolCalls, ({ one }) => ({
+	agentRun: one(agentRuns, {
+		fields: [agentRunToolCalls.agentRunId],
+		references: [agentRuns.id],
 	}),
 }));
 

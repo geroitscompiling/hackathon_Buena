@@ -212,6 +212,74 @@ describe("CaseLifecycleService integration (R2.3–R2.5)", () => {
 			await testDb.close();
 		}
 	});
+
+	it("links new facts to existing scoped open cases from later batches", async () => {
+		const testDb = await createEngineDb();
+		const db = testDb.db;
+		try {
+			const lifecycle = new CaseLifecycleService(db);
+			await db.insert(schema.sources).values({
+				id: "source-link-2",
+				fileId: "later.eml",
+				fileType: "eml",
+				ingestionDate: "2026-04-26T10:00:00.000Z",
+			});
+			await db.insert(facts).values({
+				id: "f2",
+				propertyId: "LIE-001",
+				category: "maintenance",
+				key: "window_repair_completed",
+				value: "Window repair for unit 1 was completed by Mueller.",
+				sourceId: "source-link-2",
+				isGoldStandard: false,
+				confidenceScore: 0.91,
+			});
+			await db.insert(schema.factHouses).values({ factId: "f2", houseId: "LIE-001-H1" });
+			await db.insert(schema.factApartments).values({
+				factId: "f2",
+				apartmentId: "LIE-001-H1-A1",
+			});
+			await db.insert(cases).values({
+				id: "existing-open-case",
+				propertyId: "LIE-001",
+				houseId: "LIE-001-H1",
+				apartmentId: "LIE-001-H1-A1",
+				ownerUserId: "user-1",
+				caseKey: "a:LIE-001-H1-A1|windowtrack|window-repair",
+				closurePredicate: "repair_completed",
+				title: "Window repair request in Unit 1",
+				summary: "Tenant asked for repair",
+				status: "open",
+				createdAt: "2026-04-25T10:00:00.000Z",
+				updatedAt: "2026-04-25T10:00:00.000Z",
+			});
+
+			const linkedCaseIds = await lifecycle.linkFactsToOpenCasesHeuristic({
+				propertyId: "LIE-001",
+				factsForBatch: [
+					{
+						id: "f2",
+						key: "window_repair_completed",
+						value: "Window repair for unit 1 was completed by Mueller.",
+						scope: {
+							scopeType: "apartment",
+							propertyId: "LIE-001",
+							houseId: "LIE-001-H1",
+							apartmentId: "LIE-001-H1-A1",
+						},
+					},
+				],
+			});
+
+			expect(linkedCaseIds).toContain("existing-open-case");
+			const links = await db.select().from(factCases);
+			expect(links.some((l) => l.caseId === "existing-open-case" && l.factId === "f2")).toBe(
+				true,
+			);
+		} finally {
+			await testDb.close();
+		}
+	});
 });
 
 describe("factSatisfiesClosurePredicate", () => {

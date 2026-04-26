@@ -25,6 +25,7 @@
     "gemini:diagnose": "tsx src/scripts/diagnoseGemini.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.64",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
@@ -37,6 +38,7 @@
     "@tanstack/react-router-ssr-query": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
+    "ai": "^6.0.168",
     "better-auth": "^1.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

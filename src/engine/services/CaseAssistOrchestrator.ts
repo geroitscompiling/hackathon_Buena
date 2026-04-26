@@ -1,7 +1,8 @@
 import type { db as appDb } from "#/db";
-import { createMcpTools } from "#/mcp/server";
+import { createMcpTools, listMcpTools } from "#/mcp/server";
 import type { EmbeddingClient } from "#/services/semanticIndex";
-import { factValueImpliesClosure, type CaseLifecycleService, type GuardedClosureResult } from "./CaseLifecycleService";
+import { CaseAgentRuntime } from "./CaseAgentRuntime";
+import type { CaseLifecycleService, GuardedClosureResult } from "./CaseLifecycleService";
 
 type CaseAssistDb = typeof appDb;
 
@@ -31,11 +32,56 @@ export type CaseAssistRunResult = {
 	guardrailResult?: GuardedClosureResult;
 };
 
+function createLocalMcpClient(
+	database: CaseAssistDb,
+	options: { embeddingClient?: EmbeddingClient } = {},
+) {
+	const tools = createMcpTools(database as never, {
+		embeddingClient: options.embeddingClient,
+	});
+
+	return {
+		connect: async () => {},
+		listTools: async () => ({
+			tools: listMcpTools(tools).map((tool) => ({
+				name: tool.name,
+				description: tool.description,
+				inputSchema: tool.inputSchema,
+			})),
+		}),
+		callTool: async ({
+			name,
+			arguments: args,
+		}: {
+			name: string;
+			arguments: Record<string, unknown>;
+		}) => {
+			const matched = tools.find((tool) => tool.name === name);
+			if (!matched) {
+				return {
+					isError: true,
+					content: [{ type: "text", text: `Tool not found: ${name}` }],
+				};
+			}
+			const result = await matched.execute(args);
+			return {
+				isError: false,
+				structuredContent: result,
+				content: [{ type: "text", text: JSON.stringify(result) }],
+			};
+		},
+		close: async () => {},
+	};
+}
+
 export class CaseAssistOrchestrator {
 	constructor(
 		private readonly db: CaseAssistDb,
 		private readonly lifecycle: Pick<CaseLifecycleService, "evaluateGuardedClosureAction">,
-		private readonly options: { embeddingClient?: EmbeddingClient } = {},
+		private readonly options: {
+			embeddingClient?: EmbeddingClient;
+			baseUrl?: string;
+		} = {},
 	) {}
 
 	async run(input: {
@@ -44,62 +90,33 @@ export class CaseAssistOrchestrator {
 		confidenceThreshold: number;
 		nowIso: string;
 	}): Promise<CaseAssistRunResult> {
-		const tools = createMcpTools(this.db as never, {
-			embeddingClient: this.options.embeddingClient,
+		const runtime = new CaseAgentRuntime(this.db, this.lifecycle, {
+				baseUrl: this.options.baseUrl,
+				now: () => input.nowIso,
+				createMcpClient: this.options.baseUrl
+					? undefined
+					: async () => createLocalMcpClient(this.db, this.options),
 		});
-		const bundleTool = tools.find((tool) => tool.name === "get_case_context_bundle");
-		if (!bundleTool) {
-			throw new Error("MCP tool get_case_context_bundle is unavailable.");
-		}
-		const bundle = (await bundleTool.execute({
-			caseId: input.caseId,
-			relatedCasesLimit: 5,
-			relatedFactsLimit: 5,
-		})) as CaseContextBundle;
 
-		const predicate = bundle.case.closurePredicate ?? null;
-		const matchingEvidence =
-			predicate === null
-				? []
-				: bundle.relatedFacts.filter((result) => {
-						const key = result.payload?.key;
-						const value = result.payload?.value;
-						return key === predicate && typeof value === "string" && factValueImpliesClosure(value);
-					});
-		const recommendation: CaseAssistRecommendation =
-			predicate && matchingEvidence.length > 0
-				? {
-						proposedAction: "close_case",
-						confidence: 0.9,
-						why: `Closure predicate ${predicate} has supporting evidence.`,
-					}
+		const result = await runtime.run(input);
+		const debugBundle = result.debugBundle as CaseContextBundle | undefined;
+		const bundle =
+			debugBundle?.case?.id
+				? debugBundle
 				: {
-						proposedAction: "keep_open",
-						confidence: 0.6,
-						why: "No reliable closure evidence found in related context.",
-					};
-
-		if (recommendation.proposedAction !== "close_case") {
-			return {
-				bundle,
-				recommendation,
+				case: { id: input.caseId },
+				relatedCases: [],
+				relatedFacts: [],
 			};
-		}
-
-		const guardrailResult = await this.lifecycle.evaluateGuardedClosureAction({
-			caseId: input.caseId,
-			propertyId: input.propertyId,
-			proposedAction: "close_case",
-			proposedConfidence: recommendation.confidence,
-			confidenceThreshold: input.confidenceThreshold,
-			nowIso: input.nowIso,
-			contextSummary: recommendation.why,
-		});
 
 		return {
 			bundle,
-			recommendation,
-			guardrailResult,
+			recommendation: {
+				proposedAction: result.recommendation.proposedAction,
+				confidence: result.recommendation.confidence,
+				why: result.recommendation.summary,
+			},
+			guardrailResult: result.guardrailResult,
 		};
 	}
 }

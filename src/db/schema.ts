@@ -1,6 +1,7 @@
 import { index } from "drizzle-orm/pg-core";
 import {
 	boolean,
+	integer,
 	pgTable,
 	primaryKey,
 	real,
@@ -153,5 +154,46 @@ export const caseActionTraces = pgTable("case_action_traces", {
 	confidenceThreshold: real("confidenceThreshold").notNull(),
 	evidenceFactIds: text("evidenceFactIds").notNull(),
 	contextSummary: text("contextSummary").notNull(),
+	createdAt: text("createdAt").notNull(),
+});
+
+export const agentRuns = pgTable("agent_runs", {
+	id: text("id").primaryKey(),
+	caseId: text("caseId")
+		.notNull()
+		.references(() => cases.id),
+	model: text("model").notNull(),
+	status: text("status").notNull(),
+	finalRecommendationJson: text("finalRecommendationJson"),
+	guardrailTraceId: text("guardrailTraceId").references(() => caseActionTraces.id),
+	startedAt: text("startedAt").notNull(),
+	finishedAt: text("finishedAt"),
+	createdAt: text("createdAt").notNull(),
+});
+
+export const agentRunMessages = pgTable("agent_run_messages", {
+	id: text("id").primaryKey(),
+	agentRunId: text("agentRunId")
+		.notNull()
+		.references(() => agentRuns.id),
+	stepIndex: integer("stepIndex").notNull(),
+	role: text("role").notNull(),
+	content: text("content").notNull(),
+	createdAt: text("createdAt").notNull(),
+});
+
+export const agentRunToolCalls = pgTable("agent_run_tool_calls", {
+	id: text("id").primaryKey(),
+	agentRunId: text("agentRunId")
+		.notNull()
+		.references(() => agentRuns.id),
+	stepIndex: integer("stepIndex").notNull(),
+	toolName: text("toolName").notNull(),
+	argumentsJson: text("argumentsJson").notNull(),
+	resultJson: text("resultJson"),
+	status: text("status").notNull(),
+	error: text("error"),
+	startedAt: text("startedAt").notNull(),
+	finishedAt: text("finishedAt"),
 	createdAt: text("createdAt").notNull(),
 });
