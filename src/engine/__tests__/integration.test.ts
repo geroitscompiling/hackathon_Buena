@@ -102,8 +102,8 @@ describe("Integration: ERP Ingestors Pipeline", () => {
 			extract: async () => [
 				{
 					category: "maintenance",
-					key: "heating_issue",
-					value: "reported",
+					key: "repair",
+					value: "Am 24.10. wurde ein Heizungsproblem in Wohnung LIE-001-H1-A1 gemeldet.",
 					confidenceScore: 0.92,
 				},
 			],
@@ -131,7 +131,7 @@ describe("Integration: ERP Ingestors Pipeline", () => {
 			confidenceScore: buildingFacts[0].confidenceScore,
 		});
 
-		const storedFacts = await db.select().from(facts).where(eq(facts.key, "heating_issue"));
+		const storedFacts = await db.select().from(facts).where(eq(facts.key, "repair"));
 		expect(storedFacts).toHaveLength(1);
 		expect(storedFacts[0].isGoldStandard).toBe(false);
 	});

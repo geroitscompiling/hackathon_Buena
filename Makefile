@@ -8,7 +8,7 @@ help:
 	@echo "  make db-start     - start local Postgres + pgvector"
 	@echo "  make db-stop      - stop local Postgres + pgvector"
 	@echo "  make db-reset     - reset local Postgres volume data"
-	@echo "  make db-setup     - push schema and seed clean db"
+	@echo "  make db-setup     - push schema on a clean db"
 	@echo "  make run-initial  - reset db and run baseline dry-run (live AI)"
 	@echo "  make run-initial-live - run baseline dry-run with live AI"
 	@echo "  make run-initial-mock - run baseline dry-run with deterministic mocks"
@@ -41,7 +41,6 @@ db-reset:
 db-setup: db-start
 	docker compose exec -T postgres psql -U postgres -d buena -c "CREATE EXTENSION IF NOT EXISTS vector;"
 	DATABASE_URL=$(DATABASE_URL) pnpm run db:push
-	DATABASE_URL=$(DATABASE_URL) pnpm run db:seed
 
 run-initial-live: db-reset db-setup
 	DATABASE_URL=$(DATABASE_URL) pnpm run dry-run:baseline

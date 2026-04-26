@@ -19,7 +19,7 @@ make run-initial
 
 Key targets:
 - `make db-reset` recreates the local Postgres volume for a clean database state
-- `make db-setup` runs schema push + seed on a clean DB
+- `make db-setup` runs schema push on a clean DB
 - `make run-initial` executes baseline dry-run in live mode (stage step 1)
 - `make run-history-live` replays history in live mode with MCP-enabled flow (stage step 2)
 - `make run-stage-live` runs the stage sequence (`run-initial` then `run-history-live`)
@@ -30,11 +30,10 @@ Key targets:
 
 ## Database Setup
 
-Initialize the SQLite database and seed initial test data:
+Initialize the database schema:
 
 ```bash
 pnpm run db:push
-pnpm run db:seed
 ```
 
 ## Initial Setup from Test Data

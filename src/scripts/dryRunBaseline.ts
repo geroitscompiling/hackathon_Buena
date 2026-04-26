@@ -31,8 +31,8 @@ async function main() {
               return [
                 {
                   category: "maintenance",
-                  key: "email_signal_detected",
-                  value: true,
+                  key: "repair",
+                  value: "Am 24.10. wurde eine zusaetzliche Heizungsreparatur fuer LIE-001-H1-A1 angefragt.",
                   confidenceScore: 0.91,
                 },
               ];
@@ -40,8 +40,8 @@ async function main() {
             return [
               {
                 category: "financial",
-                key: "invoice_signal_detected",
-                value: true,
+                key: "payment",
+                value: "Die Rechnung 20251203_DL-015_INV-00184 ist weiterhin offen.",
                 confidenceScore: 0.88,
               },
             ];
