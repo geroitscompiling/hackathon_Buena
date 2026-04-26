@@ -409,6 +409,82 @@ describe("CaseAgentRuntime", () => {
 		}
 	});
 
+	it("skips MCP connection and generateText when case status is already resolved", async () => {
+		const testDb = await createPostgresTestDb();
+		const db = testDb.db;
+		await db.insert(schema.properties).values({
+			id: "LIE-014",
+			name: "Terminal Property",
+		});
+		await db.insert(schema.houses).values({
+			id: "LIE-014-H1",
+			propertyId: "LIE-014",
+			name: "House 1",
+		});
+		await db.insert(schema.apartments).values({
+			id: "LIE-014-H1-A1",
+			houseId: "LIE-014-H1",
+			name: "Apartment 1",
+		});
+		await db.insert(schema.users).values({
+			id: "user-14",
+			name: "Owner",
+			email: "owner14@example.com",
+		});
+		await db.insert(schema.cases).values({
+			id: "runtime-case-resolved",
+			propertyId: "LIE-014",
+			houseId: "LIE-014-H1",
+			apartmentId: "LIE-014-H1-A1",
+			ownerUserId: "user-14",
+			caseKey: "a:LIE-014-H1-A1|test|resolved",
+			closurePredicate: "invoice_paid",
+			title: "Done case",
+			summary: "Already closed.",
+			status: "resolved",
+			createdAt: "2026-04-26T09:00:00.000Z",
+			updatedAt: "2026-04-26T09:00:00.000Z",
+		});
+
+		const connect = vi.fn();
+		const lifecycle = new CaseLifecycleService(db);
+
+		try {
+			vi.mocked(generateText).mockClear();
+			const runtime = new CaseAgentRuntime(db, lifecycle, {
+				now: () => "2026-04-26T10:00:00.000Z",
+				createMcpClient: async () => ({
+					connect,
+					listTools: async () => ({ tools: [] }),
+					callTool: async () => ({ isError: true, content: [] }),
+					close: async () => {},
+				}),
+			});
+
+			const result = await runtime.run({
+				caseId: "runtime-case-resolved",
+				propertyId: "LIE-014",
+				confidenceThreshold: 0.8,
+			});
+
+			expect(connect).not.toHaveBeenCalled();
+			expect(vi.mocked(generateText).mock.calls.length).toBe(0);
+			expect(result.recommendation).toEqual({
+				proposedAction: "close_case",
+				confidence: 1,
+				summary: "Case is already resolved.",
+				evidenceFactIds: [],
+			});
+			expect(result.guardrailResult).toEqual({
+				closed: false,
+				reason: "already_terminal",
+			});
+			expect(result.debugBundle).toEqual({ skippedBecauseTerminal: true });
+		} finally {
+			await testDb.close();
+		}
+	});
+
 	it("keeps investigating across multiple tool calls until a completion decision is reached", async () => {
 		const testDb = await seedRuntimeCase();
 		const db = testDb.db;
