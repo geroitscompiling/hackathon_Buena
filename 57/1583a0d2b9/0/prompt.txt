@@ -1,0 +1,18 @@
+There seems to be a bug (at least) wiuth the fact overview on:
+http://localhost:3000/facts
+
+It indicates that there are only 100 facts. Probably there are way more given the situation with the testdata. Can you doublechen and propose a solution?
+
+---
+
+Do we have the same cap on cases?
+
+---
+
+please do that
+
+---
+
+Okay, fair enough. Another part that we can do on the fly: SEARCH.
+
+I found two Issues: If I ask for 10.000 result I get an uncaught exception that my number is too big and it is max 50 and more important it misses a filter for "goldStandard" (Data from JSON and CSV)
