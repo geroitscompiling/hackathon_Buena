@@ -193,6 +193,23 @@ describe("db queries", () => {
 		expect(listed).toHaveLength(2);
 	});
 
+	it("filters cases by content query and status", async () => {
+		const byDraft = await listCases(db, { q: "draft", limit: 50 });
+		expect(byDraft.map((c) => c.id)).toEqual(["case-2"]);
+
+		expect(await countCases(db, { q: "draft" })).toBe(1);
+
+		const openOnly = await listCases(db, { status: "open", limit: 50 });
+		expect(openOnly).toHaveLength(2);
+
+		const byPropertyAndText = await listCases(db, {
+			propertyId: "LIE-001",
+			q: "door",
+			limit: 50,
+		});
+		expect(byPropertyAndText.map((c) => c.id)).toEqual(["case-1"]);
+	});
+
 	it("creates, updates, and deletes hierarchy records", async () => {
 		const property = await createProperty(db, {
 			id: "LIE-003",

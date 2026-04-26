@@ -3,9 +3,12 @@ import { z } from "zod";
 
 import { db, type AppDatabase } from "#/services/database";
 import * as schema from "#/db/schema";
+import {
+	SEMANTIC_SEARCH_MAX_RESULTS,
+	type SemanticSearchResult,
+} from "#/services/semanticSearchShared";
 
-/** Max rows returned after merging fact + case hits (each branch queries up to this many). */
-export const SEMANTIC_SEARCH_MAX_RESULTS = 10_000;
+export { SEMANTIC_SEARCH_MAX_RESULTS, type SemanticSearchResult };
 
 export type EmbeddingClient = {
 	embedDocument: (text: string) => Promise<number[]>;
@@ -29,14 +32,6 @@ export const semanticSearchSchema = z.object({
 });
 
 export type SemanticSearchArgs = z.infer<typeof semanticSearchSchema>;
-
-export type SemanticSearchResult = {
-	entityType: "fact" | "case";
-	id: string;
-	score: number;
-	snippet: string;
-	payload: unknown;
-};
 
 function toVectorLiteral(values: number[]): string {
 	return `[${values.join(",")}]`;

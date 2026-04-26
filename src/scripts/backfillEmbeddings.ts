@@ -7,18 +7,37 @@ import { SemanticIndexService } from "#/services/semanticIndex";
 dotenv.config({ path: [".env.local", ".env"] });
 
 async function main() {
-	const limit = Number.parseInt(process.env.EMBEDDING_BACKFILL_LIMIT ?? "100", 10);
-	if (Number.isNaN(limit) || limit <= 0) {
+	const batchSize = Number.parseInt(
+		process.env.EMBEDDING_BACKFILL_LIMIT ?? "500",
+		10,
+	);
+	if (Number.isNaN(batchSize) || batchSize <= 0) {
 		throw new Error("EMBEDDING_BACKFILL_LIMIT must be a positive integer");
 	}
 
-	const summary = await new SemanticIndexService(
-		db,
-		new GeminiEmbeddingService(),
-	).backfillMissingEmbeddings(limit);
+	const service = new SemanticIndexService(db, new GeminiEmbeddingService());
+	let factsTotal = 0;
+	let casesTotal = 0;
+	let batch: { factsUpdated: number; casesUpdated: number };
+	do {
+		batch = await service.backfillMissingEmbeddings(batchSize);
+		factsTotal += batch.factsUpdated;
+		casesTotal += batch.casesUpdated;
+		if (batch.factsUpdated > 0 || batch.casesUpdated > 0) {
+			console.log(
+				`Backfill batch: +${batch.factsUpdated} facts, +${batch.casesUpdated} cases`,
+			);
+		}
+	} while (batch.factsUpdated > 0 || batch.casesUpdated > 0);
 
 	console.log("Embedding backfill complete");
-	console.log(JSON.stringify(summary, null, 2));
+	console.log(
+		JSON.stringify(
+			{ factsUpdated: factsTotal, casesUpdated: casesTotal },
+			null,
+			2,
+		),
+	);
 	await queryClient.end();
 }
 

@@ -37,6 +37,8 @@ export interface PropertyHistoryReplaySummary {
     | "assistProposedClose"
     | "assistGuardedClosed"
     | "assistGuardedRejected"
+    | "embeddingBackfillFacts"
+    | "embeddingBackfillCases"
   >;
 }
 
@@ -118,6 +120,8 @@ export async function runPropertyHistoryReplay({
     assistProposedClose: 0,
     assistGuardedClosed: 0,
     assistGuardedRejected: 0,
+    embeddingBackfillFacts: 0,
+    embeddingBackfillCases: 0,
   };
 
   for (const dayDirectory of selectedDayDirectories) {
@@ -146,6 +150,8 @@ export async function runPropertyHistoryReplay({
     totals.assistProposedClose += summary.assistProposedClose;
     totals.assistGuardedClosed += summary.assistGuardedClosed;
     totals.assistGuardedRejected += summary.assistGuardedRejected;
+    totals.embeddingBackfillFacts += summary.embeddingBackfillFacts;
+    totals.embeddingBackfillCases += summary.embeddingBackfillCases;
   }
 
   return {
