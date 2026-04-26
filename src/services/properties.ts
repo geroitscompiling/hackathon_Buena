@@ -306,9 +306,13 @@ export async function createProperty(
 
 	await database.insert(schema.properties).values(values);
 
-	return database.query.properties.findFirst({
+	const created = await database.query.properties.findFirst({
 		where: eq(schema.properties.id, values.id),
 	});
+	if (!created) {
+		throw new Error(`Failed to load property after create: ${values.id}`);
+	}
+	return created;
 }
 
 export async function updateProperty(
@@ -322,9 +326,13 @@ export async function updateProperty(
 		.set({ name })
 		.where(eq(schema.properties.id, id));
 
-	return database.query.properties.findFirst({
+	const updated = await database.query.properties.findFirst({
 		where: eq(schema.properties.id, id),
 	});
+	if (!updated) {
+		throw new Error(`Failed to load property after update: ${id}`);
+	}
+	return updated;
 }
 
 export async function deleteProperty(

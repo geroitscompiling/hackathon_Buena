@@ -12,6 +12,7 @@ import { z } from "zod";
 
 import type { AppDrizzleDatabase } from "#/db/drizzleTypes.ts";
 import * as schema from "#/db/schema";
+import type { CaseClosurePredicate } from "#/engine/case/caseDomain";
 import { CaseLifecycleService, factSatisfiesClosurePredicate, loadFactScopes } from "#/engine/services/CaseLifecycleService";
 import { listCases, listCasesSchema } from "#/services/cases";
 import { listFacts, listFactsSchema } from "#/services/facts";
@@ -21,7 +22,7 @@ import {
 	listPropertyHierarchies,
 } from "#/services/properties";
 import {
-	SemanticIndexService,
+	type SemanticIndexService,
 	semanticSearch,
 	semanticSearchSchema,
 	type EmbeddingClient,
@@ -34,9 +35,16 @@ type McpToolDefinition<TSchema extends ZodTypeAny> = {
 	name: string;
 	description: string;
 	schema: TSchema;
-	/** MCP passes parsed JSON; validated with `schema` at runtime via service `parse` calls. */
+	/** Receives raw MCP tool arguments; use {@link withParsedArgs} so the inner handler is typed. */
 	execute: (args: unknown) => Promise<unknown>;
 };
+
+function withParsedArgs<S extends ZodTypeAny>(
+	schema: S,
+	run: (args: z.infer<S>) => Promise<unknown> | unknown,
+): (raw: unknown) => Promise<unknown> {
+	return async (raw) => Promise.resolve(run(schema.parse(raw)));
+}
 
 const semanticSearchToolSchema = semanticSearchSchema.strict();
 
@@ -381,44 +389,6 @@ async function loadCaseForContext(database: AppDatabase, caseId: string) {
 	return caseRow;
 }
 
-async function getLinkedFactsForCase(database: AppDatabase, caseId: string) {
-	const links = await database.query.factCases.findMany({
-		where: (factCases, { eq }) => eq(factCases.caseId, caseId),
-		with: {
-			fact: {
-				with: {
-					apartmentLinks: true,
-					caseLinks: true,
-					houseLinks: true,
-					source: true,
-				},
-			},
-		},
-	});
-
-	return links.map((link) =>
-		sanitizeToolPayload({
-			id: link.fact.id,
-			propertyId: link.fact.propertyId,
-			category: link.fact.category,
-			key: link.fact.key,
-			value: link.fact.value,
-			isGoldStandard: link.fact.isGoldStandard,
-			confidenceScore: link.fact.confidenceScore,
-			houseIds: link.fact.houseLinks.map((houseLink) => houseLink.houseId),
-			apartmentIds: link.fact.apartmentLinks.map((apartmentLink) => apartmentLink.apartmentId),
-			caseIds: link.fact.caseLinks.map((caseLink) => caseLink.caseId),
-			source: {
-				id: link.fact.source.id,
-				fileId: link.fact.source.fileId,
-				fileType: link.fact.source.fileType,
-				ingestionDate: link.fact.source.ingestionDate,
-				documentDate: link.fact.source.documentDate,
-			},
-		}),
-	);
-}
-
 function scopeFiltersForCase(caseRow: CaseRowWithScope) {
 	return {
 		propertyId: caseRow.propertyId,
@@ -486,6 +456,7 @@ async function searchFactsForCase(
 		{
 			query,
 			entityType: "fact",
+			goldStandard: "all",
 			...scope,
 			limit,
 		},
@@ -512,6 +483,7 @@ async function searchCasesForCase(
 		{
 			query,
 			entityType: "case",
+			goldStandard: "all",
 			...scope,
 			limit: limit + 1,
 		},
@@ -540,10 +512,11 @@ async function getCaseClosureEvidence(
 			matchingFacts: [],
 		};
 	}
+	const closurePredicate = caseRow.closurePredicate as CaseClosurePredicate;
 
 	const facts = await database.query.facts.findMany({
 		where: (fact, { and, eq }) =>
-			and(eq(fact.propertyId, caseRow.propertyId), eq(fact.key, caseRow.closurePredicate!)),
+			and(eq(fact.propertyId, caseRow.propertyId), eq(fact.key, closurePredicate)),
 		limit: args.limit,
 		with: {
 			source: true,
@@ -553,7 +526,7 @@ async function getCaseClosureEvidence(
 	});
 	const scopeMap = await loadFactScopes(database, facts.map((fact) => fact.id));
 	const matchingFacts = facts
-		.filter((fact) => factSatisfiesClosurePredicate(fact.key, fact.value, caseRow.closurePredicate!))
+		.filter((fact) => factSatisfiesClosurePredicate(fact.key, fact.value, closurePredicate))
 		.filter((fact) => {
 			const scope = scopeMap.get(fact.id);
 			if (!scope) {
@@ -625,6 +598,7 @@ async function getCaseContextBundle(
 		await runSemanticSearchSafe(dbHandle, {
 			query: queryText,
 			entityType: "case",
+			goldStandard: "all",
 			...scopeFilters,
 			limit: args.relatedCasesLimit + 1,
 		}, options)
@@ -634,14 +608,15 @@ async function getCaseContextBundle(
 	const relatedFacts = await runSemanticSearchSafe(dbHandle, {
 		query: queryText,
 		entityType: "fact",
+		goldStandard: "all",
 		...scopeFilters,
 		limit: args.relatedFactsLimit,
 	}, options);
 
 	return {
 		case: sanitizeToolPayload(caseRow),
-		relatedCases: sanitizeToolPayload(relatedCases),
-		relatedFacts: sanitizeToolPayload(relatedFacts),
+		relatedCases,
+		relatedFacts,
 	};
 }
 
@@ -689,76 +664,88 @@ export function createMcpTools(
 			description:
 				"Lists properties together with their houses and apartments.",
 			schema: listPropertiesSchema,
-			execute: (args) => listPropertyHierarchies(database, args),
+			execute: withParsedArgs(listPropertiesSchema, (args) =>
+				listPropertyHierarchies(database, args),
+			),
 		},
 		{
 			name: "list_facts",
 			description:
 				"Lists facts with optional filtering by property, category, key, or source.",
 			schema: listFactsSchema,
-			execute: (args) => listFacts(database, args),
+			execute: withParsedArgs(listFactsSchema, (args) => listFacts(database, args)),
 		},
 		{
 			name: "list_cases",
 			description:
 				"Lists cases with optional filtering by scope, status, or owner.",
 			schema: listCasesSchema,
-			execute: (args) => listCases(database, args),
+			execute: withParsedArgs(listCasesSchema, (args) => listCases(database, args)),
 		},
 		{
 			name: "semantic_search",
 			description:
 				"Searches facts and cases by natural language using vector similarity.",
 			schema: semanticSearchToolSchema,
-			execute: (args) =>
+			execute: withParsedArgs(semanticSearchToolSchema, (args) =>
 				semanticSearch(embeddingClientFactory(), database, args),
+			),
 		},
 		{
 			name: "get_related_cases",
 			description:
 				"Gets semantically related cases for an existing case within its scope.",
 			schema: getRelatedCasesSchema,
-			execute: async (args: unknown) => {
-				const parsed = getRelatedCasesSchema.parse(args);
-				const bundle = await getCaseContextBundle(database, {
-					caseId: parsed.caseId,
-					relatedCasesLimit: parsed.limit,
-					relatedFactsLimit: 1,
-				}, options);
-				return onlyCases(bundle.relatedCases);
-			},
+			execute: withParsedArgs(getRelatedCasesSchema, async (parsed) => {
+				const bundle = await getCaseContextBundle(
+					database,
+					{
+						caseId: parsed.caseId,
+						relatedCasesLimit: parsed.limit,
+						relatedFactsLimit: 1,
+					},
+					options,
+				);
+				return sanitizeToolPayload(onlyCases(bundle.relatedCases));
+			}),
 		},
 		{
 			name: "get_related_facts",
 			description:
 				"Gets semantically related facts for an existing case within its scope.",
 			schema: getRelatedFactsSchema,
-			execute: async (args: unknown) => {
-				const parsed = getRelatedFactsSchema.parse(args);
-				const bundle = await getCaseContextBundle(database, {
-					caseId: parsed.caseId,
-					relatedCasesLimit: 1,
-					relatedFactsLimit: parsed.limit,
-				}, options);
-				return onlyFacts(bundle.relatedFacts);
-			},
+			execute: withParsedArgs(getRelatedFactsSchema, async (parsed) => {
+				const bundle = await getCaseContextBundle(
+					database,
+					{
+						caseId: parsed.caseId,
+						relatedCasesLimit: 1,
+						relatedFactsLimit: parsed.limit,
+					},
+					options,
+				);
+				return sanitizeToolPayload(onlyFacts(bundle.relatedFacts));
+			}),
 		},
 		{
 			name: "get_case_context_bundle",
 			description:
 				"Returns a single case context bundle with related cases and facts.",
 			schema: getCaseContextBundleSchema,
-			execute: (args: unknown) =>
-				getCaseContextBundle(database, getCaseContextBundleSchema.parse(args), {
-					embeddingClient: options.embeddingClient,
-				}),
+			execute: withParsedArgs(getCaseContextBundleSchema, async (args) =>
+				sanitizeToolPayload(
+					await getCaseContextBundle(database, args, {
+						embeddingClient: options.embeddingClient,
+					}),
+				),
+			),
 		},
 		{
 			name: "search_case_history",
 			description:
 				"Returns scoped historical facts and cases related to the current case.",
 			schema: searchCaseHistorySchema,
-			execute: async (args) => {
+			execute: withParsedArgs(searchCaseHistorySchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for search_case_history.");
 				}
@@ -773,14 +760,14 @@ export function createMcpTools(
 					relatedFacts,
 					relatedCases,
 				});
-			},
+			}),
 		},
 		{
 			name: "search_related_facts",
 			description:
 				"Searches scoped related facts for the current case.",
 			schema: searchRelatedFactsSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(searchRelatedFactsSchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for search_related_facts.");
 				}
@@ -792,14 +779,14 @@ export function createMcpTools(
 					buildCaseSearchQuery(caseRow, args.query),
 					options,
 				);
-			},
+			}),
 		},
 		{
 			name: "search_related_cases",
 			description:
 				"Searches scoped related cases for the current case.",
 			schema: searchRelatedCasesSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(searchRelatedCasesSchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for search_related_cases.");
 				}
@@ -811,54 +798,60 @@ export function createMcpTools(
 					buildCaseSearchQuery(caseRow, args.query),
 					options,
 				);
-			},
+			}),
 		},
 		{
 			name: "get_case_closure_evidence",
 			description:
 				"Returns scoped facts that satisfy the case closure predicate.",
 			schema: getCaseClosureEvidenceSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(getCaseClosureEvidenceSchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for get_case_closure_evidence.");
 				}
 				return getCaseClosureEvidence(database, args);
-			},
+			}),
 		},
 		{
 			name: "list_testfiles_directory",
 			description:
 				"Lists files and subdirectories inside the read-only testfiles dataset.",
 			schema: listTestfilesDirectorySchema,
-			execute: (args) => listTestfilesDirectory(args),
+			execute: withParsedArgs(listTestfilesDirectorySchema, (args) =>
+				listTestfilesDirectory(args),
+			),
 		},
 		{
 			name: "find_testfiles_files",
 			description:
 				"Recursively finds files inside the read-only testfiles dataset.",
 			schema: findTestfilesFilesSchema,
-			execute: (args) => findTestfilesFiles(args),
+			execute: withParsedArgs(findTestfilesFilesSchema, (args) =>
+				findTestfilesFiles(args),
+			),
 		},
 		{
 			name: "grep_testfiles",
 			description:
 				"Searches text-like files inside the read-only testfiles dataset for matching lines.",
 			schema: grepTestfilesSchema,
-			execute: (args) => grepTestfiles(args),
+			execute: withParsedArgs(grepTestfilesSchema, (args) => grepTestfiles(args)),
 		},
 		{
 			name: "read_testfiles_file",
 			description:
 				"Reads a bounded preview of a text-like file inside the read-only testfiles dataset.",
 			schema: readTestfilesFileSchema,
-			execute: (args) => readTestfilesFile(args),
+			execute: withParsedArgs(readTestfilesFileSchema, (args) =>
+				readTestfilesFile(args),
+			),
 		},
 		{
 			name: "link_fact_to_case",
 			description:
 				"Creates an explicit evidence link between a fact and a case.",
 			schema: linkFactToCaseSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(linkFactToCaseSchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for link_fact_to_case.");
 				}
@@ -875,13 +868,13 @@ export function createMcpTools(
 					factId: args.factId,
 					linked: true,
 				};
-			},
+			}),
 		},
 		{
 			name: "update_case_summary",
 			description: "Updates the summary of an existing case.",
 			schema: updateCaseSummarySchema,
-			execute: async (args) => {
+			execute: withParsedArgs(updateCaseSummarySchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for update_case_summary.");
 				}
@@ -898,13 +891,13 @@ export function createMcpTools(
 					summary: args.summary,
 					updated: true,
 				};
-			},
+			}),
 		},
 		{
 			name: "update_case_title",
 			description: "Updates the title of an existing case.",
 			schema: updateCaseTitleSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(updateCaseTitleSchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for update_case_title.");
 				}
@@ -921,13 +914,13 @@ export function createMcpTools(
 					title: args.title,
 					updated: true,
 				};
-			},
+			}),
 		},
 		{
 			name: "update_case_status",
 			description: "Updates the status of an existing case.",
 			schema: updateCaseStatusSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(updateCaseStatusSchema, async (args) => {
 				if (!database) {
 					throw new Error("Database handle is required for update_case_status.");
 				}
@@ -944,14 +937,14 @@ export function createMcpTools(
 					status: args.status,
 					updated: true,
 				};
-			},
+			}),
 		},
 		{
 			name: "request_case_closure",
 			description:
 				"Requests guarded closure of a case through the lifecycle service.",
 			schema: requestCaseClosureSchema,
-			execute: async (args) => {
+			execute: withParsedArgs(requestCaseClosureSchema, async (args) => {
 				if (!database || !lifecycle) {
 					throw new Error("Database handle is required for request_case_closure.");
 				}
@@ -969,7 +962,7 @@ export function createMcpTools(
 					caseId: args.caseId,
 					result,
 				});
-			},
+			}),
 		},
 	] as const satisfies readonly McpToolDefinition<ZodTypeAny>[];
 }
@@ -1003,9 +996,7 @@ function createMcpServer<
 			throw new Error(`Tool not found: ${request.params.name}`);
 		}
 
-		const result = await tool.execute(
-			tool.schema.parse(request.params.arguments ?? {}),
-		);
+		const result = await tool.execute(request.params.arguments ?? {});
 
 		return {
 			content: [

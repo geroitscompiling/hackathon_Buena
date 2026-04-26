@@ -110,20 +110,6 @@ const recommendationSchema = z.object({
 	evidenceFactIds: z.array(z.string()),
 });
 
-const investigationDecisionSchema = z.discriminatedUnion("status", [
-	z.object({
-		status: z.literal("continue"),
-		assistantMessage: z.string().min(1),
-		toolName: z.string().min(1),
-		toolArguments: z.record(z.string(), z.unknown()),
-	}),
-	z.object({
-		status: z.literal("done"),
-		assistantMessage: z.string().min(1),
-		recommendation: recommendationSchema,
-	}),
-]);
-
 const SYSTEM_PROMPT = [
 	"You are a property-management case assistant.",
 	"You will receive the current case and its directly linked evidence in the prompt.",

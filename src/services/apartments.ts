@@ -34,9 +34,13 @@ export async function createApartment(
 
 	await database.insert(schema.apartments).values(values);
 
-	return database.query.apartments.findFirst({
+	const created = await database.query.apartments.findFirst({
 		where: eq(schema.apartments.id, values.id),
 	});
+	if (!created) {
+		throw new Error(`Failed to load apartment after create: ${values.id}`);
+	}
+	return created;
 }
 
 export async function updateApartment(
@@ -50,9 +54,13 @@ export async function updateApartment(
 		.set({ name })
 		.where(eq(schema.apartments.id, id));
 
-	return database.query.apartments.findFirst({
+	const updated = await database.query.apartments.findFirst({
 		where: eq(schema.apartments.id, id),
 	});
+	if (!updated) {
+		throw new Error(`Failed to load apartment after update: ${id}`);
+	}
+	return updated;
 }
 
 export async function deleteApartment(

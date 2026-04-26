@@ -34,9 +34,13 @@ export async function createHouse(
 
 	await database.insert(schema.houses).values(values);
 
-	return database.query.houses.findFirst({
+	const created = await database.query.houses.findFirst({
 		where: eq(schema.houses.id, values.id),
 	});
+	if (!created) {
+		throw new Error(`Failed to load house after create: ${values.id}`);
+	}
+	return created;
 }
 
 export async function updateHouse(
@@ -50,9 +54,13 @@ export async function updateHouse(
 		.set({ name })
 		.where(eq(schema.houses.id, id));
 
-	return database.query.houses.findFirst({
+	const updated = await database.query.houses.findFirst({
 		where: eq(schema.houses.id, id),
 	});
+	if (!updated) {
+		throw new Error(`Failed to load house after update: ${id}`);
+	}
+	return updated;
 }
 
 export async function deleteHouse(

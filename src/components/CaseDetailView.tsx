@@ -454,20 +454,6 @@ function isVectorField(key: string) {
 	);
 }
 
-function formatToolTimeRange(startedAt: string, finishedAt: string | null) {
-	if (!finishedAt) {
-		return formatDateTime(startedAt);
-	}
-
-	return `${formatTimeOnly(startedAt)} - ${formatTimeOnly(finishedAt)}`;
-}
-
-function formatTimeOnly(value: string) {
-	return new Date(value).toLocaleString("en-GB", {
-		timeStyle: "short",
-	});
-}
-
 function buildTranscriptEntries(run: CaseDetail["agentRuns"][number]) {
 	return [
 		...run.messages
