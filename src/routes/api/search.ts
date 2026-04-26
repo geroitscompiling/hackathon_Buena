@@ -11,6 +11,7 @@ export const Route = createFileRoute("/api/search")({
 				const result = await semanticSearch(new GeminiEmbeddingService(), undefined, {
 					query: searchParams.get("query") ?? "",
 					entityType: searchParams.get("entityType") ?? undefined,
+					goldStandard: searchParams.get("goldStandard") ?? undefined,
 					propertyId: searchParams.get("propertyId") ?? undefined,
 					houseId: searchParams.get("houseId") ?? undefined,
 					apartmentId: searchParams.get("apartmentId") ?? undefined,
