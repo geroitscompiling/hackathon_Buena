@@ -1,0 +1,9 @@
+Huston we have a problem: the tests are failing (make test).
+However, UI assume It's an inssue with db or hanging processes rather that real failures. Well, I just received an PR and merged it to the main branch so might be shit as well. 
+I did a DB reset for  now and pnpm install. That solved some missing package issues. in addition 7 tests are skipped (why?)
+
+@/Users/gerograms/.cursor/projects/Users-gerograms-workspace-hackathon/terminals/1.txt:899-1026
+
+---
+
+Postgres is on dicker, maybe resstart docker here if it is too slow?

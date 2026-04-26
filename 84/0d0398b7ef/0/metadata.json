@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.5.6",
+  "checkpoint_id": "840d0398b7ef",
+  "session_id": "3622d28a-8bc6-42bf-992c-e290e6f0e048",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-26T04:12:32.679519Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "package-lock.json",
+    "vite.config.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "default",
+  "turn_id": "3071bfc6ab08",
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-26T04:12:32.677157Z",
+    "agent_lines": 2,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 2,
+    "total_committed": 2,
+    "total_lines_changed": 4,
+    "agent_percentage": 50,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 1087,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "package-lock.json": 1087
+      },
+      "user_removed_per_file": {
+        "package-lock.json": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
