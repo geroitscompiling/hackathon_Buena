@@ -1,0 +1,37 @@
+Findings
+High — /api/mcp route does not inject DB-backed tools, so MCP tool calls can fail at runtime.
+The route calls handleMcpHttpRequest(request) with default tools, and default createMcpTools() builds handlers without a database handle. Many tools (list_facts, list_cases, get_case_context_bundle, etc.) require DB access.
+
+mcp.ts
+Lines 8-10
+			DELETE: ({ request }) => handleMcpHttpRequest(request),
+			GET: ({ request }) => handleMcpHttpRequest(request),
+			POST: ({ request }) => handleMcpHttpRequest(request),
+
+server.ts
+Lines 254-257
+export async function handleMcpHttpRequest(
+	request: Request,
+	tools = createMcpTools(),
+) {
+This is masked in tests because they pass a custom toolRegistry with DB:
+
+
+server.test.ts
+Lines 121-122
+			toolRegistry,
+Open questions / assumptions
+I’m assuming /api/mcp is intended to be live/usable in app runtime (not only in direct unit tests). If so, it should pass createMcpTools(db) from route wiring.
+If MCP route is intentionally disabled and only test/demo code uses direct tool creation, this should be documented explicitly.
+What I verified
+Epic 4 focused suites all pass:
+server.test.ts
+registry.test.ts
+semanticIndex.test.ts
+CaseAssistOrchestrator.test.ts
+judgeHistoryMcpAssist.integration.test.ts
+Lint is clean (pnpm lint).
+Quick verdict
+Core Epic 4 implementation looks strong and test-backed.
+One critical integration gap remains: route-level MCP wiring without DB injection.
+Fix that and this looks ready for commit/review.
