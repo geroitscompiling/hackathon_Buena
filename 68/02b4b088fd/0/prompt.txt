@@ -1,0 +1,4 @@
+Under Cases: 
+http://localhost:3000/cases?q=
+
+Please remove the Column Owner from overview as it is currently default
