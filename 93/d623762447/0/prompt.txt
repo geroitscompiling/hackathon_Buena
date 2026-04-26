@@ -1,0 +1,6 @@
+Might be a bit of a too easy request but here it comes:
+Give possibility for humans to edit/add facts. In addition make sure that facts CAN have a "Fact valid from DATE" field populated in the flows. Right now we only have a digested time Stamp
+
+---
+
+please show me the command to apply the column locally
