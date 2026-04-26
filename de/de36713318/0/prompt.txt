@@ -1,1 +1,5 @@
 for the POC to work another dev implemented Posstgres Vector DB (dockerized). Can you check if we have two DB systems now in the Repo one local.db on SQLIte and the cevtor monster? Might it make sense to refactor this?
+
+---
+
+Okay, do the light cleanup here now please.
