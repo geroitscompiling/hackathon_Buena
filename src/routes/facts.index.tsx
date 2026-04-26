@@ -64,7 +64,7 @@ function FactsPage() {
 			: `${facts.length.toLocaleString()} facts loaded`;
 
 	return (
-		<main className="px-4 py-6 md:px-6">
+		<main className="min-w-0 max-w-full px-4 py-6 md:px-6">
 			<section className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<p className="mb-2 text-sm text-muted-foreground">Facts</p>
@@ -75,6 +75,10 @@ function FactsPage() {
 							view. The full total is {total.toLocaleString()}.
 						</p>
 					) : null}
+					<p className="mt-2 text-sm text-muted-foreground">
+						Create a manual fact with the Add fact button. Change an existing row
+						with Edit in the first column of the table.
+					</p>
 				</div>
 				<Button
 					type="button"

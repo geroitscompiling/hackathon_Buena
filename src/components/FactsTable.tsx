@@ -25,40 +25,99 @@ export function FactsTable({ facts, onEditFact }: FactsTableProps) {
 	}
 
 	return (
-		<div className="overflow-hidden rounded-lg border bg-card">
-			<div className="overflow-x-auto">
-				<Table>
+		<div className="w-full min-w-0 max-w-full overflow-hidden rounded-lg border bg-card">
+			<Table className="table-fixed">
 					<TableHeader>
 						<TableRow>
-							<TableHead>Topic</TableHead>
-							<TableHead>Value</TableHead>
-							<TableHead>Property</TableHead>
-							<TableHead>Scope</TableHead>
-							<TableHead>Source</TableHead>
-							<TableHead>Valid from</TableHead>
-							<TableHead>Meta</TableHead>
-							{onEditFact ? <TableHead className="w-28">Actions</TableHead> : null}
+							{onEditFact ? (
+								<TableHead className="w-[7%] align-top whitespace-normal">
+									Actions
+								</TableHead>
+							) : null}
+							<TableHead
+								className={
+									onEditFact ? "w-[13%] align-top whitespace-normal" : "w-[14%] align-top whitespace-normal"
+								}
+							>
+								Topic
+							</TableHead>
+							<TableHead
+								className={
+									onEditFact ? "w-[31%] align-top whitespace-normal" : "w-[32%] align-top whitespace-normal"
+								}
+							>
+								Value
+							</TableHead>
+							<TableHead
+								className={
+									onEditFact ? "w-[11%] align-top whitespace-normal" : "w-[12%] align-top whitespace-normal"
+								}
+							>
+								Property
+							</TableHead>
+							<TableHead
+								className={
+									onEditFact ? "w-[13%] align-top whitespace-normal" : "w-[14%] align-top whitespace-normal"
+								}
+							>
+								Scope
+							</TableHead>
+							<TableHead
+								className={
+									onEditFact ? "w-[11%] align-top whitespace-normal" : "w-[12%] align-top whitespace-normal"
+								}
+							>
+								Source
+							</TableHead>
+							<TableHead
+								className={
+									onEditFact ? "w-[7%] align-top whitespace-normal" : "w-[8%] align-top whitespace-normal"
+								}
+							>
+								Valid from
+							</TableHead>
+							<TableHead
+								className={
+									onEditFact ? "w-[7%] align-top whitespace-normal" : "w-[8%] align-top whitespace-normal"
+								}
+							>
+								Meta
+							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{facts.map((fact) => (
 							<TableRow key={fact.id}>
-								<TableCell className="min-w-36 align-top">
+								{onEditFact ? (
+									<TableCell className="align-top whitespace-normal">
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={() => onEditFact(fact)}
+										>
+											Edit
+										</Button>
+									</TableCell>
+								) : null}
+								<TableCell className="min-w-0 align-top whitespace-normal break-words">
 									<div className="space-y-1">
 										<p className="font-semibold">{fact.key}</p>
-										<p className="text-xs text-muted-foreground">{fact.id}</p>
+										<p className="break-all text-xs text-muted-foreground">{fact.id}</p>
 									</div>
 								</TableCell>
-								<TableCell className="min-w-40 align-top">
+								<TableCell className="min-w-0 align-top whitespace-normal break-words [overflow-wrap:anywhere]">
 									{fact.value}
 								</TableCell>
-								<TableCell className="min-w-44 align-top">
+								<TableCell className="min-w-0 align-top whitespace-normal break-words">
 									<div className="space-y-1">
 										<p className="font-medium">{fact.property.name}</p>
-										<p className="text-xs text-muted-foreground">{fact.property.id}</p>
+										<p className="break-all text-xs text-muted-foreground">
+											{fact.property.id}
+										</p>
 									</div>
 								</TableCell>
-								<TableCell className="min-w-56 align-top">
+								<TableCell className="min-w-0 align-top whitespace-normal break-words">
 									<div className="flex flex-wrap gap-1.5">
 										{fact.houseIds.map((houseId) => (
 											<Badge key={houseId} variant="outline">
@@ -80,20 +139,20 @@ export function FactsTable({ facts, onEditFact }: FactsTableProps) {
 										) : null}
 									</div>
 								</TableCell>
-								<TableCell className="min-w-36 align-top">
+								<TableCell className="min-w-0 align-top whitespace-normal break-words">
 									<div className="space-y-1">
-										<p className="font-medium">{fact.source.fileId}</p>
+										<p className="break-words font-medium">{fact.source.fileId}</p>
 										<p className="text-xs uppercase tracking-wide text-muted-foreground">
 											{fact.source.fileType}
 										</p>
 									</div>
 								</TableCell>
-								<TableCell className="min-w-28 align-top text-sm">
+								<TableCell className="min-w-0 align-top text-sm whitespace-normal break-words">
 									{fact.validFrom ?? (
 										<span className="text-muted-foreground">—</span>
 									)}
 								</TableCell>
-								<TableCell className="min-w-36 align-top">
+								<TableCell className="min-w-0 align-top whitespace-normal break-words">
 									<div className="flex flex-wrap gap-1.5">
 										<Badge variant="outline">{fact.category}</Badge>
 										<Badge variant="secondary">
@@ -102,23 +161,10 @@ export function FactsTable({ facts, onEditFact }: FactsTableProps) {
 										{fact.isGoldStandard ? <Badge>Gold</Badge> : null}
 									</div>
 								</TableCell>
-								{onEditFact ? (
-									<TableCell className="align-top">
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={() => onEditFact(fact)}
-										>
-											Edit
-										</Button>
-									</TableCell>
-								) : null}
 							</TableRow>
 						))}
 					</TableBody>
-				</Table>
-			</div>
+			</Table>
 		</div>
 	);
 }

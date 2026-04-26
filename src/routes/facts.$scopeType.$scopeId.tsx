@@ -80,7 +80,7 @@ function FactsScopePage() {
 	const [editingFact, setEditingFact] = useState<FactListItem | null>(null);
 
 	return (
-		<main className="px-4 py-6 md:px-6">
+		<main className="min-w-0 max-w-full px-4 py-6 md:px-6">
 			<section className="mb-5 flex flex-wrap items-center justify-between gap-4">
 				<div>
 					<p className="mb-2 text-sm text-muted-foreground">Facts</p>
