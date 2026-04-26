@@ -7,11 +7,27 @@ import { SearchResults } from "#/components/SearchResults";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import { cn } from "#/lib/utils";
+import { cn, formatIntegerGrouped } from "#/lib/utils";
 import {
 	SEMANTIC_SEARCH_MAX_RESULTS,
+	type SearchIndexStats,
 	type SemanticSearchResult,
 } from "#/services/semanticSearchShared";
+
+function parseIndexStats(response: Response): SearchIndexStats {
+	return {
+		factsIndexed: Number.parseInt(
+			response.headers.get("X-Search-Index-Facts") ?? "0",
+			10,
+		),
+		casesIndexed: Number.parseInt(
+			response.headers.get("X-Search-Index-Cases") ?? "0",
+			10,
+		),
+		factsTotal: Number.parseInt(response.headers.get("X-Search-Total-Facts") ?? "0", 10),
+		casesTotal: Number.parseInt(response.headers.get("X-Search-Total-Cases") ?? "0", 10),
+	};
+}
 
 const ENTITY_TYPE_OPTIONS = [
 	{ value: "all" as const, label: "All entities" },
@@ -70,6 +86,7 @@ function SearchPage() {
 	const [results, setResults] = useState<SemanticSearchResult[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [searchError, setSearchError] = useState<string | null>(null);
+	const [indexStats, setIndexStats] = useState<SearchIndexStats | null>(null);
 	const [query, setQuery] = useState(search.query);
 	const [entityType, setEntityType] = useState(search.entityType);
 	const [propertyId, setPropertyId] = useState(search.propertyId ?? "");
@@ -103,6 +120,8 @@ function SearchPage() {
 			if (!search.query.trim()) {
 				setResults([]);
 				setSearchError(null);
+				setIndexStats(null);
+				setIsLoading(false);
 				return;
 			}
 
@@ -119,12 +138,20 @@ function SearchPage() {
 			if (search.apartmentId) params.set("apartmentId", search.apartmentId);
 
 			const response = await fetch(`/api/search?${params.toString()}`);
+			const stats = parseIndexStats(response);
+			const payload = await response.json();
 			if (!response.ok) {
-				throw new Error(`Search failed with status ${response.status}`);
+				if (!cancelled) {
+					setIndexStats(stats);
+				}
+				const body = payload as { error?: string };
+				throw new Error(
+					typeof body.error === "string" ? body.error : `Search failed (${response.status})`,
+				);
 			}
-			const payload = (await response.json()) as SemanticSearchResult[];
 			if (!cancelled) {
-				setResults(payload);
+				setResults(payload as SemanticSearchResult[]);
+				setIndexStats(stats);
 				setIsLoading(false);
 			}
 		}
@@ -280,11 +307,11 @@ function SearchPage() {
 									value={limit}
 									onChange={(event) => setLimit(event.target.value)}
 									inputMode="numeric"
-									placeholder={`max ${SEMANTIC_SEARCH_MAX_RESULTS.toLocaleString()}`}
+									placeholder={`max ${formatIntegerGrouped(SEMANTIC_SEARCH_MAX_RESULTS)}`}
 									aria-describedby="search-limit-hint"
 								/>
 								<p id="search-limit-hint" className="mt-1 text-xs text-muted-foreground">
-									Capped at {SEMANTIC_SEARCH_MAX_RESULTS.toLocaleString()} per search.
+									Capped at {formatIntegerGrouped(SEMANTIC_SEARCH_MAX_RESULTS)} per search.
 								</p>
 							</div>
 							<Button type="submit" className="min-w-28 shrink-0">
@@ -299,7 +326,11 @@ function SearchPage() {
 				<div>
 					<p className="text-sm text-muted-foreground">Results</p>
 					<h2 className="text-xl font-semibold">
-						{isLoading ? "Searching..." : `${results.length} matches`}
+						{!search.query.trim()
+							? "Submit a query to search"
+							: isLoading
+								? "Searching..."
+								: `${results.length} matches`}
 					</h2>
 					{searchError ? (
 						<p className="mt-2 text-sm text-destructive" role="alert">
@@ -309,7 +340,12 @@ function SearchPage() {
 				</div>
 			</section>
 
-			<SearchResults results={results} query={search.query} />
+			<SearchResults
+				results={results}
+				query={search.query}
+				entityType={search.entityType}
+				indexStats={indexStats}
+			/>
 		</main>
 	);
 }

@@ -9,3 +9,11 @@ export type SemanticSearchResult = {
 	snippet: string;
 	payload: unknown;
 };
+
+/** Populated from `/api/search` response headers (client-safe). */
+export type SearchIndexStats = {
+	factsIndexed: number;
+	casesIndexed: number;
+	factsTotal: number;
+	casesTotal: number;
+};
