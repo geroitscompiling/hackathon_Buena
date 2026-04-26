@@ -19,17 +19,17 @@ By demo day, we must show one property whose timeline evolves by replaying `day-
 
 ### Already implemented
 
-1. SQLite/Drizzle schema for hierarchy, facts, cases, users, source tracking, and relation tables.
+1. Postgres + Drizzle baseline with local Docker startup via `make db-setup` (including `pgvector` extension).
 2. Core ERP ingestion (`JsonIngestor`, `CsvIngestor`) producing gold facts.
-3. LLM stack (`Gatekeeper`, `FactExtractor`, `GeminiService`) with `temperature: 0`, model split, retry/backoff, and throttling delay.
-4. Baseline dry-run and passing test suite.
+3. R1 and R2 behavior is implemented in code: hierarchy resolution, gold protection path, case extraction/lifecycle, auto-close rules, and fact-case linking.
+4. Semantic search is available via API + MCP and integrated into frontend search page.
+5. Baseline/history dry-runs and passing test suite.
 
 ### Missing / incomplete
 
-1. Case extraction + upsert/linking from unstructured docs into `cases` / `fact_cases` (facts-only history today).
-2. Deterministic ERP overwrite protection policy in write path (POC slice exists; extend as needed).
-3. Hash-based caching for Gatekeeper/Extractor outputs.
-4. Full timeline event model (`ingestion_events`) for UI/MCP (optional beyond POC counters).
+1. Epic 4 hardening of semantic retrieval + MCP tooling + agent loop behavior (see Epic 4 tickets below).
+2. Hash-based caching for Gatekeeper/Extractor/CaseExtractor outputs.
+3. Full timeline event model (`ingestion_events`) for UI/MCP (optional beyond POC counters).
 
 ## 3. Data and Domain Contracts (Locked)
 
@@ -196,6 +196,56 @@ A **case** is an operational workflow record stored in `cases` (title, summary, 
 - **R3.3 [TEST]**: Add tests for cache invalidation when file content changes.
 - **R3.4**: Extend diagnose script output to include cache hit/miss and recommended model pairing for demo runs.
 
+### Epic 4 (Legacy Epic 4): MCP + Semantic Retrieval + Agentic Case Assist
+*Goal: Make MCP + semantic retrieval reliable and useful for automated case assistance in the demo.*
+
+> [!NOTE]
+> Feedback integrated: semantic search API + MCP + frontend page are already in place, and stack moved to Postgres/pgvector.
+> Epic 4 now focuses on productionizing that path for the POC demo and agent workflows.
+
+- **E4.1 [TEST] Semantic Retrieval Quality Gates**
+  - Add dataset-backed tests for top-k relevance over facts/cases with scoped filters (`propertyId`, `houseId`, `apartmentId`).
+  - Define minimum acceptance thresholds (e.g., expected entity appears in top-3 for canonical prompts).
+
+- **E4.2 MCP Tool Contract Stabilization**
+  - Define and lock MCP tool schemas for:
+    1. `semantic_search`
+    2. `get_related_cases`
+    3. `get_related_facts`
+    4. `get_case_context_bundle` (single-call case context for agents)
+  - Add integration tests for schema and error handling.
+
+- **E4.3 Embedding/Index Freshness**
+  - Ensure new/updated facts and cases are embedded/indexed deterministically after ingestion.
+  - Add replay tests asserting no stale semantic results after updates/auto-close transitions.
+
+- **E4.4 Agent-Assist Loop (POC Safe)**
+  - Implement an orchestrated step (ai-sdk + MCP tools) that:
+    1. receives a new/updated case
+    2. retrieves related cases/facts via MCP semantic search
+    3. returns a concise structured recommendation bundle
+  - Keep case state mutation guarded (no blind auto-close from agent output).
+
+- **E4.5 Guarded Agent Actions**
+  - If agent proposes `close case`, require explicit rule satisfaction:
+    - closure predicate evidence present in DB
+    - scope alignment check
+    - confidence threshold met
+  - Persist action trace (`why closed`, evidence IDs, prompt/tool context summary).
+
+- **E4.6 [TEST] End-to-End MCP Agent Workflow**
+  - Add integration test:
+    1. ingest day file
+    2. open/resolve case
+    3. run MCP-based related search
+    4. validate response bundle quality + guardrail enforcement.
+
+- **E4.7 Demo Path Script**
+  - Add one deterministic command for judges:
+    - run history replay
+    - execute semantic query examples
+    - show one agent-assist recommendation output with evidence trace.
+
 ### Epic R4: Day-01 to Day-10 History Replay
 *Goal: Build the timeline engine required for the demo story.*
 
@@ -216,11 +266,11 @@ A **case** is an operational workflow record stored in `cases` (title, summary, 
 ## 5. Ticket Execution Order (Do This Next)
 
 1. **Week Slice A (foundation fix)**: R1.1 -> R1.5
-2. **Week Slice B (cases)**: R2.0 -> R2.8
-3. **Week Slice C (history core)**: R4.1 -> R4.5
-4. **Week Slice D (reliability + demo polish)**: R3.1 -> R3.4, then R5.1 -> R5.4
+2. **Week Slice B (cases)**: R2.0 -> R2.8 (implemented; maintain only)
+3. **Week Slice C (semantic + MCP hardening)**: E4.1 -> E4.7
+4. **Week Slice D (history core + polish)**: R4.1 -> R4.5, then R3.1 -> R3.4 and selective R5
 
-If time is constrained, do not skip R1/R2/R4; they are the minimum for the promised demo narrative.
+If time is constrained, prioritize E4.1, E4.2, E4.5, and R4.3 for demo safety.
 
 ## 6. Demo Go-To Flow (Updated Pitch)
 

@@ -12,6 +12,10 @@ const config = defineConfig({
   test: {
     environment: 'node',
     setupFiles: './vitest.setup.ts',
+    hookTimeout: 30000,
+    testTimeout: 20000,
+    maxWorkers: 1,
+    minWorkers: 1,
   },
   plugins: [
     devtools(),
