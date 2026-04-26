@@ -1,0 +1,5 @@
+Okay, with Epic 5 done, let's re-check the whle implementation plan and come to a final verdict
+
+---
+
+Basically let's "reset" te whole plan. Remove every implemented aspect. We do the runner now and create fresh Epics/Tassks is needed for now: Bye Bye. Remove all "Doings" just keep the information that might be needed for further Epics and tasks
