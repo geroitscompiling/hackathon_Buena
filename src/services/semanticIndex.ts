@@ -4,6 +4,9 @@ import { z } from "zod";
 import { db, type AppDatabase } from "#/services/database";
 import * as schema from "#/db/schema";
 
+/** Max rows returned after merging fact + case hits (each branch queries up to this many). */
+export const SEMANTIC_SEARCH_MAX_RESULTS = 10_000;
+
 export type EmbeddingClient = {
 	embedDocument: (text: string) => Promise<number[]>;
 	embedQuery: (text: string) => Promise<number[]>;
@@ -12,10 +15,17 @@ export type EmbeddingClient = {
 export const semanticSearchSchema = z.object({
 	query: z.string().trim().min(1),
 	entityType: z.enum(["fact", "case", "all"]).default("all"),
+	/** Restricts **facts** to ERP gold (JSON/CSV) vs extracted; cases ignore this. */
+	goldStandard: z.enum(["all", "gold", "nonGold"]).default("all"),
 	propertyId: z.string().trim().min(1).optional(),
 	houseId: z.string().trim().min(1).optional(),
 	apartmentId: z.string().trim().min(1).optional(),
-	limit: z.coerce.number().int().positive().max(50).default(10),
+	limit: z.coerce
+		.number()
+		.int()
+		.positive()
+		.max(SEMANTIC_SEARCH_MAX_RESULTS)
+		.default(10),
 });
 
 export type SemanticSearchArgs = z.infer<typeof semanticSearchSchema>;
@@ -197,8 +207,15 @@ export async function semanticSearch(
 	database: AppDatabase = db,
 	args: unknown,
 ): Promise<SemanticSearchResult[]> {
-	const { apartmentId, entityType, houseId, limit, propertyId, query } =
-		semanticSearchSchema.parse(args);
+	const {
+		apartmentId,
+		entityType,
+		goldStandard,
+		houseId,
+		limit,
+		propertyId,
+		query,
+	} = semanticSearchSchema.parse(args);
 	const queryEmbedding = await embeddingClient.embedQuery(
 		formatSemanticSearchQuery(query),
 	);
@@ -212,6 +229,12 @@ export async function semanticSearch(
 			isNotNull(schema.facts.embedding),
 			houseId ? eq(schema.factHouses.houseId, houseId) : undefined,
 			apartmentId ? eq(schema.factApartments.apartmentId, apartmentId) : undefined,
+			goldStandard === "gold"
+				? eq(schema.facts.isGoldStandard, true)
+				: undefined,
+			goldStandard === "nonGold"
+				? eq(schema.facts.isGoldStandard, false)
+				: undefined,
 		].filter(Boolean);
 
 		const factRows = await database

@@ -14,15 +14,28 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "#/components/ui/select";
-import type { SemanticSearchResult } from "#/services/semanticIndex";
+import {
+	SEMANTIC_SEARCH_MAX_RESULTS,
+	type SemanticSearchResult,
+} from "#/services/semanticIndex";
+
+function clampSemanticSearchLimit(val: unknown): number {
+	const raw =
+		typeof val === "number" ? val : Number.parseInt(String(val ?? ""), 10);
+	if (!Number.isFinite(raw) || raw < 1) {
+		return 10;
+	}
+	return Math.min(Math.floor(raw), SEMANTIC_SEARCH_MAX_RESULTS);
+}
 
 const searchPageSchema = z.object({
 	query: z.string().default(""),
 	entityType: z.enum(["all", "fact", "case"]).default("all"),
+	goldStandard: z.enum(["all", "gold", "nonGold"]).default("all"),
 	propertyId: z.string().optional(),
 	houseId: z.string().optional(),
 	apartmentId: z.string().optional(),
-	limit: z.coerce.number().int().positive().max(50).default(10),
+	limit: z.preprocess(clampSemanticSearchLimit, z.number().int().positive()),
 });
 
 export const Route = createFileRoute("/search")({
@@ -40,11 +53,13 @@ function SearchPage() {
 	const [propertyId, setPropertyId] = useState(search.propertyId ?? "");
 	const [houseId, setHouseId] = useState(search.houseId ?? "");
 	const [apartmentId, setApartmentId] = useState(search.apartmentId ?? "");
+	const [goldStandard, setGoldStandard] = useState(search.goldStandard);
 	const [limit, setLimit] = useState(String(search.limit));
 
 	useEffect(() => {
 		setQuery(search.query);
 		setEntityType(search.entityType);
+		setGoldStandard(search.goldStandard);
 		setPropertyId(search.propertyId ?? "");
 		setHouseId(search.houseId ?? "");
 		setApartmentId(search.apartmentId ?? "");
@@ -52,6 +67,7 @@ function SearchPage() {
 	}, [
 		search.apartmentId,
 		search.entityType,
+		search.goldStandard,
 		search.houseId,
 		search.limit,
 		search.propertyId,
@@ -71,6 +87,7 @@ function SearchPage() {
 			const params = new URLSearchParams({
 				query: search.query,
 				entityType: search.entityType,
+				goldStandard: search.goldStandard,
 				limit: String(search.limit),
 			});
 			if (search.propertyId) params.set("propertyId", search.propertyId);
@@ -101,6 +118,7 @@ function SearchPage() {
 	}, [
 		search.apartmentId,
 		search.entityType,
+		search.goldStandard,
 		search.houseId,
 		search.limit,
 		search.propertyId,
@@ -120,7 +138,7 @@ function SearchPage() {
 			<Card className="mb-6 py-0">
 				<CardContent className="py-6">
 					<form
-						className="grid gap-4 md:grid-cols-2 xl:grid-cols-6"
+						className="grid gap-4 md:grid-cols-2 xl:grid-cols-7"
 						onSubmit={async (event) => {
 							event.preventDefault();
 							await navigate({
@@ -128,10 +146,11 @@ function SearchPage() {
 								search: {
 									query,
 									entityType,
+									goldStandard,
 									propertyId: propertyId.trim() || undefined,
 									houseId: houseId.trim() || undefined,
 									apartmentId: apartmentId.trim() || undefined,
-									limit: Number.parseInt(limit, 10) || 10,
+									limit: clampSemanticSearchLimit(limit),
 								},
 							});
 						}}
@@ -159,6 +178,26 @@ function SearchPage() {
 									<SelectItem value="all">All entities</SelectItem>
 									<SelectItem value="fact">Facts only</SelectItem>
 									<SelectItem value="case">Cases only</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+						<div>
+							<label htmlFor="search-gold" className="mb-2 block text-sm font-medium">
+								Gold standard (facts)
+							</label>
+							<Select
+								value={goldStandard}
+								onValueChange={(value) =>
+									setGoldStandard(value as "all" | "gold" | "nonGold")
+								}
+							>
+								<SelectTrigger id="search-gold" className="w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">All facts</SelectItem>
+									<SelectItem value="gold">Gold (ERP JSON / CSV)</SelectItem>
+									<SelectItem value="nonGold">Non-gold (extracted)</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -198,7 +237,7 @@ function SearchPage() {
 						<div className="flex items-end gap-3">
 							<div className="flex-1">
 								<label htmlFor="search-limit" className="mb-2 block text-sm font-medium">
-									Limit
+									Limit (max {SEMANTIC_SEARCH_MAX_RESULTS.toLocaleString()})
 								</label>
 								<Input
 									id="search-limit"
