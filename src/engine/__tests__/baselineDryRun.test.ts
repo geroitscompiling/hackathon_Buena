@@ -185,7 +185,7 @@ describe("Baseline dry-run pipeline", () => {
 		const aiFacts = await db
 			.select()
 			.from(facts)
-			.where(eq(facts.key, "email_signal_detected"));
+			.where(eq(facts.key, "repair"));
 		expect(aiFacts).toHaveLength(1);
 		const houseLinks = await db
 			.select()
