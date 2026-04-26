@@ -18,6 +18,7 @@ import {
 import {
 	semanticSearch,
 	semanticSearchSchema,
+	type SemanticSearchResult,
 } from "#/services/semanticIndex";
 
 type AppDatabase = typeof db;
@@ -28,6 +29,101 @@ type McpToolDefinition<TSchema extends ZodTypeAny> = {
 	schema: TSchema;
 	execute: (args: z.infer<TSchema>) => Promise<unknown>;
 };
+
+const semanticSearchToolSchema = semanticSearchSchema.strict();
+
+const getRelatedCasesSchema = z
+	.object({
+		caseId: z.string().trim().min(1),
+		limit: z.coerce.number().int().positive().max(25).default(5),
+	})
+	.strict();
+
+const getRelatedFactsSchema = z
+	.object({
+		caseId: z.string().trim().min(1),
+		limit: z.coerce.number().int().positive().max(25).default(5),
+	})
+	.strict();
+
+const getCaseContextBundleSchema = z
+	.object({
+		caseId: z.string().trim().min(1),
+		relatedCasesLimit: z.coerce.number().int().positive().max(25).default(5),
+		relatedFactsLimit: z.coerce.number().int().positive().max(25).default(5),
+	})
+	.strict();
+
+async function getCaseContextBundle(
+	database: AppDatabase | undefined,
+	args: z.infer<typeof getCaseContextBundleSchema>,
+) {
+	const dbHandle = database;
+	if (!dbHandle) {
+		throw new Error("Database handle is required for get_case_context_bundle.");
+	}
+	const caseRow = await dbHandle.query.cases.findFirst({
+		where: (cases, { eq }) => eq(cases.id, args.caseId),
+		with: {
+			apartment: true,
+			house: true,
+			owner: true,
+			property: true,
+		},
+	});
+	if (!caseRow) {
+		throw new Error(`Case not found: ${args.caseId}`);
+	}
+	const queryText = `${caseRow.title}. ${caseRow.summary}`.trim();
+	const scopeFilters = {
+		propertyId: caseRow.propertyId,
+		houseId: caseRow.houseId ?? undefined,
+		apartmentId: caseRow.apartmentId ?? undefined,
+	};
+
+	const relatedCases = (
+		await runSemanticSearchSafe(dbHandle, {
+			query: queryText,
+			entityType: "case",
+			...scopeFilters,
+			limit: args.relatedCasesLimit + 1,
+		})
+	)
+		.filter((row) => row.entityType === "case" && row.id !== caseRow.id)
+		.slice(0, args.relatedCasesLimit);
+	const relatedFacts = await runSemanticSearchSafe(dbHandle, {
+		query: queryText,
+		entityType: "fact",
+		...scopeFilters,
+		limit: args.relatedFactsLimit,
+	});
+
+	return {
+		case: caseRow,
+		relatedCases,
+		relatedFacts,
+	};
+}
+
+function onlyCases(results: SemanticSearchResult[]): SemanticSearchResult[] {
+	return results.filter((row) => row.entityType === "case");
+}
+
+function onlyFacts(results: SemanticSearchResult[]): SemanticSearchResult[] {
+	return results.filter((row) => row.entityType === "fact");
+}
+
+async function runSemanticSearchSafe(
+	database: AppDatabase,
+	args: z.infer<typeof semanticSearchToolSchema>,
+): Promise<SemanticSearchResult[]> {
+	try {
+		const embedding = new GeminiEmbeddingService();
+		return await semanticSearch(embedding, database, args);
+	} catch {
+		return [];
+	}
+}
 
 export function createMcpTools(database?: AppDatabase) {
 	return [
@@ -56,9 +152,44 @@ export function createMcpTools(database?: AppDatabase) {
 			name: "semantic_search",
 			description:
 				"Searches facts and cases by natural language using vector similarity.",
-			schema: semanticSearchSchema,
+			schema: semanticSearchToolSchema,
 			execute: (args) =>
 				semanticSearch(new GeminiEmbeddingService(), database, args),
+		},
+		{
+			name: "get_related_cases",
+			description:
+				"Gets semantically related cases for an existing case within its scope.",
+			schema: getRelatedCasesSchema,
+			execute: async (args) => {
+				const bundle = await getCaseContextBundle(database, {
+					caseId: args.caseId,
+					relatedCasesLimit: args.limit,
+					relatedFactsLimit: 1,
+				});
+				return onlyCases(bundle.relatedCases);
+			},
+		},
+		{
+			name: "get_related_facts",
+			description:
+				"Gets semantically related facts for an existing case within its scope.",
+			schema: getRelatedFactsSchema,
+			execute: async (args) => {
+				const bundle = await getCaseContextBundle(database, {
+					caseId: args.caseId,
+					relatedCasesLimit: 1,
+					relatedFactsLimit: args.limit,
+				});
+				return onlyFacts(bundle.relatedFacts);
+			},
+		},
+		{
+			name: "get_case_context_bundle",
+			description:
+				"Returns a single case context bundle with related cases and facts.",
+			schema: getCaseContextBundleSchema,
+			execute: (args) => getCaseContextBundle(database, args),
 		},
 	] as const satisfies readonly McpToolDefinition<ZodTypeAny>[];
 }

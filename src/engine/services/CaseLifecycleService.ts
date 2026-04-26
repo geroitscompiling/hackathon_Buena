@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { cases, factCases } from "../../db/schema";
+import { caseActionTraces, cases, factCases } from "../../db/schema";
 import type {
 	CaseClosurePredicate,
 	CaseIntent,
@@ -16,6 +16,7 @@ import {
 import type { HierarchyResolver } from "./HierarchyResolver";
 import type { ResolvedHierarchyScope } from "./HierarchyResolver";
 import { createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { db as appDb } from "../../db";
 import type { SemanticIndexService } from "#/services/semanticIndex";
 
@@ -41,6 +42,19 @@ export interface CaseLifecycleCounters {
 }
 
 export type CaseIntentBatchResult = CaseLifecycleCounters & { caseKeys: string[] };
+
+export type GuardedClosureReason =
+	| "unsupported_action"
+	| "case_not_found"
+	| "already_terminal"
+	| "confidence_below_threshold"
+	| "missing_closure_predicate"
+	| "no_matching_evidence"
+	| "closed_with_guardrails";
+
+export type GuardedClosureResult =
+	| { closed: false; reason: Exclude<GuardedClosureReason, "closed_with_guardrails"> }
+	| { closed: true; reason: "closed_with_guardrails"; evidenceFactIds: string[] };
 
 function deterministicCaseId(propertyId: string, caseKey: string): string {
 	const h = createHash("sha256").update(`${propertyId}::${caseKey}`).digest("hex");
@@ -327,6 +341,166 @@ export class CaseLifecycleService {
 			}
 		}
 		return resolved;
+	}
+
+	private async persistClosureDecisionTrace(input: {
+		caseId: string;
+		action: "close_case";
+		decision: "approved" | "rejected";
+		reason: GuardedClosureReason;
+		confidenceScore: number;
+		confidenceThreshold: number;
+		evidenceFactIds: string[];
+		contextSummary: string;
+		createdAt: string;
+	}): Promise<void> {
+		await this.db.insert(caseActionTraces).values({
+			id: randomUUID(),
+			caseId: input.caseId,
+			action: input.action,
+			decision: input.decision,
+			reason: input.reason,
+			confidenceScore: input.confidenceScore,
+			confidenceThreshold: input.confidenceThreshold,
+			evidenceFactIds: JSON.stringify(input.evidenceFactIds),
+			contextSummary: input.contextSummary,
+			createdAt: input.createdAt,
+		});
+	}
+
+	async evaluateGuardedClosureAction(input: {
+		caseId: string;
+		propertyId: string;
+		proposedAction: "close_case";
+		proposedConfidence: number;
+		confidenceThreshold: number;
+		nowIso: string;
+		contextSummary: string;
+	}): Promise<GuardedClosureResult> {
+		if (input.proposedAction !== "close_case") {
+			return { closed: false, reason: "unsupported_action" };
+		}
+
+		const caseRow = await this.db.query.cases.findFirst({
+			where: (c, { and: a, eq: e }) =>
+				a(e(c.id, input.caseId), e(c.propertyId, input.propertyId)),
+		});
+		if (!caseRow) {
+			return { closed: false, reason: "case_not_found" };
+		}
+
+		if (caseRow.status === TERMINAL_CASE_STATUS) {
+			await this.persistClosureDecisionTrace({
+				caseId: caseRow.id,
+				action: "close_case",
+				decision: "rejected",
+				reason: "already_terminal",
+				confidenceScore: input.proposedConfidence,
+				confidenceThreshold: input.confidenceThreshold,
+				evidenceFactIds: [],
+				contextSummary: input.contextSummary,
+				createdAt: input.nowIso,
+			});
+			return { closed: false, reason: "already_terminal" };
+		}
+
+		if (input.proposedConfidence < input.confidenceThreshold) {
+			await this.persistClosureDecisionTrace({
+				caseId: caseRow.id,
+				action: "close_case",
+				decision: "rejected",
+				reason: "confidence_below_threshold",
+				confidenceScore: input.proposedConfidence,
+				confidenceThreshold: input.confidenceThreshold,
+				evidenceFactIds: [],
+				contextSummary: input.contextSummary,
+				createdAt: input.nowIso,
+			});
+			return { closed: false, reason: "confidence_below_threshold" };
+		}
+
+		const predicate = caseRow.closurePredicate as CaseClosurePredicate | null;
+		if (!predicate) {
+			await this.persistClosureDecisionTrace({
+				caseId: caseRow.id,
+				action: "close_case",
+				decision: "rejected",
+				reason: "missing_closure_predicate",
+				confidenceScore: input.proposedConfidence,
+				confidenceThreshold: input.confidenceThreshold,
+				evidenceFactIds: [],
+				contextSummary: input.contextSummary,
+				createdAt: input.nowIso,
+			});
+			return { closed: false, reason: "missing_closure_predicate" };
+		}
+
+		const matchingFacts = await this.db.query.facts.findMany({
+			where: (f, { and: a, eq: e }) =>
+				a(e(f.propertyId, input.propertyId), e(f.key, predicate)),
+			columns: {
+				id: true,
+				key: true,
+				value: true,
+				propertyId: true,
+			},
+		});
+		const scopeMap = await loadFactScopes(
+			this.db,
+			matchingFacts.map((fact) => fact.id),
+		);
+		const alignedEvidenceIds = matchingFacts
+			.filter((fact) => factSatisfiesClosurePredicate(fact.key, fact.value, predicate))
+			.filter((fact) => {
+				const scope = scopeMap.get(fact.id);
+				if (!scope) return false;
+				return scopesAlign(
+					{
+						propertyId: caseRow.propertyId,
+						houseId: caseRow.houseId,
+						apartmentId: caseRow.apartmentId,
+					},
+					scope,
+				);
+			})
+			.map((fact) => fact.id);
+
+		if (alignedEvidenceIds.length === 0) {
+			await this.persistClosureDecisionTrace({
+				caseId: caseRow.id,
+				action: "close_case",
+				decision: "rejected",
+				reason: "no_matching_evidence",
+				confidenceScore: input.proposedConfidence,
+				confidenceThreshold: input.confidenceThreshold,
+				evidenceFactIds: [],
+				contextSummary: input.contextSummary,
+				createdAt: input.nowIso,
+			});
+			return { closed: false, reason: "no_matching_evidence" };
+		}
+
+		await this.db
+			.update(cases)
+			.set({ status: TERMINAL_CASE_STATUS, updatedAt: input.nowIso })
+			.where(eq(cases.id, caseRow.id));
+		await this.persistClosureDecisionTrace({
+			caseId: caseRow.id,
+			action: "close_case",
+			decision: "approved",
+			reason: "closed_with_guardrails",
+			confidenceScore: input.proposedConfidence,
+			confidenceThreshold: input.confidenceThreshold,
+			evidenceFactIds: alignedEvidenceIds,
+			contextSummary: input.contextSummary,
+			createdAt: input.nowIso,
+		});
+
+		return {
+			closed: true,
+			reason: "closed_with_guardrails",
+			evidenceFactIds: alignedEvidenceIds,
+		};
 	}
 }
 

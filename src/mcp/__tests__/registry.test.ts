@@ -88,6 +88,9 @@ describe("mcp tools", () => {
 			"list_facts",
 			"list_cases",
 			"semantic_search",
+			"get_related_cases",
+			"get_related_facts",
+			"get_case_context_bundle",
 		]);
 	});
 

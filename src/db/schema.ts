@@ -140,3 +140,18 @@ export const factCases = pgTable(
 	},
 	(table) => [primaryKey({ columns: [table.factId, table.caseId] })],
 );
+
+export const caseActionTraces = pgTable("case_action_traces", {
+	id: text("id").primaryKey(),
+	caseId: text("caseId")
+		.notNull()
+		.references(() => cases.id),
+	action: text("action").notNull(),
+	decision: text("decision").notNull(),
+	reason: text("reason").notNull(),
+	confidenceScore: real("confidenceScore").notNull(),
+	confidenceThreshold: real("confidenceThreshold").notNull(),
+	evidenceFactIds: text("evidenceFactIds").notNull(),
+	contextSummary: text("contextSummary").notNull(),
+	createdAt: text("createdAt").notNull(),
+});

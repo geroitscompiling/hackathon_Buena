@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 
 import {
 	apartments,
+	caseActionTraces,
 	cases,
 	factApartments,
 	factCases,
@@ -78,6 +79,14 @@ export const casesRelations = relations(cases, ({ one, many }) => ({
 		references: [users.id],
 	}),
 	factLinks: many(factCases),
+	actionTraces: many(caseActionTraces),
+}));
+
+export const caseActionTracesRelations = relations(caseActionTraces, ({ one }) => ({
+	case: one(cases, {
+		fields: [caseActionTraces.caseId],
+		references: [cases.id],
+	}),
 }));
 
 export const factHousesRelations = relations(factHouses, ({ one }) => ({
