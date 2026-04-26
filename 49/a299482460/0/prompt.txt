@@ -1,0 +1,10 @@
+Sorry I again need to ask:
+If I make the REAL Deal like initial setup and make history I get the same output to the UX like when running the judge Demo runner?
+
+---
+
+but run history Live as well uses the MCP to flow? If not this is a huge flaw? The whole requirement was around this?
+
+---
+
+yes please
