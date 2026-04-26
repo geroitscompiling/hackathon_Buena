@@ -116,6 +116,10 @@ export interface BaselineDryRunSummary {
   assistProposedClose: number;
   assistGuardedClosed: number;
   assistGuardedRejected: number;
+  /** Facts that had null embeddings and were embedded during the final backfill pass. */
+  embeddingBackfillFacts: number;
+  /** Cases that had null embeddings and were embedded during the final backfill pass. */
+  embeddingBackfillCases: number;
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
@@ -529,7 +533,6 @@ export async function runBaselineDryRun({
         isGoldStandard: enrichedFact.isGoldStandard,
         confidenceScore: enrichedFact.confidenceScore,
       });
-      await resolvedSemanticIndexService.refreshFactEmbeddingById(enrichedFact.id);
 
       if (resolvedScope.scopeType === "house" || resolvedScope.scopeType === "apartment") {
         if (!resolvedScope.houseId) {
@@ -550,6 +553,8 @@ export async function runBaselineDryRun({
           apartmentId: resolvedScope.apartmentId,
         });
       }
+
+      await resolvedSemanticIndexService.refreshFactEmbeddingById(enrichedFact.id);
 
       existingPolicyFacts.push({
         id: enrichedFact.id,
@@ -640,6 +645,19 @@ export async function runBaselineDryRun({
   const goldFactsPersisted = persistedFacts.filter((fact) => fact.isGoldStandard).length;
   const nonGoldFactsPersisted = persistedFacts.length - goldFactsPersisted;
 
+  let embeddingBackfillFacts = 0;
+  let embeddingBackfillCases = 0;
+  if (resolvedEmbeddingClient) {
+    const batchSize = 500;
+    const backfillIndex = new SemanticIndexService(db, resolvedEmbeddingClient);
+    let batch: { factsUpdated: number; casesUpdated: number };
+    do {
+      batch = await backfillIndex.backfillMissingEmbeddings(batchSize);
+      embeddingBackfillFacts += batch.factsUpdated;
+      embeddingBackfillCases += batch.casesUpdated;
+    } while (batch.factsUpdated > 0 || batch.casesUpdated > 0);
+  }
+
   return {
     sourcesPersisted: sourceIds.size,
     factsInserted,
@@ -659,5 +677,7 @@ export async function runBaselineDryRun({
     assistProposedClose,
     assistGuardedClosed,
     assistGuardedRejected,
+    embeddingBackfillFacts,
+    embeddingBackfillCases,
   };
 }

@@ -22,8 +22,16 @@ export function SearchResults({ results, query }: SearchResultsProps) {
 
 	if (results.length === 0) {
 		return (
-			<div className="rounded-lg border border-dashed bg-card px-6 py-8 text-sm text-muted-foreground">
-				No semantic matches found for <span className="font-medium text-foreground">{query}</span>.
+			<div className="space-y-3 rounded-lg border border-dashed bg-card px-6 py-8 text-sm text-muted-foreground">
+				<p>
+					No semantic matches found for{" "}
+					<span className="font-medium text-foreground">{query}</span>.
+				</p>
+				<p>
+					Vector search only includes rows that already have embeddings. Load data with Gemini
+					embedding env set, or run <code className="rounded bg-muted px-1.5 py-0.5">pnpm embeddings:backfill</code>{" "}
+					against your database.
+				</p>
 			</div>
 		);
 	}

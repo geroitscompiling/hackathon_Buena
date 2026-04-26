@@ -69,6 +69,8 @@ describe("PropertyHistoryRunner", () => {
           assistProposedClose: 0,
           assistGuardedClosed: 0,
           assistGuardedRejected: 0,
+          embeddingBackfillFacts: 0,
+          embeddingBackfillCases: 0,
         };
       },
     });
@@ -119,6 +121,8 @@ describe("PropertyHistoryRunner", () => {
           assistProposedClose: 0,
           assistGuardedClosed: 0,
           assistGuardedRejected: 0,
+          embeddingBackfillFacts: 0,
+          embeddingBackfillCases: 0,
         };
       },
     });
