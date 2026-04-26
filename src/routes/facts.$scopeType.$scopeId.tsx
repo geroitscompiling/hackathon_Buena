@@ -39,7 +39,7 @@ const getFactsScopePayload = createServerFn({
 			data.scopeType,
 			data.scopeId,
 		);
-		const properties = await listProperties(undefined, { limit: 200 });
+		const properties = await listProperties(undefined, { limit: 100 });
 		return { facts, scopeContext, properties };
 	});
 

@@ -26,7 +26,7 @@ const getFactsOverview = createServerFn({
 	const total = await countFacts(undefined, {});
 	const limit = Math.min(FACTS_OVERVIEW_LOAD_LIMIT, Math.max(total, 1));
 	const facts = await listFacts(undefined, { limit });
-	const properties = await listProperties(undefined, { limit: 200 });
+	const properties = await listProperties(undefined, { limit: 100 });
 	return { facts, total, properties };
 });
 
